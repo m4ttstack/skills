@@ -1,0 +1,14 @@
+{
+  "name": "mattstack",
+  "owner": {
+    "name": "Matt Erickson"
+  },
+  "plugins": [
+    {
+      "name": "fast-browser",
+      "source": "./plugins/fast-browser",
+      "description": "Fast Playwright browser automation for Claude Code and Codex",
+      "version": "0.1.0-alpha.1"
+    }
+  ]
+}
