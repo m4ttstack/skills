@@ -7,7 +7,7 @@
     {
       "name": "fast-browser",
       "source": "./plugins/fast-browser",
-      "description": "Fast Playwright browser automation for Claude Code and Codex",
+      "description": "macOS and Chrome alpha browser automation for Claude Code and Codex",
       "version": "0.1.0-alpha.1"
     }
   ]

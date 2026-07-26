@@ -2,6 +2,23 @@
 
 Personal Claude Code skills for Matt Goodwin. All skills are scoped under the `mattstack:` prefix.
 
+## Fast Browser plugin candidate
+
+The repository now contains a dual-host Fast Browser alpha for Claude Code and
+Codex under `plugins/fast-browser`. The npm package is still private and
+UNLICENSED, so it is not available through `npx` yet. Current installs must use
+the repository source:
+
+```bash
+node plugins/fast-browser/bin/fast-browser.mjs setup \
+  --source /path/to/mattstack \
+  --host both
+```
+
+See the [Fast Browser README](plugins/fast-browser/README.md) for requirements,
+safe and full profiles, Chrome developer-mode loading, diagnostics, migration,
+rollback, uninstall, privacy, and security guidance.
+
 ## Skills
 
 ### orchestration
@@ -24,7 +41,13 @@ Personal Claude Code skills for Matt Goodwin. All skills are scoped under the `m
 - **mattstack:browser-macros** -- library of pre-written Playwright flow scripts (run via `browser_run_code_unsafe` filename+args). Index in `MACROS.md`; scripts live in `~/.playwright-mcp/macros/` (the MCP server only reads files under its output dir or cwd).
 - **mattstack:mine-macros** -- sweep `~/.playwright-mcp` session logs for repeated browser flows, propose parameterized macros with evidence, and update the library after per-macro approval.
 
-## Setup
+## Legacy skill-only setup
+
+The symlinks below are the pre-plugin setup. Existing browser-skill users can
+review and migrate that state with
+`node plugins/fast-browser/bin/fast-browser.mjs migrate --dry-run` followed by
+`node plugins/fast-browser/bin/fast-browser.mjs migrate --host both`; new Fast
+Browser installs should use the plugin candidate workflow above.
 
 Symlink each skill directory into `~/.claude/skills/`:
 
