@@ -11,15 +11,15 @@ and network-backed setup are unavailable. The source checkout alone is not an
 installable candidate.
 
 The verified local candidate flow requires a separate URL-free
-`fast-browser-release-0.1.0-alpha.1.json` plus these two adjacent files:
-`fast-browser-mcp-0.1.0-alpha.1.tar.gz` and
-`fast-browser-extension-0.1.0-alpha.1.zip`. With that bundle:
+`fast-browser-release-0.1.0-alpha.5.json` plus these two adjacent files:
+`fast-browser-mcp-0.1.0-alpha.5.tar.gz` and
+`fast-browser-extension-0.1.0-alpha.5.zip`. With that bundle:
 
 ```bash
 cd /path/to/mattstack
 node plugins/fast-browser/bin/fast-browser.mjs setup \
   --source /path/to/mattstack \
-  --runtime-lock /absolute/path/to/fast-browser-release-0.1.0-alpha.1.json \
+  --runtime-lock /absolute/path/to/fast-browser-release-0.1.0-alpha.5.json \
   --host both \
   --profile safe
 ```
