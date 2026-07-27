@@ -4,29 +4,31 @@ Personal Claude Code skills for Matt Goodwin. All skills are scoped under the `m
 
 ## Fast Browser plugin candidate
 
-The repository now contains a dual-host Fast Browser alpha for Claude Code and
-Codex under `plugins/fast-browser`. The npm package is still private and
-UNLICENSED, and the locked runtime commit/tag/release is not public, so `npx`
-and network-backed setup are unavailable. The source checkout alone is not an
-installable candidate.
-
-The verified local candidate flow requires a separate URL-free
-`fast-browser-release-0.1.0-alpha.5.json` plus these two adjacent files:
-`fast-browser-mcp-0.1.0-alpha.5.tar.gz` and
-`fast-browser-extension-0.1.0-alpha.5.zip`. With that bundle:
+The repository contains a dual-host Fast Browser alpha for Claude Code and
+Codex under `plugins/fast-browser`. It is MIT licensed, and the locked runtime
+release is published, so the source checkout installs on its own without a
+local artifact bundle:
 
 ```bash
 cd /path/to/mattstack
 node plugins/fast-browser/bin/fast-browser.mjs setup \
   --source /path/to/mattstack \
-  --runtime-lock /absolute/path/to/fast-browser-release-0.1.0-alpha.5.json \
   --host both \
   --profile safe
 ```
 
-The URL-backed bundled lock will fail until the runtime commit, tag, and release
-assets are public. `npx` additionally remains gated on license and publisher
-approval.
+`npx` remains unavailable: the package is not published to npm yet.
+
+To install an unpublished local build instead, pass a URL-free release manifest
+plus its two adjacent artifacts:
+
+```bash
+node plugins/fast-browser/bin/fast-browser.mjs setup \
+  --source /path/to/mattstack \
+  --runtime-lock /absolute/path/to/fast-browser-release-0.1.0-alpha.7.json \
+  --host both \
+  --profile safe
+```
 
 See the [Fast Browser README](plugins/fast-browser/README.md) for requirements,
 safe and full profiles, Chrome developer-mode loading, diagnostics, migration,
