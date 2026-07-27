@@ -2,22 +2,19 @@
 
 Personal Claude Code skills for Matt Goodwin. All skills are scoped under the `mattstack:` prefix.
 
-## Fast Browser plugin candidate
+## Fast Browser
 
-The repository contains a dual-host Fast Browser alpha for Claude Code and
-Codex under `plugins/fast-browser`. It is MIT licensed, and the locked runtime
-release is published, so the source checkout installs on its own without a
-local artifact bundle:
+[**Fast Browser**](plugins/fast-browser/) lets Claude Code and Codex drive the
+Chrome you already have open, with your profile and logins, instead of a blank
+automated browser. Published as
+[`@mattstack/fast-browser`](https://www.npmjs.com/package/@mattstack/fast-browser):
 
 ```bash
-cd /path/to/mattstack
-node plugins/fast-browser/bin/fast-browser.mjs setup \
-  --source /path/to/mattstack \
-  --host both \
-  --profile safe
+npx @mattstack/fast-browser setup --host both
 ```
 
-`npx` remains unavailable: the package is not published to npm yet.
+It is MIT licensed; the Playwright-derived runtime and extension artifacts it
+installs remain Apache-2.0.
 
 To install an unpublished local build instead, pass a URL-free release manifest
 plus its two adjacent artifacts:
