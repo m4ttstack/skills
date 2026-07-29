@@ -52,9 +52,12 @@ and someone has to look. then:
 scripts/attend.sh <herd-pane-id> -l <job>
 ```
 
-that opens a focused tab in your visible session streaming that one agent,
+that opens a focused tab in your visible session attached to that one agent,
 live and writable. it is a window, not a move: the agent stays in the herd
 session and keeps running. detach with `ctrl+b q`, then close the tab.
+
+attaching also resizes the herd pane to the tab you are viewing it in, and
+that size sticks after you detach.
 
 ## teardown
 
@@ -85,6 +88,13 @@ session variable, so the call lands in your visible session with no error. the
 whole herd would spawn into the UI it is supposed to stay out of. that is why
 `scripts/hrd` exists and why it does `env -u HERDR_SOCKET_PATH`. never call
 `herdr` directly against the herd.
+
+**`terminal session control` is not a viewer.** the name reads like the
+interactive one and it is not: it is the thin client's wire protocol, so
+pointing a tab at it fills the screen with JSON frames of base64 ANSI. the
+interactive primitive is `terminal attach`, which takes a terminal id (off
+`pane get`) rather than a pane id. we shipped the wrong one first and it
+looked exactly like a corrupted terminal.
 
 **headless panes are born 53x23.** the server sizes panes for a client that
 never attached. a claude TUI at that size is unusable and every `pane read`
