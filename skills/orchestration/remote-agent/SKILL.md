@@ -91,8 +91,12 @@ If the script is unavailable, do this by hand:
    `herdr pane split <focused> --direction right --no-focus` and parse
    `result.pane.pane_id`.
 6. Launch:
-   `herdr pane run <pane> "cd <path> && cswap run '<account>' -- claude --model '<model>'"`
-   (drop the `cswap run '<account>' --` part to use the current account).
+   `herdr pane run <pane> "cd <path> && cswap run '<account>' --share-history -- claude --model '<model>'"`
+   (drop the `cswap run '<account>' --share-history --` part to use the current
+   account). Keep `--share-history`: cswap re-syncs sharing on every launch, so
+   omitting it unlinks that account's `projects/` and `history.jsonl` and the
+   session's transcript lands in a profile-local dir that `claude --resume`
+   elsewhere cannot see.
 7. **Wait with `herdr wait agent-status <pane> --status idle --timeout 60000`.**
    Do NOT wait on banner text -- the wording varies and the match will time out
    (this was the original failure). Fall back to

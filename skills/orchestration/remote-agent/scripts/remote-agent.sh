@@ -96,10 +96,13 @@ else
   log "split pane $PANE ($DIRECTION)"
 fi
 
-# 6. Build and run the launch command.
+# 6. Build and run the launch command. --share-history is not optional: cswap
+#    re-syncs sharing on every launch, so a run without it unlinks that
+#    account's projects/ and history.jsonl and the session lands in a profile-
+#    local transcript dir that `claude --resume` elsewhere cannot see.
 LAUNCH="claude"
 [ -n "$MODEL" ] && LAUNCH="$LAUNCH --model '$MODEL'"
-[ -n "$ACCOUNT" ] && LAUNCH="cswap run '$ACCOUNT' -- $LAUNCH"
+[ -n "$ACCOUNT" ] && LAUNCH="cswap run '$ACCOUNT' --share-history -- $LAUNCH"
 herdr pane run "$PANE" "cd '$REPO_PATH' && $LAUNCH"
 log "launching: cd '$REPO_PATH' && $LAUNCH"
 
