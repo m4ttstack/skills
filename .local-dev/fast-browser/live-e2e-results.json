@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "completedAt": "2026-07-27T18:22:59.669Z",
+  "clients": [
+    {
+      "label": null,
+      "orderId": "CLAUDE-TEAM-5",
+      "browserCalls": 2,
+      "elapsedMs": 864
+    },
+    {
+      "label": null,
+      "orderId": "CODEX-SCALE-12",
+      "browserCalls": 2,
+      "elapsedMs": 864
+    }
+  ],
+  "groupLabelsVerified": false,
+  "groupLabelsDistinct": null,
+  "chromeWasFrontmostAtStart": false,
+  "focusChangedToFixtureTab": false,
+  "focusSampleAttempts": 6,
+  "killClaudeLeftCodexFunctional": true,
+  "reconnectLeftBothFunctional": true
+}
