@@ -7,13 +7,18 @@
 # Usage: relay-answer.sh <pane-id> <answer text...>
 set -euo pipefail
 [ $# -ge 2 ] || { echo "usage: relay-answer.sh <pane-id> <answer text...>" >&2; exit 2; }
+
+# Routed through the shim so the same relay works whether the agent is in a
+# visible pane or an invisible herd session. See scripts/hrd.
+HRD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/hrd"
+
 PANE="$1"; shift
-herdr pane send-keys "$PANE" ctrl+c
+"$HRD" pane send-keys "$PANE" ctrl+c
 sleep 1
-herdr pane run "$PANE" "$*"
+"$HRD" pane run "$PANE" "$*"
 
 # Paste detection can swallow the submit, leaving the answer in the input
 # box. Confirm the agent went back to work; nudge with Enter if it did not.
-if ! herdr wait agent-status "$PANE" --status working --timeout 8000 >/dev/null 2>&1; then
-  herdr pane send-keys "$PANE" Enter
+if ! "$HRD" agent wait "$PANE" --until working --timeout 8000 >/dev/null 2>&1; then
+  "$HRD" pane send-keys "$PANE" Enter
 fi

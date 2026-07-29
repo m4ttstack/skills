@@ -13,11 +13,19 @@ Usage:
     herd-monitor.py --interval 15 <pane-id> ...    custom poll seconds (default 30)
 
 A watched pane that disappears from `pane list` reports `-> gone`.
+
+With SHEPHERDR_HERD_SESSION set, this watches the invisible herd session
+instead of the visible one. Nothing else about the output changes.
 """
 import json
+import os
 import subprocess
 import sys
 import time
+
+# See scripts/hrd: one shim so the monitor treats visible and invisible
+# panes identically.
+HRD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hrd")
 
 
 def collect_panes(node, found):
@@ -34,7 +42,7 @@ def collect_panes(node, found):
 
 def snapshot():
     proc = subprocess.run(
-        ["herdr", "pane", "list"], capture_output=True, text=True, timeout=30
+        [HRD, "pane", "list"], capture_output=True, text=True, timeout=30
     )
     if proc.returncode != 0:
         return None
