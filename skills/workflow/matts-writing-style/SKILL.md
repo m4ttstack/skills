@@ -19,6 +19,19 @@ These rules apply to any text that will be posted under Matthew's name: MR descr
 - **One claim per paragraph.** Split the mechanism from the consequence even when it's only two sentences. A reviewer skims, so structure for skimming even when the prose stays plain. (A short qualifying mechanism, a condition or two, isn't a separate claim; it folds into the claim's parenthetical rather than getting its own paragraph.)
 - **Pull code out of the prose.** More than a few tokens of code (a full expression, a suggested function/predicate, a snippet) goes in its own fenced block on its own line, never inlined mid-sentence. Inline backticks are for short references (a symbol, a type, `foo.bar`), not for a whole line of code the reader has to parse inside a paragraph. After a fenced block, the sentence that finishes the ask ends there; the rationale starts a new paragraph. The reader should be able to stop after the ask.
 
+### The compression pass (mandatory before posting any MR comment)
+
+Your first draft is always too long and too formal. Treat it as a rough cut, never the thing you post. Before posting any MR comment (inline finding, reply, or summary), run one explicit revision pass with a single goal: shorter and more conversational. This is not optional polish, it is a required step in the loop, and it exists because the near-universal correction on a first draft is "can you make that shorter and more conversational." That correction is now this pass's job, not the human's.
+
+Read the draft back and ask "would Matt just send this, or would he trim it first?" If there's any doubt, trim. On every pass:
+
+- cut to the fewest sentences that still land the ask, then cut one more clause
+- collapse a multi-paragraph finding toward one tight paragraph plus the ask; a non-blocking note toward two lines
+- swap filing/report tone for how you'd say it out loud to a colleague you trust (contractions, "wonder if", "could we just", "does this actually...")
+- drop every supporting clause past the first reason, and every hop the inline anchor already implies
+
+Only post after this pass. If you catch yourself posting the first draft, you skipped it.
+
 ### Voice
 
 Casual and direct. No corporate-speak ("ensure", "facilitate", "in order to"), no performative politeness ("please let me know if you have any questions"). Write like you're talking to a colleague you trust.
@@ -27,7 +40,11 @@ Honest hedging is welcome, but hedge inside the claim, not in front of it. "the 
 
 ### MR Review Findings (you're the reviewer, inline threads)
 
-The dominant genre. Length scales with stakes, not a fixed size. A blocking `issue` may walk 2-4 paragraphs so the author sees the path they have to act on; a `thought`, `question`, `nitpick`, or non-blocking note is a line or two, same weight as a process ask. If a non-blocking note is running 3+ paragraphs you're over-building it: fold the mechanism into the claim and cut. Inline threads carry the substance. One finding per thread, anchored to the line it's about.
+The dominant genre. **Default to a few tight, conversational sentences, even for a substantive finding:** name the problem, give the one-line causal chain, ask for the fix as a light question. Most findings land in 2-4 *sentences*, not 2-4 *paragraphs*. Trust the author to follow the chain from one compressed sentence instead of tracing every hop; the inline anchor already tells them where you are, so don't re-walk the file path or restate the mechanism's downstream consequence as a fresh clause.
+
+The multi-paragraph walk is the rare exception, earned only when the author genuinely cannot act without seeing the full path traced step by step. Reaching for it should feel like the stakes are forcing your hand, not like the default. If any finding is running 3+ paragraphs you're almost certainly over-building it: compress the causal chain to the shortest form that still lands the ask, fold the mechanism into the claim, and cut. A `thought`, `question`, `nitpick`, or non-blocking note stays a line or two.
+
+Inline threads carry the substance. One finding per thread, anchored to the line it's about.
 
 Open with a Conventional Comments label (https://conventionalcomments.org/) so the author can triage without reading the whole thing: issue, suggestion, question, nitpick, thought, with a decoration when it helps. Pick the label by what you're asking the author to do: `question` when you don't know if it's broken and need them to check; `issue` when you know it's broken (add `(non-blocking)` if you're not blocking on the fix); `suggestion` for design or style opinions; `nitpick` for trivia; `thought` when you're just musing. The label is **bolded markdown, never a code span**: write `**thought (non-blocking):**`, not `` `thought (non-blocking):` ``. The label is triage information the author can't get anywhere else; it is not a license for throat-clearing after it.
 
@@ -69,6 +86,26 @@ no worse than before, it always fell back to the filer. but could an ambiguous f
 ```
 
 The over-built version of that same note ran four paragraphs: a claim, a separate mechanism walk, a "not a regression" impact paragraph, and the ask. Everything past the two paragraphs above was scaffolding for a note nobody has to act on.
+
+### Length is the whole game: compress a substantive finding
+
+Even a real, blocking-adjacent finding is a few sentences, not a report. The most common failure is spelling out every link of the mechanism as its own clause when one compressed sentence lands the same ask. A substantive finding still gets its conventional prefix and stays lowercase; what changes is that it reads like you're talking, not filing.
+
+Over-built (every link spelled out, downstream consequence restated, report tone):
+
+```
+**issue (non-blocking):** on the identify-reject path this re-serves the generic-context variation to `shouldWaitForMount` consumers. `setContext` lives inside the `fetchFlagSettings().then`, so when `identify()` rejects the active context is still the bootstrap generic one and `variation()` returns the generic value. for an individually-targeted user on an `off`-fallthrough tenant that value is `off`, so the guard redirects... the exact CV-2688 bounce, reintroduced on the failure path. `useIdentifiedFlagValue` can't rescue it since the context never flipped. the failing-identify test encodes this. it's defensible as fail-closed-to-legacy, but should be a conscious decision.
+```
+
+Compressed (same finding, same ask):
+
+```
+**issue (non-blocking):** if `identify()` rejects here the context is still the bootstrap one, so this falls back to the generic value... the same `off` that bounced targeted users to begin with. fine as fail-closed-to-legacy, but can we say that out loud in the comment (or retry once)? right now it reads as harmless.
+```
+
+Both name the problem, the cause, and the ask. The second trusts the author to follow the chain from one sentence, drops the file-path recap the anchor already provides, cuts the restated downstream hop, and phrases the fix as a question. That is the target length and tone for a *substantive* finding, not just a nit.
+
+A brief, specific acknowledgment is welcome inline when it's earned and it does work, i.e. it softens the worry that follows: `**thought (non-blocking):** nice job confirming the 5.4.0 ordering. only worry: it leans on an unpinned dep's internals with no test guarding it...`. That is different from the gratuitous summary compliment, which still gets cut (see the summary note section): the inline acknowledgment has to point at a specific good decision and immediately pivot into the finding, never just warm the room.
 
 ### MR Review Summary Note
 
