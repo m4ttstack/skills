@@ -31,14 +31,24 @@ If the app serves a built frontend only when a `dist`/`build` dir exists (common
 
 ### 1. Pick a port
 
-Check for conflicts against existing portless routes and launchd plists:
+Managed local apps use the `11000..11999` range (uniform, and clear of common dev
+ports like 3000/5173/8080). Prefer the local-apps board's suggestion, which is the
+lowest free port in range:
+
+```bash
+curl -s http://apps.localhost/api/status | grep -o '"nextPort":[0-9]*'
+```
+
+If the board is unreachable, pick the lowest free `11xxx` port yourself by checking
+both sources:
 
 ```bash
 portless list
 ls ~/Library/LaunchAgents/com.matthewgoodwin.*.plist
 ```
 
-If the project already uses a port (in `.env` or source), keep it. Otherwise pick the next available port starting from 8080.
+If the project already pins a port in `.env` or source and you are not migrating it,
+keep that port; otherwise allocate from `11000` upward.
 
 ### 2. Create logs directory
 
