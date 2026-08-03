@@ -16,9 +16,10 @@ Fast Browser can capture screenshots but cannot mark them up. A raw capture
 rarely makes its own point: the reader has to hunt for what changed, and there
 is no way to hide PII in a shot that is otherwise worth sharing.
 
-`assured:capture-evidence` in claimview-tools already solves the *drawing* half
-well. This design lifts that pipeline into Fast Browser essentially unchanged
-and fixes the one part of it that does not survive being handed to an agent.
+An existing internal screenshot-annotation skill already solves the *drawing*
+half well. This design lifts that pipeline into Fast Browser essentially
+unchanged and fixes the one part of it that does not survive being handed to
+an agent.
 
 ## What is borrowed, and what changes
 
@@ -69,7 +70,7 @@ a selector either resolves to exact bounds or reports that it did not match.
 ### Explicitly not borrowed: the propose-then-confirm gate
 
 Step A4 of the source skill requires the agent to propose annotations and wait
-for confirmation before drawing. That gate exists because claimview screenshots
+for confirmation before drawing. That gate exists because those screenshots
 go into a merge request that a third-party reviewer reads, so the editorial
 choice of what to point at needs a human.
 
@@ -405,7 +406,7 @@ Integration:
 ## Non-goals
 
 - Before/after pairing, MR upload, evidence-directory conventions. Those are
-  claimview's workflow, not a generic annotation feature.
+  that other skill's workflow, not a generic annotation feature.
 - Annotating PNGs that Fast Browser did not capture. Without a live DOM there
   are no measured coordinates, which is the whole point.
 - New primitives. The eight are proven; `crop` is listed in the source skill's

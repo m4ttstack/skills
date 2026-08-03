@@ -35,7 +35,7 @@ check on it without opening anything:
 ```bash
 scripts/herd-session.sh status
 # 3 workspace(s), 3 pane(s)
-#    w1 done      claimview-tools
+#    w1 done      app-repo
 #    w2 working   gitq
 ```
 

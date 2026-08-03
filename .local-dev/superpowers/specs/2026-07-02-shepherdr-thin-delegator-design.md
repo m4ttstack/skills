@@ -4,7 +4,7 @@ Revision of `skills/orchestration/shepherdr/SKILL.md`. The shepherd stops being 
 
 ## Problem
 
-Evidence from the 2026-07-01 runs (3 shepherd sessions driving 19 sub-agents across soribashi, repo-tools, claimview-tools):
+Evidence from the 2026-07-01 runs (3 shepherd sessions driving 19 sub-agents across three separate repos):
 
 - Completion pane reads were cheap (~2.5-3KB each, 25-30% of tool-result bytes). Not the villain.
 - The brainstorm-behind-relay was expensive: 16 relayed messages, 7 question round-trips, ~15 pane reads just to see question text, plus scrollback archaeology when reports scrolled away.
