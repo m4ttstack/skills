@@ -7,7 +7,7 @@ shared here as a public reference. Most skills are scoped under the
 
 ## Fast Browser
 
-[**Fast Browser**](plugins/fast-browser/) lets Claude Code and Codex drive the
+[**Fast Browser**](https://github.com/m4ttstack/fast-browser) lets Claude Code and Codex drive the
 Chrome you already have open, with your profile and logins, instead of a blank
 automated browser. Published as
 [`@mattstack/fast-browser`](https://www.npmjs.com/package/@mattstack/fast-browser):
@@ -19,27 +19,16 @@ npx @mattstack/fast-browser setup --host both
 It is MIT licensed; the Playwright-derived runtime and extension artifacts it
 installs remain Apache-2.0.
 
-To install an unpublished local build instead, pass a URL-free release manifest
-plus its two adjacent artifacts:
-
-```bash
-node plugins/fast-browser/bin/fast-browser.mjs setup \
-  --source /path/to/mattstack \
-  --runtime-lock /absolute/path/to/fast-browser-release-0.1.0-alpha.7.json \
-  --host both \
-  --profile safe
-```
-
-See the [Fast Browser README](plugins/fast-browser/README.md) for requirements,
-safe and full profiles, Chrome developer-mode loading, diagnostics, migration,
-rollback, uninstall, privacy, and security guidance.
+See the [Fast Browser README](https://github.com/m4ttstack/fast-browser#readme)
+for requirements, safe and full profiles, unpublished local builds, Chrome
+developer-mode loading, diagnostics, migration, rollback, uninstall, privacy,
+and security guidance.
 
 Fast Browser's canonical public repo is
 [github.com/m4ttstack/fast-browser](https://github.com/m4ttstack/fast-browser),
-published from a filtered copy of this repo's history. The `plugins/fast-browser`
-subdirectory here is slated to move there; until that local migration happens,
-this copy stays in place because it is load-bearing for the setup above. The
-follow-up is tracked in Linear.
+published from a filtered copy of this repo's history. It no longer lives in
+this repo: the `plugins/fast-browser` copy kept here during the split has been
+removed now that the setup above runs from the standalone package.
 
 ## Skills
 
@@ -66,8 +55,8 @@ follow-up is tracked in Linear.
 
 ### browser
 
-These ship inside the [Fast Browser](plugins/fast-browser/) plugin and are
-symlinked here for discoverability:
+These ship inside [Fast Browser](https://github.com/m4ttstack/fast-browser) and
+are listed here for discoverability:
 
 - **fast-browsing** -- drive a browser through Fast Browser's tools at near-human speed: macro check first, scout once, batch whole flows into one script, read targeted.
 - **browser-macros** -- library of pre-written flow scripts run via `browser_run_code_unsafe` (filename + args). Index in `MACROS.md`.
@@ -78,10 +67,9 @@ symlinked here for discoverability:
 ## Legacy skill-only setup
 
 The symlinks below are the pre-plugin setup. Existing browser-skill users can
-review and migrate that state with
-`node plugins/fast-browser/bin/fast-browser.mjs migrate --dry-run` followed by
-`node plugins/fast-browser/bin/fast-browser.mjs migrate --host both`; new Fast
-Browser installs should use the plugin candidate workflow above.
+review and migrate that state with `npx @mattstack/fast-browser migrate
+--dry-run` followed by `npx @mattstack/fast-browser migrate --host both`; new
+Fast Browser installs should use the setup above.
 
 Symlink each skill directory into `~/.claude/skills/`:
 
@@ -95,9 +83,4 @@ ln -s ~/Documents/GitHub/mattstack/skills/infra/remote-brainstorm ~/.claude/skil
 ln -s ~/Documents/GitHub/mattstack/skills/infra/run-feedback ~/.claude/skills/mattstack:run-feedback
 ln -s ~/Documents/GitHub/mattstack/skills/infra/getting-current-time ~/.claude/skills/mattstack:getting-current-time
 ln -s ~/Documents/GitHub/mattstack/skills/ui/building-with-alpine-halfmoon ~/.claude/skills/mattstack:building-with-alpine-halfmoon
-ln -s ~/Documents/GitHub/mattstack/skills/browser/fast-browsing ~/.claude/skills/mattstack:fast-browsing
-ln -s ~/Documents/GitHub/mattstack/skills/browser/browser-macros ~/.claude/skills/mattstack:browser-macros
-ln -s ~/Documents/GitHub/mattstack/skills/browser/mine-macros ~/.claude/skills/mattstack:mine-macros
-ln -s ~/Documents/GitHub/mattstack/skills/browser/annotating-screenshots ~/.claude/skills/mattstack:annotating-screenshots
-ln -s ~/Documents/GitHub/mattstack/skills/browser/capturing-flows ~/.claude/skills/mattstack:capturing-flows
 ```
