@@ -1,5 +1,5 @@
 ---
-name: model-tiering
+name: mattstack:model-tiering
 description: "Use when choosing which model to spawn a sub-agent, worker, or sub-claude on -- any decision point where a less capable model could handle the work. Covers spawn-time selection (shepherd picking worker models) and delegation-time selection (a worker dispatching sub-agents for subtasks)."
 ---
 

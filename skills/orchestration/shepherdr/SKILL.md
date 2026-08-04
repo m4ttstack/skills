@@ -80,7 +80,7 @@ If work arrives unscoped and the user wants it scoped before fan-out, brainstorm
 
 ### choosing the worker model
 
-**REQUIRED:** Read `model-tiering` (`~/.claude/skills/model-tiering/SKILL.md`)
+**REQUIRED:** Read `mattstack:model-tiering` (`~/.claude/skills/mattstack:model-tiering/SKILL.md`)
 for the tier table, complexity signals, and the recursive principle. Pick the
 model per job from that table, pass it explicitly via `-m`. A spawn without
 `-m` inherits your session model, which silently defeats tiering.
