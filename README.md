@@ -1,8 +1,10 @@
 # mattstack
 
-The mattstack skill collection for Claude Code: browser, orchestration, and
-infra skills, built for Matt Goodwin's own day-to-day use and shared here as a
-public reference. Every skill is scoped under the `mattstack:` prefix.
+The mattstack skill collection for Claude Code: orchestration and infra skills,
+built for Matt Goodwin's own day-to-day use and shared here as a public
+reference. Every skill is scoped under the `mattstack:` prefix. The browser
+skills are catalogued here too, but they ship inside Fast Browser rather than
+from this repo.
 
 Skills wired to Matt's own machine, domains, and data live separately at
 [m4ttheweric/skills](https://github.com/m4ttheweric/skills) under the `matt:`
@@ -27,11 +29,9 @@ for requirements, safe and full profiles, unpublished local builds, Chrome
 developer-mode loading, diagnostics, migration, rollback, uninstall, privacy,
 and security guidance.
 
-Fast Browser's canonical public repo is
-[github.com/m4ttstack/fast-browser](https://github.com/m4ttstack/fast-browser),
-published from a filtered copy of this repo's history. It no longer lives in
-this repo: the `plugins/fast-browser` copy kept here during the split has been
-removed now that the setup above runs from the standalone package.
+Fast Browser is its own repo and its own package. It started life inside this
+one, so its history is a filtered copy of this repo's, but nothing about it
+lives here now.
 
 ## Skills
 
@@ -46,8 +46,8 @@ removed now that the setup above runs from the standalone package.
 
 ### browser
 
-These ship inside [Fast Browser](https://github.com/m4ttstack/fast-browser) and
-are listed here for discoverability:
+Catalogued here so they are findable, but they install with
+[Fast Browser](https://github.com/m4ttstack/fast-browser), not from this repo:
 
 - **fast-browsing** -- drive a browser through Fast Browser's tools at near-human speed: macro check first, scout once, batch whole flows into one script, read targeted.
 - **browser-macros** -- library of pre-written flow scripts run via `browser_run_code_unsafe` (filename + args). Index in `MACROS.md`.
@@ -68,7 +68,6 @@ ln -s ~/Documents/GitHub/mattstack/skills/infra/getting-current-time ~/.claude/s
 The prefix is asserted in two places per skill: the symlink name above and the
 `name:` field in that skill's `SKILL.md` frontmatter. They have to agree.
 
-The browser skills install with Fast Browser, not from here. Anyone still on
-the old symlink-only browser setup can review and migrate that state with `npx
-@mattstack/fast-browser migrate --dry-run` followed by `npx
+Anyone still on the old symlink-only browser setup can review and migrate that
+state with `npx @mattstack/fast-browser migrate --dry-run` followed by `npx
 @mattstack/fast-browser migrate --host both`.
