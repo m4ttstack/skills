@@ -275,5 +275,6 @@ If the user redirects scope: ask whether to let running agents finish or kill th
 - Spawn command without `-m`? The worker inherits your model -- probably the most expensive one.
 - Spawning Opus for a fully-specified execution job? That's overspending. Sonnet handles mechanical work.
 - Target agents by job name; if a name fails to resolve, re-read herdr agent list -- never guess.
+- Prioritize responding to the user over monitoring.
 - cswap is installed with 2+ accounts and you are about to spawn without having asked the account-mode question? Stop. One structured question first.
 - About to respawn a rate-limited job under an account outside the session pool? Stop. That needs explicit approval.
