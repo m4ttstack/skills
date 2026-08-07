@@ -3,17 +3,22 @@
 #
 # Usage:
 #   spawn-agent.sh -j <job-name> (-b <branch> | -d <existing-dir>) -J <brief.md>
-#                  -w <workspace-id> [-r <repo-root>] [-k <kickoff-text>] [-m <model>]
+#                  -w <workspace-id> [-r <repo-root>] [-k <kickoff-text>]
+#                  [-m <model>] [-a <cswap-account>]
 #
 # With -b: creates the worktree at ~/.shepherdr/worktrees/<repo>/<job-name>.
 # With -d: uses the existing directory as-is (no git worktree add); any branch
 # must already be provisioned there. -m launches claude with --model <model>.
+# -a launches through `cswap run <account> --` so the pane bills that account.
 # Copies the brief to the job dir ~/.shepherdr/jobs/<repo>/<job-name>/job.md
 # (contract files never live inside the repo), opens a --no-focus tab labeled
 # "<worktree>: <job>" in the given workspace, launches claude, waits for
-# readiness, sends the kickoff, and confirms it submitted (nudging with Enter
-# if paste detection swallowed it).
-# Prints the new pane id on stdout; everything else goes to stderr.
+# readiness (auto-accepting claude's fresh-worktree trust dialog), names
+# the agent after the job, and submits the kickoff via `agent prompt`
+# (atomic under bracketed paste; delivery-verified, resent once).
+# Prints "<pane-id> <target>" on stdout; target is the agent name when the
+# job name fits herdr's name grammar, else the pane id. Everything else goes
+# to stderr.
 #
 # With SHEPHERDR_HERD_SESSION set, the tab is created in that invisible herd
 # session instead of the visible one; -w must then be a workspace id from
@@ -24,14 +29,15 @@ set -euo pipefail
 # invisible switch a single env var. See scripts/hrd.
 HRD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/hrd"
 
-usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
 REPO_ROOT=""
 KICKOFF=""
 BRANCH=""
 DIR=""
 MODEL=""
-while getopts "j:b:J:w:r:k:d:m:" opt; do
+ACCOUNT=""
+while getopts "j:b:J:w:r:k:d:m:a:" opt; do
   case "$opt" in
     j) JOB="$OPTARG" ;;
     b) BRANCH="$OPTARG" ;;
@@ -41,6 +47,7 @@ while getopts "j:b:J:w:r:k:d:m:" opt; do
     k) KICKOFF="$OPTARG" ;;
     d) DIR="$OPTARG" ;;
     m) MODEL="$OPTARG" ;;
+    a) ACCOUNT="$OPTARG" ;;
     *) usage ;;
   esac
 done
@@ -90,29 +97,70 @@ if [ -n "${SHEPHERDR_HERD_SESSION:-}" ]; then
 fi
 
 "$HRD" pane run "$PANE" "cd $WORKTREE"
-"$HRD" pane run "$PANE" "claude${MODEL:+ --model '$MODEL'}"
+if [ -n "$ACCOUNT" ]; then
+  "$HRD" pane run "$PANE" "cswap run $ACCOUNT --${MODEL:+ --model '$MODEL'}"
+else
+  "$HRD" pane run "$PANE" "claude${MODEL:+ --model '$MODEL'}"
+fi
 
-# Readiness: wait for herdr to detect the agent and see it idle. Matching
-# --match ">" races the real prompt char and produces dead kickoff prompts.
-# `done` is accepted too: it is the same settled state as idle for a pane
-# nobody has looked at, and in a herd session nobody ever looks.
-if ! "$HRD" agent wait "$PANE" --until idle --until done --timeout 45000 >/dev/null 2>&1; then
-  echo "spawn-agent: agent-status wait timed out for $PANE; falling back to prompt match" >&2
-  "$HRD" pane wait-output "$PANE" --match "❯" --timeout 15000 >/dev/null
+# herdr needs a brief moment after the launch command to attach the
+# freshly started claude process as a tracked agent session; calling
+# `agent wait` before that registration lands returns agent_not_found
+# immediately instead of polling for the agent to appear (live-verified:
+# it is reliably still missing at 0.3s and present by 0.6s). Poll briefly
+# for the agent to be known before the real readiness wait below.
+for _ in $(seq 1 20); do
+  "$HRD" agent get "$PANE" >/dev/null 2>&1 && break
+  sleep 0.25
+done
+
+# Readiness: wait for herdr to detect the agent and see it settled or
+# blocked. A fresh worktree makes claude open its "do you trust this
+# folder?" dialog, which herdr reports as blocked; accept it (the shepherd
+# created this worktree itself, so trust is correct by construction) and
+# re-wait. Task-1 probing showed a blocked agent silently discards
+# prompted text, so this MUST resolve before the kickoff.
+"$HRD" agent wait "$PANE" --until idle --until done --until blocked --timeout 45000 >/dev/null \
+  || { echo "spawn-agent: agent never became ready in pane $PANE" >&2; exit 1; }
+STATUS="$("$HRD" agent get "$PANE" \
+  | python3 -c 'import sys,json; r=json.load(sys.stdin)["result"]; a=r.get("agent") or r; print(a.get("agent_status","unknown"))' \
+  2>/dev/null || echo unknown)"
+if [ "$STATUS" = "blocked" ]; then
+  if "$HRD" agent read "$PANE" --source visible --lines 30 | grep -qi "trust"; then
+    "$HRD" agent send-keys "$PANE" enter
+    "$HRD" agent wait "$PANE" --until idle --until done --timeout 30000 >/dev/null \
+      || { echo "spawn-agent: agent stuck after trust dialog in pane $PANE" >&2; exit 1; }
+  else
+    echo "spawn-agent: agent blocked on an unrecognized dialog in pane $PANE" >&2
+    exit 1
+  fi
+fi
+
+# Name the agent after its job so the shepherd targets names, not pane ids.
+# herdr names must match [a-z][a-z0-9_-]{0,31} and be unique among live
+# agents; fall back to the pane id when the job name does not qualify.
+TARGET="$PANE"
+if [[ "$JOB" =~ ^[a-z][a-z0-9_-]{0,31}$ ]] \
+   && "$HRD" agent rename "$PANE" "$JOB" >/dev/null 2>&1; then
+  TARGET="$JOB"
+else
+  echo "spawn-agent: could not name agent '$JOB'; targeting pane id" >&2
 fi
 
 if [ -z "$KICKOFF" ]; then
   KICKOFF="Your job directory is $JOB_DIR -- it is outside the repo, and all job/question/report and scratch files belong there, NEVER in the repo or worktree. Read $JOB_DIR/job.md and complete the entire job it describes. Work only inside this worktree and stay within the brief's scope fence. The brief's verification commands must pass. Whenever you need input from Matt, write $JOB_DIR/question.md in the multiple-choice format the brief shows, then stop and wait; the answer arrives as your next message. Even yes/no confirmations become numbered options. When the job is complete, write $JOB_DIR/report.md per the brief, then stop. Commit incrementally on this branch; never push. The worktree must contain only the work itself."
 fi
-"$HRD" pane run "$PANE" "$KICKOFF"
 
-# Claude's TUI can treat fast text+Enter as a paste, leaving the kickoff
-# sitting unsubmitted in the input box. Confirm the agent actually started
-# working; nudge with a bare Enter if it did not (harmless when it did).
-if ! "$HRD" agent wait "$PANE" --until working --timeout 8000 >/dev/null 2>&1; then
-  "$HRD" pane send-keys "$PANE" Enter
-  "$HRD" agent wait "$PANE" --until working --timeout 8000 >/dev/null 2>&1 \
+# `agent prompt` submits atomically under bracketed paste. Task-1 probing
+# showed its stall error cannot be relied on (a blocked agent discards the
+# text with exit 0), so verify delivery by watching for `working`; resend
+# once if it never starts.
+"$HRD" agent prompt "$TARGET" "$KICKOFF" >/dev/null
+if ! "$HRD" agent wait "$TARGET" --until working --timeout 8000 >/dev/null 2>&1; then
+  echo "spawn-agent: kickoff not picked up; resending once" >&2
+  "$HRD" agent prompt "$TARGET" "$KICKOFF" >/dev/null
+  "$HRD" agent wait "$TARGET" --until working --timeout 8000 >/dev/null 2>&1 \
     || echo "spawn-agent: kickoff may be unsubmitted in pane $PANE -- check its input box" >&2
 fi
 
-echo "$PANE"
+echo "$PANE $TARGET"
