@@ -79,8 +79,11 @@ def main():
     ap.add_argument("--threshold", type=float)
     args = ap.parse_args()
 
-    pool = [int(n) for n in args.pool.split(",") if n]
-    assigned = [int(n) for n in args.assigned.split(",") if n]
+    try:
+        pool = [int(n) for n in args.pool.split(",") if n]
+        assigned = [int(n) for n in args.assigned.split(",") if n]
+    except ValueError as e:
+        sys.exit(f"pick-account: invalid --pool/--assigned value: {e}")
     threshold = load_threshold(args.threshold)
     data = load_accounts(args.json_file)
     by_number = {a["number"]: a for a in data.get("accounts", [])}

@@ -90,13 +90,26 @@ structured question, never spawn anyway.
 
 If a worker stalls on a rate limit mid-job (the diagnose read shows a
 limit banner): in smart-distribute mode with a qualifying account left in
-the pool, respawn automatically -- close the pane, re-run the picker,
-respawn with the SAME job dir and worktree, and prefix the kickoff with:
-"A previous agent started this job and hit a rate limit. Check git log
-and the job directory, then continue and complete the brief." Announce
-the respawn to the user afterward. In single-account mode or with the
-pool exhausted, ask instead: 1. wait for reset (show the countdown from
-cswap list --json), 2. switch to an out-of-pool account, 3. abandon.
+the pool, respawn automatically -- close the pane, re-run the picker, and
+respawn into the SAME worktree with `spawn-agent.sh -d <original worktree>`.
+`-d` mode derives its job dir from the directory's basename, which is wrong
+for a respawn (`-d ~/.shepherdr/worktrees/<repo>/<job>` computes job dir
+`~/.shepherdr/jobs/<job>/<job>`, not the original
+`~/.shepherdr/jobs/<repo>/<job>`), so always pass `-k` yourself with a
+kickoff that names the ORIGINAL job dir explicitly, adapting spawn-agent.sh's
+default kickoff: "Your job directory is <original job dir> -- it is outside
+the repo, and all job/question/report and scratch files belong there, NEVER
+in the repo or worktree. A previous agent started this job and hit a rate
+limit; check git log and the job directory, then continue and complete the
+brief in <original job dir>/job.md. Work only inside this worktree and stay
+within the brief's scope fence. Whenever you need input from Matt, write
+<original job dir>/question.md in the multiple-choice format the brief
+shows, then stop and wait. When the job is complete, write
+<original job dir>/report.md per the brief, then stop. Commit incrementally
+on this branch; never push." Announce the respawn to the user afterward. In
+single-account mode or with the pool exhausted, ask instead: 1. wait for
+reset (show the countdown from cswap list --json), 2. switch to an
+out-of-pool account, 3. abandon.
 
 Note: cswap sessions share settings and skills but not plugin caches.
 Workers get everything through their briefs, so do not chase phantom

@@ -38,9 +38,12 @@ What changes in this mode:
   focused tab in the visible session showing that agent live and writable.
   The user detaches with `ctrl+b q`; you close the tab with
   `herdr tab close <tab-id>` (plain herdr -- the tab is visible-session).
-- **`done` is the only settled state you will see.** Nothing is ever
-  focused, so agents never transition `done -> idle`. This is what you want:
-  the completion watcher already keys on `done`.
+- **Herd panes settle at `idle`.** Nothing is ever focused, so the
+  seen/unseen distinction that produces `done` collapses -- herd-session
+  panes settle at `idle` instead. The standard per-agent watcher already
+  covers this (`--until done --until idle --until blocked`); wait matching
+  is exact with no implicit fallback, so both settled states must be listed
+  or the wait will sit past a herd agent that already finished.
 - **Wrap-up** ends with `scripts/herd-session.sh stop`, which kills the
   session and every pane in it. Offer it; never run it unprompted, and never
   before the user has taken what they want from the worktrees.

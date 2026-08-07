@@ -3,8 +3,9 @@
 # Agents in auto mode often draft a suggested answer into their own input
 # buffer; submitting on top would send the draft, not your answer. Always
 # ctrl+c first, then `agent prompt`, which submits atomically under
-# bracketed paste and errors (agent_prompt_stalled) if the agent does not
-# react within 5s.
+# bracketed paste. Delivery is verified by watching for `working` rather
+# than trusted to agent prompt's own stall error, which cannot be relied
+# on; resend once if the agent never starts.
 #
 # Usage: relay-answer.sh <pane-id-or-agent-name> <answer text...>
 set -euo pipefail

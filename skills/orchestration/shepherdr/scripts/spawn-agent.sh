@@ -60,6 +60,12 @@ if [ -z "$DIR" ] && [ -z "$BRANCH" ]; then echo "spawn-agent: one of -b <branch>
 if [ -n "$DIR" ]; then
   [ -d "$DIR" ] || { echo "directory not found: $DIR" >&2; exit 1; }
   WORKTREE="$DIR"
+  # REPO_NAME derives from the directory's basename, not the original repo
+  # name -- for a respawn into ~/.shepherdr/worktrees/<repo>/<job> this
+  # computes job dir ~/.shepherdr/jobs/<job>/<job>, NOT the original
+  # ~/.shepherdr/jobs/<repo>/<job>. Callers respawning an existing job MUST
+  # pass -k with a kickoff that names the original job dir explicitly; the
+  # default kickoff below would point at the wrong place.
   REPO_NAME="$(basename "$DIR")"
 else
   [ -n "$REPO_ROOT" ] || REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -126,8 +132,9 @@ STATUS="$("$HRD" agent get "$PANE" \
   | python3 -c 'import sys,json; r=json.load(sys.stdin)["result"]; a=r.get("agent") or r; print(a.get("agent_status","unknown"))' \
   2>/dev/null || echo unknown)"
 if [ "$STATUS" = "blocked" ]; then
-  if "$HRD" agent read "$PANE" --source visible --lines 30 | grep -qi "trust"; then
-    "$HRD" agent send-keys "$PANE" enter >/dev/null 2>&1
+  if "$HRD" agent read "$PANE" --source visible --lines 30 | grep -i trust >/dev/null; then
+    "$HRD" agent send-keys "$PANE" enter >/dev/null \
+      || { echo "spawn-agent: trust accept failed in pane $PANE" >&2; exit 1; }
     "$HRD" agent wait "$PANE" --until idle --until done --timeout 30000 >/dev/null \
       || { echo "spawn-agent: agent stuck after trust dialog in pane $PANE" >&2; exit 1; }
   else
