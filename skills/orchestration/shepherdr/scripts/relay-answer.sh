@@ -1,24 +1,29 @@
 #!/usr/bin/env bash
-# Relay an answer to an agent pane: clear any auto-drafted input, then send.
+# Relay an answer to an agent: clear any auto-drafted input, then submit.
 # Agents in auto mode often draft a suggested answer into their own input
-# buffer; sending Enter would submit the draft, not your answer. Always
-# ctrl+c first, then run.
+# buffer; submitting on top would send the draft, not your answer. Always
+# ctrl+c first, then `agent prompt`, which submits atomically under
+# bracketed paste and errors (agent_prompt_stalled) if the agent does not
+# react within 5s.
 #
-# Usage: relay-answer.sh <pane-id> <answer text...>
+# Usage: relay-answer.sh <pane-id-or-agent-name> <answer text...>
 set -euo pipefail
-[ $# -ge 2 ] || { echo "usage: relay-answer.sh <pane-id> <answer text...>" >&2; exit 2; }
+[ $# -ge 2 ] || { echo "usage: relay-answer.sh <pane-id-or-name> <answer text...>" >&2; exit 2; }
 
 # Routed through the shim so the same relay works whether the agent is in a
 # visible pane or an invisible herd session. See scripts/hrd.
 HRD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/hrd"
 
-PANE="$1"; shift
-"$HRD" pane send-keys "$PANE" ctrl+c
+TARGET="$1"; shift
+"$HRD" agent send-keys "$TARGET" ctrl+c
 sleep 1
-"$HRD" pane run "$PANE" "$*"
-
-# Paste detection can swallow the submit, leaving the answer in the input
-# box. Confirm the agent went back to work; nudge with Enter if it did not.
-if ! "$HRD" agent wait "$PANE" --until working --timeout 8000 >/dev/null 2>&1; then
-  "$HRD" pane send-keys "$PANE" Enter
+# Task-1 probing showed agent prompt's stall error cannot be relied on
+# (a blocked agent discards the text with exit 0), so verify delivery by
+# watching for `working`; resend once if the agent never starts.
+"$HRD" agent prompt "$TARGET" "$*" >/dev/null
+if ! "$HRD" agent wait "$TARGET" --until working --timeout 8000 >/dev/null 2>&1; then
+  echo "relay-answer: answer not picked up; resending once" >&2
+  "$HRD" agent prompt "$TARGET" "$*" >/dev/null
+  "$HRD" agent wait "$TARGET" --until working --timeout 8000 >/dev/null 2>&1 \
+    || { echo "relay-answer: answer may be unsubmitted for $TARGET" >&2; exit 1; }
 fi
