@@ -1,6 +1,6 @@
 ---
 name: mattstack:shepherdr
-description: "Shepherd a herd of Claude Code agents via herdr panes. Use when the user wants to fan out work across multiple agents, run parallel brainstorms, delegate parallel tasks, or says 'shepherdr', 'shepherd', 'fan out', 'spawn agents', 'delegate this', 'split this across agents', 'herd this', or 'run these in parallel with herdr'."
+description: "Shepherd a herd of Claude Code agents via herdr panes. Use when the user wants to fan out work across multiple agents, run parallel brainstorms, delegate parallel tasks, or says 'shepherdr', 'shepherd', 'fan out', 'spawn agents', 'delegate this', 'split this across agents', 'herd this', 'run these in parallel with herdr', 'spread this across my accounts', or asks for multi-account or cswap-aware fan-out."
 ---
 
 # shepherdr
@@ -14,6 +14,15 @@ You are the shepherd: a thin delegator, not a reviewer. You break work into jobs
 - You never do hands-on work: no merging, no fixing, no pushing. Integration is itself a job.
 
 For herdr CLI mechanics, load the `herdr` skill.
+
+## when not to herd
+
+A small, fully specified execution fan-out with no expected questions, no
+need for account spreading, and no need to watch or steer live belongs on
+the Agent tool (subagents with worktree isolation), not panes. The herd
+earns its keep through account distribution, mid-flight interaction
+(question relay, artifact gates), live visibility, and crash-survivable
+jobs. If none of those apply, say so and dispatch subagents instead.
 
 ## prerequisites
 
@@ -49,6 +58,49 @@ model per job from that table, pass it explicitly via `-m`. A spawn without
 
 The user can override any tier. Domain-specific skills layered on top of
 shepherdr may set a floor (e.g., "never use model X for workers in this repo").
+
+## accounts (cswap)
+
+At fan-out, if `cswap` is installed and `cswap list --json` shows two or
+more accounts, ask ONE structured question (AskUserQuestion, single
+choice) before spawning anything: how should this herd use accounts?
+
+1. Smart distribute across all accounts (recommended)
+2. Smart distribute across a subset -- follow-up multi-select of accounts
+3. Single account -- follow-up single-select
+
+Show each account's email/alias and current headroom in the option
+descriptions so the choice is informed at a glance. The selection is the
+session pool: record it in the status table and never spawn or respawn
+outside it without explicit approval. No cswap or a single account: skip
+all of this; workers launch as plain claude exactly as before.
+
+Before each spawn in a smart-distribute herd, run the picker and pass the
+result to spawn-agent.sh via `-a`:
+
+```bash
+ACCT=$(scripts/pick-account.py --pool 2,3 --model <model> --assigned <accounts-already-assigned>)
+```
+
+`--assigned` lists the account of every pane already spawned this run,
+one entry per pane. The picker excludes accounts near their limits and
+answers with the healthiest account for that worker's model; it exits
+nonzero when no pool account qualifies -- surface that to the user as a
+structured question, never spawn anyway.
+
+If a worker stalls on a rate limit mid-job (the diagnose read shows a
+limit banner): in smart-distribute mode with a qualifying account left in
+the pool, respawn automatically -- close the pane, re-run the picker,
+respawn with the SAME job dir and worktree, and prefix the kickoff with:
+"A previous agent started this job and hit a rate limit. Check git log
+and the job directory, then continue and complete the brief." Announce
+the respawn to the user afterward. In single-account mode or with the
+pool exhausted, ask instead: 1. wait for reset (show the countdown from
+cswap list --json), 2. switch to an out-of-pool account, 3. abandon.
+
+Note: cswap sessions share settings and skills but not plugin caches.
+Workers get everything through their briefs, so do not chase phantom
+missing-plugin issues in worker panes.
 
 ## the job-dir contract
 
@@ -106,12 +158,18 @@ Labels carry location: the sidebar label is the only thing that tells the user w
 Spawn each agent with the script (worktree + tab + claude + readiness wait + kickoff in one call):
 
 ```bash
-PANE=$(scripts/spawn-agent.sh -j my-job -b <branch> -m <model> -J /path/to/brief.md -w <workspace-id>)
+OUT=$(scripts/spawn-agent.sh -j my-job -b <branch> -m <model> -J /path/to/brief.md -w <workspace-id> [-a <account>])
+PANE=${OUT%% *}; TARGET=${OUT##* }
 ```
 
-Pick `<model>` from the tier table in "choosing the worker model" above.
+Pick `<model>` from the tier table in "choosing the worker model" above,
+and `<account>` from the picker when the herd is account-distributed.
 
-It prints the new pane id. Readiness is handled inside the script (waits on agent-status, not `--match ">"`, which races the real prompt). Stagger launches for 4+ agents: spawn one, confirm the pane id came back, spawn the next.
+It prints the pane id and the agent's name; use the name (`$TARGET`) for
+every later agent command. Readiness and kickoff submission are native
+(`agent wait`, `agent prompt`); a spawn that cannot reach a ready agent
+fails loudly instead of guessing. Stagger launches for 4+ agents: spawn
+one, confirm it returned, spawn the next.
 
 Worktrees land at `~/.shepherdr/worktrees/<repo>/<job>/`. Agents never work in the user's checkout. Skip isolation only for read-only jobs or when the user explicitly says to work in place.
 
@@ -122,24 +180,28 @@ Set up immediately after spawning; then do nothing until an event fires.
 **Completion watcher per agent** (background Bash):
 
 ```bash
-scripts/hrd agent wait <pane-id> --until done --timeout 3600000
+scripts/hrd agent wait <target> --until done --until idle --until blocked --timeout 3600000
 ```
 
-Watch for `done`, NOT `idle`. herdr distinguishes the two: `done` means
-the agent finished but the pane has not been focused yet; `idle` only
-triggers AFTER someone views the pane (focusing transitions done -> idle).
-Watching for `idle` misses completions on unfocused panes -- the shepherd
-appears stuck until the user manually focuses the pane.
+One wait covers settled work (`done`, and `idle` -- herd-session panes
+settle at idle, and wait matching is exact with no implicit fallback, so
+both must be listed) and a recognized question or approval UI
+(`blocked`), so blocked is event-driven. A wait that errors because its
+pane vanished is the `gone` signal.
 
-One hour, not 10-15 minutes -- short timeouts expire on healthy agents. On expiry: one cheap `scripts/hrd pane list` status check, re-arm if still working.
+One hour, not 10-15 minutes -- short timeouts expire on healthy agents.
+On expiry: one cheap `scripts/hrd pane list` status check, re-arm if
+still working.
 
-**One change-detection monitor** for the whole herd (background Bash or Monitor tool):
+**Safety-net monitor** for the whole herd (background Bash or Monitor tool):
 
 ```bash
 scripts/herd-monitor.py <pane-1> <pane-2> ...
 ```
 
-Prints one line per status transition (`1-3 working -> idle`), including `-> blocked` and `-> gone`. This is the stuck detector.
+The per-agent waits are primary; the monitor is a belt-and-suspenders
+poller that catches anything a wait misses and reports `-> gone` when a
+pane disappears.
 
 ### when an event fires
 
@@ -157,13 +219,14 @@ Check for the files with `ls ~/.shepherdr/jobs/<repo>/<job>/` and read them with
 
 1. Read `question.md`. Nothing else.
 2. If `needs: pane`: doorbell the user -- "agent <job> needs you in pane <id>" -- and do not relay. In a herd session the pane is invisible, so put it in front of them: `scripts/attend.sh <pane-id> -l <job>`, tell them to detach with `ctrl+b q`, and close the tab it prints once they are done.
-3. Batch: if other agents also have pending questions, present up to 4 together in one AskUserQuestion call. Options verbatim, agent's recommendation first.
-4. If an agent wrote an open-ended question anyway, synthesize the options yourself (its recommendation first, then the obvious alternatives) so the user can navigate and hit enter. "Other" free-text is automatic.
-5. Relay the answer in the exact shape the agent expects -- bare number ("2"), bare letter, "yes". Free-text answers relay verbatim, never interpreted or expanded:
+3. Doorbell before relaying: `herdr notification show "<job> needs you" --body "<one-line question>" --sound request` (plain herdr, never the hrd shim -- notifications target the attached UI even when the herd is invisible). On full-herd completion at wrap-up, send one with `--sound done`.
+4. Batch: if other agents also have pending questions, present up to 4 together in one AskUserQuestion call. Options verbatim, agent's recommendation first.
+5. If an agent wrote an open-ended question anyway, synthesize the options yourself (its recommendation first, then the obvious alternatives) so the user can navigate and hit enter. "Other" free-text is automatic.
+6. Relay the answer in the exact shape the agent expects -- bare number ("2"), bare letter, "yes". Free-text answers relay verbatim, never interpreted or expanded:
    ```bash
-   scripts/relay-answer.sh <pane-id> "2"
+   scripts/relay-answer.sh $TARGET "2"
    ```
-6. Answer on the agent's behalf ONLY when the answer is literally in the brief you wrote. Everything else goes to the user.
+7. Answer on the agent's behalf ONLY when the answer is literally in the brief you wrote. Everything else goes to the user.
 
 ## artifact gates (design jobs)
 
@@ -192,9 +255,9 @@ If the user redirects scope: ask whether to let running agents finish or kill th
 
 1. Status table from report files:
    ```
-   | job | pane | status | summary |
-   |-----|------|--------|---------|
-   | api tests | 1-3 | done | A1-A4 done, 12 tests, suite green |
+   | job | pane | account | status | summary |
+   |-----|------|---------|--------|---------|
+   | api tests | 1-3 | 2 | done | A1-A4 done, 12 tests, suite green |
    ```
 2. Flag drift and failures.
 3. Ask: close panes or keep for review?
@@ -211,4 +274,6 @@ If the user redirects scope: ask whether to let running agents finish or kill th
 - About to summarize an agent's question in your own words? Stop. Relay verbatim.
 - Spawn command without `-m`? The worker inherits your model -- probably the most expensive one.
 - Spawning Opus for a fully-specified execution job? That's overspending. Sonnet handles mechanical work.
-- Prioritize responding to the user over monitoring. Never guess pane ids -- re-read `herdr pane list` after time passes.
+- Target agents by job name; if a name fails to resolve, re-read herdr agent list -- never guess.
+- cswap is installed with 2+ accounts and you are about to spawn without having asked the account-mode question? Stop. One structured question first.
+- About to respawn a rate-limited job under an account outside the session pool? Stop. That needs explicit approval.
