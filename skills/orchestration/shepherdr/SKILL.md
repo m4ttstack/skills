@@ -28,47 +28,9 @@ For herdr CLI mechanics, load the `herdr` skill.
 
 ## herd session: invisible panes
 
-By default agents land in the session the user is looking at. When the user
-asks for the herd to stay out of sight -- "invisible", "background",
-"headless", "don't clutter my UI" -- run it in a **herd session** instead: a
-separate headless herdr server whose panes never appear in the attached UI.
-
-Turn it on for the whole run by exporting one variable before anything else,
-then start the session:
-
-```bash
-export SHEPHERDR_HERD_SESSION=herd
-scripts/herd-session.sh start
-```
-
-Every script in this skill routes its herdr calls through `scripts/hrd`,
-which reads that variable, so spawn, relay, and monitor need no other
-changes. **You** must use `scripts/hrd` too for any herdr command you run by
-hand against the herd (`hrd workspace create`, `hrd pane read`, `hrd tab
-close`). Plain `herdr` from your pane always hits the visible session.
-
-Never set `HERDR_SESSION` yourself and call `herdr` directly. herdr injects
-`HERDR_SOCKET_PATH` into every pane and it silently outranks `HERDR_SESSION`,
-so the call lands in the visible session with no error and the herd spawns
-into the UI it was supposed to stay out of. `hrd` exists to prevent exactly
-that.
-
-What changes in this mode:
-
-- **Workspaces** for the run must be created in the herd session
-  (`hrd workspace create --cwd <repo> --no-focus`); `-w` on spawn-agent.sh
-  takes a herd workspace id.
-- **Panes cannot move between sessions.** To put an agent in front of the
-  user, stream it: `scripts/attend.sh <herd-pane-id> -l <job>` opens a
-  focused tab in the visible session showing that agent live and writable.
-  The user detaches with `ctrl+b q`; you close the tab with
-  `herdr tab close <tab-id>` (plain herdr -- the tab is visible-session).
-- **`done` is the only settled state you will see.** Nothing is ever
-  focused, so agents never transition `done -> idle`. This is what you want:
-  the completion watcher already keys on `done`.
-- **Wrap-up** ends with `scripts/herd-session.sh stop`, which kills the
-  session and every pane in it. Offer it; never run it unprompted, and never
-  before the user has taken what they want from the worktrees.
+When the user asks for the herd to stay out of sight ("invisible",
+"background", "headless"), read `references/herd-session.md` in this
+skill's directory and follow it. Do not load it otherwise.
 
 ## job types and model tiering
 
@@ -102,72 +64,10 @@ kickoff.
 
 ### job.md template
 
-Every brief follows this shape. The question and report formats are embedded because agents never load this skill -- the brief is their only copy of the contract.
-
-```markdown
-# JOB: <name>
-
-<goal, one short paragraph>
-
-## Tasks
-- A1: <task> (<file:line refs where known>)
-- A2: <task>
-
-## Scope fence
-You own: <files/dirs>. Everything else is off limits.
-
-## Repo conventions
-<the collected conventions that bind this job: A0 setup commands, branch
-policy, gates to load (absolute paths). "none" if the repo has no rules.>
-
-## Verification
-<commands that must pass before the job is done>
-
-## Asking Matt a question
-Write `question.md` in your job directory (the absolute path from your
-kickoff -- NOT inside the repo) exactly in this format, then stop and wait.
-The answer arrives as your next message.
-
-    # QUESTION
-    needs: answer
-    ## Context
-    <what you're doing and what led here; enough that Matt can answer
-    from this file alone without opening your pane>
-    ## Question
-    <one sentence>
-    ## Options
-    1. <option> -- <one-line tradeoff> (recommended)
-    2. <option> -- <one-line tradeoff>
-    3. <option>
-
-Every question is multiple choice, even confirmations: "how does this
-look?" becomes 1. Approve, proceed (recommended) / 2. Approve with
-changes (describe) / 3. Walk me through <section> first. Mark your
-recommendation. If the question truly cannot be carried by a file
-(Matt must see the screen), set `needs: pane`. Delete question.md
-after you receive the answer.
-
-## Reporting
-When the job is complete, write `report.md` in your job directory, then stop:
-
-    # REPORT
-    status: done | done-with-issues
-    ## Items
-    - A1: done -- <one line>
-    - A2: skipped -- <one-line reason>
-    ## Verification
-    - <command>: <result>
-    ## Notes
-    <anything Matt must know, max 5 lines>
-
-Report milestone artifacts as they land (design jobs): add a line
-`spec: <path>` or `plan: <path>` and stop for review.
-
-## Git
-Commit incrementally on this branch. Never push. Job/question/report and any
-scratch files belong in your job directory, never in the repo -- the worktree
-must contain only the work itself.
-```
+Copy `references/job-template.md` (in this skill's directory) verbatim
+for every brief and fill the slots. Do not retype it from memory: the
+question and report formats it embeds are the workers' only copy of the
+contract.
 
 No hard size cap on question.md: the bar is that the user can answer from the file alone. Context runs as long as it needs to; target under a screenful.
 
