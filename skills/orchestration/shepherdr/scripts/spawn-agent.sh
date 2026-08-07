@@ -127,7 +127,7 @@ STATUS="$("$HRD" agent get "$PANE" \
   2>/dev/null || echo unknown)"
 if [ "$STATUS" = "blocked" ]; then
   if "$HRD" agent read "$PANE" --source visible --lines 30 | grep -qi "trust"; then
-    "$HRD" agent send-keys "$PANE" enter
+    "$HRD" agent send-keys "$PANE" enter >/dev/null 2>&1
     "$HRD" agent wait "$PANE" --until idle --until done --timeout 30000 >/dev/null \
       || { echo "spawn-agent: agent stuck after trust dialog in pane $PANE" >&2; exit 1; }
   else
