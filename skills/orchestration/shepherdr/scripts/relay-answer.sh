@@ -16,7 +16,7 @@ set -euo pipefail
 HRD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/hrd"
 
 TARGET="$1"; shift
-"$HRD" agent send-keys "$TARGET" ctrl+c
+"$HRD" agent send-keys "$TARGET" ctrl+c >/dev/null
 sleep 1
 # Task-1 probing showed agent prompt's stall error cannot be relied on
 # (a blocked agent discards the text with exit 0), so verify delivery by
