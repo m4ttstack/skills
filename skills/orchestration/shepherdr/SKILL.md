@@ -49,28 +49,50 @@ skill's directory and follow it. Do not load it otherwise.
 
 If work arrives unscoped and the user wants it scoped before fan-out, brainstorm with them directly yourself (no pane, no relay), then spawn execution jobs from the result.
 
-### choosing the worker model
+### choosing the worker model and effort
 
 **REQUIRED:** Read `mattstack:model-tiering` (`~/.claude/skills/mattstack:model-tiering/SKILL.md`)
-for the tier table, complexity signals, and the recursive principle. Pick the
-model per job from that table, pass it explicitly via `-m`. A spawn without
-`-m` inherits your session model, which silently defeats tiering.
+for the tier table, complexity signals, and the recursive principle. Derive
+a recommendation per job from that table, then ASK: one structured question
+per job (AskUserQuestion, single choice, batched up to 4 jobs per call),
+the tier-table recommendation first and marked "(Recommended)", then 2-3
+curated alternates spanning the tiers, effort included in each label (e.g.
+"sonnet, default effort" / "fable, high effort" / "haiku, low effort").
+One keystroke accepts the recommendation; "Other" free-text is automatic.
+
+Pass the choices explicitly via `-m <model>` and, when an effort was
+chosen, `-e <effort>`. A spawn without `-m` inherits your session model,
+which silently defeats tiering.
+
+This question comes BEFORE the account question: scoped per-model pools
+(Fable) are budgeted separately, so account headroom cannot be presented
+honestly until the herd's model mix is known.
 
 The user can override any tier. Domain-specific skills layered on top of
 shepherdr may set a floor (e.g., "never use model X for workers in this repo").
 
 ## accounts (cswap)
 
-At fan-out, if `cswap` is installed and `cswap list --json` shows two or
-more accounts, ask ONE structured question (AskUserQuestion, single
-choice) before spawning anything: how should this herd use accounts?
+At fan-out, AFTER models are chosen, if `cswap` is installed and
+`cswap list --json` shows two or more accounts, ask ONE structured
+question (AskUserQuestion, single choice) before spawning anything: how
+should this herd use accounts?
 
 1. Smart distribute across all accounts (recommended)
 2. Smart distribute across a subset -- follow-up multi-select of accounts
 3. Single account -- follow-up single-select
 
-Show each account's email/alias and current headroom in the option
-descriptions so the choice is informed at a glance. The selection is the
+Build each account's option description from the picker's headroom mode,
+passing the herd's chosen models:
+
+```bash
+scripts/pick-account.py --headroom --pool 1,2,3 --model fable,sonnet
+```
+
+It prints one line per account (email, per-model scoped pcts with
+EXHAUSTED callouts, 5h/7d, binding for that model mix). Use those lines
+verbatim -- a scoped pool can be exhausted while overall headroom looks
+fine, and the user must see that before choosing. The selection is the
 session pool: record it in the status table and never spawn or respawn
 outside it without explicit approval. No cswap or a single account: skip
 all of this; workers launch as plain claude exactly as before.
@@ -171,12 +193,13 @@ Labels carry location: the sidebar label is the only thing that tells the user w
 Spawn each agent with the script (worktree + tab + claude + readiness wait + kickoff in one call):
 
 ```bash
-OUT=$(scripts/spawn-agent.sh -j my-job -b <branch> -m <model> -J /path/to/brief.md -w <workspace-id> [-a <account>])
+OUT=$(scripts/spawn-agent.sh -j my-job -b <branch> -m <model> [-e <effort>] -J /path/to/brief.md -w <workspace-id> [-a <account>])
 PANE=${OUT%% *}; TARGET=${OUT##* }
 ```
 
-Pick `<model>` from the tier table in "choosing the worker model" above,
-and `<account>` from the picker when the herd is account-distributed.
+`<model>` and `<effort>` come from the answers to the model/effort
+question ("choosing the worker model and effort" above), and `<account>`
+from the picker when the herd is account-distributed.
 
 It prints the pane id and the agent's name; use the name (`$TARGET`) for
 every later agent command. Readiness and kickoff submission are native
@@ -290,4 +313,6 @@ If the user redirects scope: ask whether to let running agents finish or kill th
 - Target agents by job name; if a name fails to resolve, re-read herdr agent list -- never guess.
 - Prioritize responding to the user over monitoring.
 - cswap is installed with 2+ accounts and you are about to spawn without having asked the account-mode question? Stop. One structured question first.
+- About to ask the account question before models are chosen? Stop. Scoped pools (Fable) budget separately; model-blind headroom is misleading.
+- About to pick a model per job without asking? Stop. The tier table gives you the recommendation; the choice is the user's.
 - About to respawn a rate-limited job under an account outside the session pool? Stop. That needs explicit approval.

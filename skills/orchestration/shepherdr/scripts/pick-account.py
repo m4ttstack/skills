@@ -11,13 +11,24 @@ score wins; ties break on lower 7-day pct.
 
 Python, not bash: macOS ships bash 3.2 (same reason as herd-monitor.py).
 
+With --headroom, picks nothing: prints one display line per pool account
+(email, per-model scoped pcts with EXHAUSTED callouts, 5h/7d, binding for
+the given model mix) for the shepherd's account question. --model then
+accepts a comma-separated model list; binding is the worst across them.
+Scoped pools are why this exists: an account can be exhausted for one
+model (Fable) while showing plenty of overall headroom.
+
 Usage:
     pick-account.py --pool 2,3 [--model claude-fable-5]
                     [--assigned 3,3] [--json-file dump.json]
                     [--threshold 90]
+    pick-account.py --headroom --pool 1,2,3 [--model fable,sonnet]
+                    [--json-file dump.json] [--threshold 90]
 
-Exit 0: stdout is the account number; stderr one rationale line.
-Exit 1: no qualifying account; stderr lists each pool account's binding.
+Exit 0: stdout is the account number (pick mode) or the display lines
+(headroom mode); stderr one rationale line (pick mode only).
+Exit 1: pick mode with no qualifying account; stderr lists each pool
+account's binding.
 """
 import argparse
 import json
@@ -70,6 +81,39 @@ def binding_pct(account, model):
     return max(pcts)
 
 
+def headroom_lines(pool, models, by_number, threshold):
+    """Display lines for the account question, one per pool account."""
+    lines = []
+    for number in pool:
+        account = by_number.get(number)
+        if account is None:
+            lines.append(f"{number}: not in cswap list")
+            continue
+        usage = account.get("usage") or {}
+        parts = []
+        for model in models:
+            wanted = model.lower()
+            for scoped in usage.get("scoped") or []:
+                name = (scoped.get("name") or "").lower()
+                if name and (name in wanted or wanted in name):
+                    pct = scoped.get("pct") or 0.0
+                    label = scoped.get("name")
+                    if pct >= threshold:
+                        parts.append(f"{label} EXHAUSTED ({pct:.0f}%)")
+                    else:
+                        parts.append(f"{label} {pct:.0f}%")
+        five = (usage.get("fiveHour") or {}).get("pct") or 0.0
+        seven = (usage.get("sevenDay") or {}).get("pct") or 0.0
+        parts.append(f"5h {five:.0f}%")
+        parts.append(f"7d {seven:.0f}%")
+        binding = max((binding_pct(account, m) for m in models), default=0.0) \
+            if models else binding_pct(account, "")
+        parts.append(f"binding {binding:.0f}%")
+        email = account.get("alias") or account.get("email") or "?"
+        lines.append(f"{number} {email}: " + ", ".join(parts))
+    return lines
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pool", required=True)
@@ -77,6 +121,7 @@ def main():
     ap.add_argument("--assigned", default="")
     ap.add_argument("--json-file")
     ap.add_argument("--threshold", type=float)
+    ap.add_argument("--headroom", action="store_true")
     args = ap.parse_args()
 
     try:
@@ -87,6 +132,12 @@ def main():
     threshold = load_threshold(args.threshold)
     data = load_accounts(args.json_file)
     by_number = {a["number"]: a for a in data.get("accounts", [])}
+
+    if args.headroom:
+        models = [m for m in args.model.split(",") if m]
+        for line in headroom_lines(pool, models, by_number, threshold):
+            print(line)
+        return
 
     candidates = []
     excluded = []

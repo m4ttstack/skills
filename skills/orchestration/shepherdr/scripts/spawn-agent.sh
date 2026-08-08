@@ -4,18 +4,20 @@
 # Usage:
 #   spawn-agent.sh -j <job-name> (-b <branch> | -d <existing-dir>) -J <brief.md>
 #                  -w <workspace-id> [-r <repo-root>] [-k <kickoff-text>]
-#                  [-m <model>] [-a <cswap-account>]
+#                  [-m <model>] [-e <effort>] [-a <cswap-account>]
 #
 # With -b: creates the worktree at ~/.shepherdr/worktrees/<repo>/<job-name>.
 # With -d: uses the existing directory as-is (no git worktree add); any branch
-# must already be provisioned there. -m launches claude with --model <model>.
+# must already be provisioned there. -m launches claude with --model <model>;
+# -e adds --effort <level> (low|medium|high|...; whatever the claude CLI takes).
 # -a launches through `cswap run <account> --` so the pane bills that account.
 # Copies the brief to the job dir ~/.shepherdr/jobs/<repo>/<job-name>/job.md
 # (contract files never live inside the repo), opens a --no-focus tab labeled
 # "<worktree>: <job>" in the given workspace, launches claude, waits for
 # readiness (auto-accepting claude's fresh-worktree trust dialog), names
 # the agent after the job, and submits the kickoff via `agent prompt`
-# (atomic under bracketed paste; delivery-verified, resent once).
+# (atomic under bracketed paste; delivery-verified, up to 3 attempts with
+# the composer cleared between attempts).
 # Prints "<pane-id> <target>" on stdout; target is the agent name when the
 # job name fits herdr's name grammar, else the pane id. Everything else goes
 # to stderr.
@@ -36,8 +38,9 @@ KICKOFF=""
 BRANCH=""
 DIR=""
 MODEL=""
+EFFORT=""
 ACCOUNT=""
-while getopts "j:b:J:w:r:k:d:m:a:" opt; do
+while getopts "j:b:J:w:r:k:d:m:e:a:" opt; do
   case "$opt" in
     j) JOB="$OPTARG" ;;
     b) BRANCH="$OPTARG" ;;
@@ -47,6 +50,7 @@ while getopts "j:b:J:w:r:k:d:m:a:" opt; do
     k) KICKOFF="$OPTARG" ;;
     d) DIR="$OPTARG" ;;
     m) MODEL="$OPTARG" ;;
+    e) EFFORT="$OPTARG" ;;
     a) ACCOUNT="$OPTARG" ;;
     *) usage ;;
   esac
@@ -103,10 +107,11 @@ if [ -n "${SHEPHERDR_HERD_SESSION:-}" ]; then
 fi
 
 "$HRD" pane run "$PANE" "cd $WORKTREE"
+CLAUDE_ARGS="${MODEL:+ --model '$MODEL'}${EFFORT:+ --effort '$EFFORT'}"
 if [ -n "$ACCOUNT" ]; then
-  "$HRD" pane run "$PANE" "cswap run $ACCOUNT --${MODEL:+ --model '$MODEL'}"
+  "$HRD" pane run "$PANE" "cswap run $ACCOUNT --$CLAUDE_ARGS"
 else
-  "$HRD" pane run "$PANE" "claude${MODEL:+ --model '$MODEL'}"
+  "$HRD" pane run "$PANE" "claude$CLAUDE_ARGS"
 fi
 
 # herdr needs a brief moment after the launch command to attach the
@@ -160,14 +165,32 @@ fi
 
 # `agent prompt` submits atomically under bracketed paste. Task-1 probing
 # showed its stall error cannot be relied on (a blocked agent discards the
-# text with exit 0), so verify delivery by watching for `working`; resend
-# once if it never starts.
-"$HRD" agent prompt "$TARGET" "$KICKOFF" >/dev/null
-if ! "$HRD" agent wait "$TARGET" --until working --timeout 8000 >/dev/null 2>&1; then
-  echo "spawn-agent: kickoff not picked up; resending once" >&2
+# text with exit 0), so verify delivery by watching for `working`. Field
+# use showed the settled state can fire a beat before the composer truly
+# accepts input, and that a blind resend can stack on a dirty composer --
+# so settle briefly first, and clear the composer (ctrl+c, like
+# relay-answer.sh) before each retry. Up to 3 attempts.
+sleep 1
+KICKOFF_OK=""
+for attempt in 1 2 3; do
+  if [ "$attempt" -gt 1 ]; then
+    # If the agent actually started just after the previous wait timed
+    # out, do not ctrl+c a working agent -- that would interrupt the turn.
+    STATUS="$("$HRD" agent get "$TARGET" \
+      | python3 -c 'import sys,json; r=json.load(sys.stdin)["result"]; a=r.get("agent") or r; print(a.get("agent_status","unknown"))' \
+      2>/dev/null || echo unknown)"
+    if [ "$STATUS" = "working" ]; then KICKOFF_OK=1; break; fi
+    echo "spawn-agent: kickoff not picked up; clearing composer, retry $attempt/3" >&2
+    "$HRD" agent send-keys "$TARGET" ctrl+c >/dev/null 2>&1 || true
+    sleep 1
+  fi
   "$HRD" agent prompt "$TARGET" "$KICKOFF" >/dev/null
-  "$HRD" agent wait "$TARGET" --until working --timeout 8000 >/dev/null 2>&1 \
-    || echo "spawn-agent: kickoff may be unsubmitted in pane $PANE -- check its input box" >&2
-fi
+  if "$HRD" agent wait "$TARGET" --until working --timeout 8000 >/dev/null 2>&1; then
+    KICKOFF_OK=1
+    break
+  fi
+done
+[ -n "$KICKOFF_OK" ] \
+  || echo "spawn-agent: kickoff may be unsubmitted in pane $PANE -- check its input box" >&2
 
 echo "$PANE $TARGET"

@@ -46,4 +46,18 @@ check "spread penalty shifts pick (3 panes)" "2" 0 "$out" "$rc"
 out=$("$PICK" --pool 1 --model Fable --json-file "$FIX" --threshold 90 2>/dev/null); rc=$?
 check "all excluded exits nonzero" "" 1 "$out" "$rc"
 
+# headroom mode: display lines, one per account, with EXHAUSTED callout
+out=$("$PICK" --headroom --pool 1,2 --model claude-fable-5 --json-file "$FIX" --threshold 90 2>/dev/null); rc=$?
+line1=$(printf '%s\n' "$out" | sed -n 1p)
+line2=$(printf '%s\n' "$out" | sed -n 2p)
+check "headroom acct1 exhausted callout" \
+  "1 a@example.com: Fable EXHAUSTED (100%), 5h 0%, 7d 88%, binding 100%" 0 "$line1" "$rc"
+check "headroom acct2 normal" \
+  "2 b@example.com: Fable 51%, 5h 13%, 7d 49%, binding 51%" 0 "$line2" "$rc"
+
+# headroom with no model: no scoped parts, binding from 5h/7d only
+out=$("$PICK" --headroom --pool 3 --json-file "$FIX" --threshold 90 2>/dev/null); rc=$?
+check "headroom modeless" \
+  "3 c@example.com: 5h 17%, 7d 38%, binding 38%" 0 "$out" "$rc"
+
 [ "$fails" -eq 0 ] && echo "all tests passed" || exit 1
