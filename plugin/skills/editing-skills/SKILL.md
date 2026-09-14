@@ -76,6 +76,12 @@ it does gives a real-looking command that updates nothing.
    and reports `restartNeeded`. The pull is the step hand-runs forget: a
    checkout parked on a merged branch compiles stale engines and nothing says
    so.
+   The middle of that chain (patch-bump, compile, recheck, commit + push)
+   fires ONLY when check finds compiled output drifting from its sources, so
+   your step 4 bump is never doubled: a hand-authored skill compiles to
+   nothing and so never drifts, leaving sync as just the cache update. Sync's
+   own bump is for the other case, where a shared engine rebuilt a pack's
+   verbs and nobody has versioned that yet.
    Guards, all refused before anything mutates: both checkouts clean and on
    `main`, no `.worktrees/` or `.claude/worktrees/` under the pack, a
    resolvable `claude` binary, a marketplace for each. Run it against the
