@@ -1,6 +1,6 @@
 ---
 name: editing-skills
-description: Use when adding, editing, publishing, or debugging why a change isn't live in any mattstack-connected skill surface -- the mattstack plugin, a team pack (acme), or a compiled/vendored pipeline verb built with `rt skills compile` -- e.g. "add a mattstack skill", "why isn't my skill or pipeline change showing up", "rt skills compile / check / sync", "an installed cache is lagging", "rt skills sync refused", "update the work orchestrator", or any change under mattstack-skills, a teams/<team> pack, or a shared work/review engine.
+description: Use when adding, editing, publishing, or debugging why a change isn't live in any mattstack-connected skill surface -- the mattstack plugin, a team pack (acme), or a compiled/vendored pipeline verb -- e.g. "add a mattstack skill", "why isn't my skill or pipeline change showing up", "rt skills compile / check / sync", "an installed cache is lagging", "update the work orchestrator", or any change under mattstack-skills, a teams/<team> pack, or a shared work/review engine.
 ---
 
 # Editing and Publishing Estate Skills
@@ -132,11 +132,11 @@ What `compile` and `check` read:
 
 ### Releasing an engine, include, or fill change
 
-1. Yours, and only yours: commit the changed mattstack file; `sh
-   tests/certify.sh <its dir>`; bump mattstack's `plugin.json` in that same
-   commit; push `main`. Sync consumes whatever `main` says and never bumps the
-   engine, so a skipped bump leaves the engine cache -- and therefore every
-   pack that compiles against it -- silently on the old version.
+1. Yours, and only yours, in this order: `sh tests/certify.sh <its dir>` on the
+   edited file; bump mattstack's `plugin.json`; commit the file and the bump
+   together; push `main`. Sync consumes whatever `main` says and never bumps
+   the engine, so a skipped bump leaves the engine cache -- and therefore
+   every pack that compiles against it -- silently on the old version.
 2. `rt skills sync --pack mattstack`. The engine and its own compiled verb
    share a checkout, so the chain collapses to one pull and one update.
 3. `rt skills sync --pack <pack>` for each other compiled pack. `rt skills
