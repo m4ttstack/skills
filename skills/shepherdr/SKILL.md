@@ -338,7 +338,7 @@ Build each account's option description from headroom mode, passing the
 herd's chosen models:
 
 ```bash
-${CLAUDE_SKILL_DIR}/parts/accounts/scripts/pick-account.py --headroom --pool 1,2,3 --model fable,sonnet
+"${CLAUDE_SKILL_DIR}/parts/accounts/scripts/pick-account.py" --headroom --pool 1,2,3 --model fable,sonnet
 ```
 
 It prints one line per account (email, per-model scoped pcts with
@@ -355,7 +355,7 @@ all of this; workers launch on the default `claude` command.
 Before each spawn in a smart-distribute herd:
 
 ```bash
-ACCT=$(${CLAUDE_SKILL_DIR}/parts/accounts/scripts/pick-account.py --pool 2,3 --model <model> --assigned <accounts-already-assigned>)
+ACCT=$("${CLAUDE_SKILL_DIR}/parts/accounts/scripts/pick-account.py" --pool 2,3 --model <model> --assigned <accounts-already-assigned>)
 ```
 
 `--assigned` lists the account of every worker already launched this run,

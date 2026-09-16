@@ -433,7 +433,7 @@ completeness check is "non-null and not `-`".
 
 When no run resolves (`RT_RUN_DB` unset, no run started by this session,
 and no running run in this worktree -- the same chain `rt runs` verbs use
-above), the two `rt runs` lines are skipped and the form alone is the gate
+below), the two `rt runs` lines are skipped and the form alone is the gate
 -- for an ATTENDED invocation. A SPAWNED pane with no resolved run never
 presents that form: nobody is watching it and no gate row reaches any
 surface, so it ends the path with one error line instead (see the forge

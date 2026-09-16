@@ -88,6 +88,15 @@ printf -- '---\nname: fake:skillsticket\ndescription: "Use when testing ticket i
 OUT=$("$CERTIFY" "$WORK/skillsticket"); STATUS=$?
 check skills_ticket 1 'FAIL no-ticket-ids'
 
+# a ticket id on a line that also contains the literal substring /.git/
+# still fails no-ticket-ids: the .git filter must anchor to the grep -rn
+# output's path segment, not match anywhere on the line (a whole-line
+# match would drop this hit and certification would wrongly pass)
+mkdir -p "$WORK/ticketnearGit"
+printf -- '---\nname: fake:ticketneargit\ndescription: "Use when testing the git-path filter."\n---\nsee RT-123 in /.git/ hooks\n' > "$WORK/ticketnearGit/SKILL.md"
+OUT=$("$CERTIFY" "$WORK/ticketnearGit"); STATUS=$?
+check ticket_near_git_path 1 'FAIL no-ticket-ids'
+
 # runtime-native skill with placeholders fails no-placeholders-in-runtime-native
 mkdir -p "$WORK/placeholder"
 printf -- '---\nname: fake:placeholder\ndescription: "Use when testing placeholders."\nmetadata:\n  slots: "x"\n---\nbad {{slot:x}} placeholder\n' > "$WORK/placeholder/SKILL.md"
