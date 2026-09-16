@@ -458,7 +458,9 @@ sentence, end the turn; under a run also record `hold:<stage>:<attempt>`
 and `rt runs field set hold "<their words>" --stage <stage>`; outside a run
 nothing is recorded.
 
-Each tool call is a fresh shell. Keep `RT_RUN_DB` in the run's prose (the
-`runDb` from `run-start`) and prefix every `rt runs` command with
-`RT_RUN_DB=<path>`; `export` and `unset` remain the contract's markers for
-the run's start and end, not a persistence mechanism.
+Each tool call is a fresh shell, but `rt runs` verbs resolve your run
+automatically: env `RT_RUN_DB` first, else the run this session started,
+else the newest running run in this worktree; ambiguity errors loudly.
+`export` and `unset` remain the contract's markers for the run's start and
+end, not a persistence mechanism -- export `RT_RUN_DB` only to drive a
+different run than yours.
