@@ -4,12 +4,12 @@ description: "Use when fanning work out across parallel Claude Code agents in he
 allowed-tools:
   - "Bash(*/scripts/pick-account.py:*)"
 metadata:
-  compiled: "mattstack@0.17.10 + mattstack:model-tiering@0.17.10 + mattstack:execution-strategy@0.17.10 + mattstack:cswap-accounts@0.17.10"
+  compiled: "mattstack@0.17.12 + mattstack:model-tiering@0.17.12 + mattstack:execution-strategy@0.17.12 + mattstack:cswap-accounts@0.17.12"
 ---
 
 <!-- compiled by rt skills compile from the sources below; slots pre-resolved; edits here are working-tree drift (rt skills promote) -->
 
-<!-- part: step source=mattstack:shepherdr version=0.17.10 path=attachments/orchestration/shepherdr/SKILL.md lines=15-495 -->
+<!-- part: step source=mattstack:shepherdr version=0.17.12 path=attachments/orchestration/shepherdr/SKILL.md lines=15-495 -->
 
 # shepherdr
 
@@ -64,7 +64,7 @@ If work arrives unscoped and the user wants it scoped before fan-out, brainstorm
 
 ## Tiering
 
-<!-- part: slot:tiering binding=mattstack:model-tiering version=0.17.10 path=attachments/model-tiering/SKILL.md lines=8-117 -->
+<!-- part: slot:tiering binding=mattstack:model-tiering version=0.17.12 path=attachments/model-tiering/SKILL.md lines=8-117 -->
 # Model Tiering
 
 Use the least capable model tier **and effort** that can succeed at each unit
@@ -178,7 +178,7 @@ this skill is the generic framework they override.
 
 ## Strategy
 
-<!-- part: slot:strategy binding=mattstack:execution-strategy version=0.17.10 path=attachments/execution-strategy/SKILL.md lines=8-90 -->
+<!-- part: slot:strategy binding=mattstack:execution-strategy version=0.17.12 path=attachments/execution-strategy/SKILL.md lines=8-93 -->
 # Execution Strategy
 
 Given a unit of work and the surface it will execute on, name the method
@@ -258,10 +258,13 @@ up: 1 job = 1 sub-project = 1 spec = 1 plan = 1 branch = 1 worktree =
 
 ## Briefing an executor
 
-Copy the assigned strategy's body from `${CLAUDE_SKILL_DIR}/parts/strategy/references/strategies.md` verbatim
-into the brief and fill its `<angle-bracket>` slots. Do not compose method
-prose per job; the bodies carry the worker-boundary rules and the report
-contract.
+When the caller has no brief-assembly verb, copy the assigned strategy's
+body from `${CLAUDE_SKILL_DIR}/parts/strategy/references/strategies.md` verbatim into the
+brief and fill its `<angle-bracket>` slots yourself. A caller that has one
+(`rt herd brief` and its `--strategy`/`--strategies` flags) does this copy
+for you -- name the strategy and pass it, nothing more. Either way, do not
+compose method prose per job; the bodies carry the worker-boundary rules
+and the report contract.
 
 `accounts` may be unbound -- that is single-account mode, handled below.
 
@@ -309,7 +312,7 @@ below the floor is wrong.
 
 ## Accounts
 
-<!-- part: slot:accounts binding=mattstack:cswap-accounts version=0.17.10 path=attachments/cswap-accounts/SKILL.md lines=9-76 -->
+<!-- part: slot:accounts binding=mattstack:cswap-accounts version=0.17.12 path=attachments/cswap-accounts/SKILL.md lines=9-76 -->
 # cswap account pool
 
 Given the herd's model mix and the accounts already assigned this run,
@@ -414,8 +417,8 @@ Every brief is assembled by the verb, never composed:
 
 ```bash
 rt herd brief --job <name> \
-  --template <this skill's dir>/references/job-template.md \
-  --strategy <strategy> --strategies <this skill's dir>/parts/strategy/references/strategies.md \
+  --template ${CLAUDE_SKILL_DIR}/references/job-template.md \
+  --strategy <strategy> --strategies ${CLAUDE_SKILL_DIR}/parts/strategy/references/strategies.md \
   --fill <slot>=<value> ... \
   --out <brief path>
 ```
@@ -718,7 +721,7 @@ work merges, what a disposal refusal means) -- follow it over item 4.
 
 ## wrap-up form contract
 
-<!-- part: include:wrap-up-form source=mattstack:wrap-up-form version=0.17.10 path=attachments/wrap-up-form/SKILL.md lines=7-33 -->
+<!-- part: include:wrap-up-form source=mattstack:wrap-up-form version=0.17.12 path=attachments/wrap-up-form/SKILL.md lines=7-33 -->
 # Wrap-up
 
 The reply is one optional sentence of context, then a form, then stop. Wait

@@ -158,8 +158,8 @@ Every brief is assembled by the verb, never composed:
 
 ```bash
 rt herd brief --job <name> \
-  --template <this skill's dir>/references/job-template.md \
-  --strategy <strategy> --strategies <this skill's dir>/parts/strategy/references/strategies.md \
+  --template ${CLAUDE_SKILL_DIR}/references/job-template.md \
+  --strategy <strategy> --strategies ${CLAUDE_SKILL_DIR}/parts/strategy/references/strategies.md \
   --fill <slot>=<value> ... \
   --out <brief path>
 ```
