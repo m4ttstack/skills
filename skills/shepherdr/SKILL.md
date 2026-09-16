@@ -9,7 +9,7 @@ metadata:
 
 <!-- compiled by rt skills compile from the sources below; slots pre-resolved; edits here are working-tree drift (rt skills promote) -->
 
-<!-- part: step source=mattstack:shepherdr version=0.17.14 path=attachments/orchestration/shepherdr/SKILL.md lines=15-496 -->
+<!-- part: step source=mattstack:shepherdr version=0.17.14 path=attachments/orchestration/shepherdr/SKILL.md lines=15-505 -->
 
 # shepherdr
 
@@ -661,6 +661,15 @@ to record. When all jobs are done, **integration is its own job**: spawn an
 agent whose brief is to merge/cherry-pick the job branches, run full
 verification, and report. Its brief carries the repo's shipping
 conventions. You never merge, fix failures, or push with your own hands.
+
+**Closing the lane is yours.** Nothing closes a done job's pane but you.
+When the lane's merge is confirmed (the integration job's report, or the
+domain hook's own ship step) and its ticket flipped, run
+`rt herd close <job> --herd <id>` in the same breath: it retires the row
+and closes the pane as part of processing that completion, not as a later
+chore. Past `herd.watchdog.nagMins` (default 30) the watchdog nags you
+about a done job whose pane is still open; that nag means this step was
+skipped, and the answer is the same command.
 
 **Domain hook -- after the report.** Unbound: integration as above. A
 bound domain part may define what follows an approved report -- telling
