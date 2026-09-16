@@ -76,6 +76,18 @@ printf -- '---\nname: fake:dash\ndescription: "Use when testing dashes."\n---\nb
 OUT=$("$CERTIFY" "$WORK/dash"); STATUS=$?
 check em_dash 1 'FAIL no-em-dashes'
 
+# RT-<digits> ticket id in body fails no-ticket-ids
+mkdir -p "$WORK/rtticket"
+printf -- '---\nname: fake:rtticket\ndescription: "Use when testing ticket ids."\n---\nsee RT-123 for context\n' > "$WORK/rtticket/SKILL.md"
+OUT=$("$CERTIFY" "$WORK/rtticket"); STATUS=$?
+check rt_ticket 1 'FAIL no-ticket-ids'
+
+# SKILLS-<digits> ticket id in body fails no-ticket-ids
+mkdir -p "$WORK/skillsticket"
+printf -- '---\nname: fake:skillsticket\ndescription: "Use when testing ticket ids."\n---\nsee SKILLS-45 for context\n' > "$WORK/skillsticket/SKILL.md"
+OUT=$("$CERTIFY" "$WORK/skillsticket"); STATUS=$?
+check skills_ticket 1 'FAIL no-ticket-ids'
+
 # runtime-native skill with placeholders fails no-placeholders-in-runtime-native
 mkdir -p "$WORK/placeholder"
 printf -- '---\nname: fake:placeholder\ndescription: "Use when testing placeholders."\nmetadata:\n  slots: "x"\n---\nbad {{slot:x}} placeholder\n' > "$WORK/placeholder/SKILL.md"

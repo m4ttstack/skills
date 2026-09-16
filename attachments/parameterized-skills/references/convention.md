@@ -431,12 +431,15 @@ redirected stage's produces): `field set <key> -`. Every reader treats it as
 absent: `field get` returning `-` reads as not set, and the orchestrator's
 completeness check is "non-null and not `-`".
 
-Outside a run (`RT_RUN_DB` unset), the two `rt runs` lines are skipped and
-the form alone is the gate -- for an ATTENDED invocation. A SPAWNED pane
-with no run never presents that form: nobody is watching it and no gate
-row reaches any surface, so it ends the path with one error line instead
-(see the forge parts' dirty-tree, conflict, push, and clarify gates for
-the exact wording).
+When no run resolves (`RT_RUN_DB` unset, no run started by this session,
+and no running run in this worktree -- the same chain `rt runs` verbs use
+above), the two `rt runs` lines are skipped and the form alone is the gate
+-- for an ATTENDED invocation. A SPAWNED pane with no resolved run never
+presents that form: nobody is watching it and no gate row reaches any
+surface, so it ends the path with one error line instead (see the forge
+parts' dirty-tree, conflict, push, and clarify gates for the exact
+wording). A resolved run always gets the `rt runs` lines and its gate
+integration, whether or not `RT_RUN_DB` itself is set.
 
 A verb that inherited a run (invoked from inside a stage) uses
 `run.current_stage` as its `--stage`, writes no `stage-done` and no
