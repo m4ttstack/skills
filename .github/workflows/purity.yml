@@ -1,0 +1,27 @@
+name: Repo purity
+
+# This repo is public. The gate keeps employer, customer, and internal-system
+# references out of the tracked tree, file names, and recent commit messages
+# on every PR and push. Extend tests/repo-purity.sh when a new term appears.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  purity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      - name: No banned references in tree, file names, or recent messages
+        run: sh tests/repo-purity.sh
+      - name: Certify every skill and attachment dir
+        run: |
+          set -e
+          for d in skills/*/ attachments/*/ attachments/*/*/; do
+            [ -f "${d}SKILL.md" ] || continue
+            sh tests/certify.sh "$d"
+          done
