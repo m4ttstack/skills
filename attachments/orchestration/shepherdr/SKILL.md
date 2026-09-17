@@ -426,7 +426,9 @@ trust that tree on the human's behalf, and the same restriction is yours.
 Check `rt herd status --json`'s job `tree` field -- non-null means the
 daemon provisioned it, null means `--dir` was passed. If the field is
 missing or you cannot tell, treat it as non-provisioned and do not drive
-keys. When both hold, this is the one exception to "about to send a pane a
+keys. If you spawned this job yourself with `--dir`, that alone settles it
+regardless of what `tree` reads: a respawn under the same job name can
+carry forward a stale provisioned `tree` from before. When both hold, this is the one exception to "about to send a pane a
 keystroke -- stop" below: clear it by driving the pane one key at a time,
 never a batched sequence: peek the screen, send one arrow key, peek again
 to confirm the cursor actually moved before sending Enter. A batched send
