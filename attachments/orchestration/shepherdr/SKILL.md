@@ -416,9 +416,10 @@ open; that nag means this step was skipped, and the answer is the same
 command.
 
 **A job parked at a trust modal.** The watchdog notifies you when a worker
-is stuck at a folder-trust dialog it could not clear itself. Clear it by
-driving the pane one key at a time, never a batched sequence: peek the
-screen, send one arrow key, peek again to confirm the cursor actually
+is stuck at a folder-trust dialog it could not clear itself. This is the
+one exception to "about to send a pane a keystroke -- stop" below: clear
+it by driving the pane one key at a time, never a batched sequence: peek
+the screen, send one arrow key, peek again to confirm the cursor actually
 moved before sending Enter. A batched send can land keys the dialog was
 not ready for and leave the pane in a worse state than the one you found
 it in.
