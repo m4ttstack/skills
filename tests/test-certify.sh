@@ -88,6 +88,19 @@ printf -- '---\nname: fake:skillsticket\ndescription: "Use when testing ticket i
 OUT=$("$CERTIFY" "$WORK/skillsticket"); STATUS=$?
 check skills_ticket 1 'FAIL no-ticket-ids'
 
+# BOARD-<digits> ticket id in body fails no-ticket-ids: an employer-visible
+# pack can ship this prefix too, which the RT-/SKILLS- only ban never caught
+mkdir -p "$WORK/boardticket"
+printf -- '---\nname: fake:boardticket\ndescription: "Use when testing ticket ids."\n---\nsee BOARD-10 for context\n' > "$WORK/boardticket/SKILL.md"
+OUT=$("$CERTIFY" "$WORK/boardticket"); STATUS=$?
+check board_ticket 1 'FAIL no-ticket-ids'
+
+# MAT-<digits> ticket id in body fails no-ticket-ids
+mkdir -p "$WORK/matticket"
+printf -- '---\nname: fake:matticket\ndescription: "Use when testing ticket ids."\n---\nsee MAT-375 for context\n' > "$WORK/matticket/SKILL.md"
+OUT=$("$CERTIFY" "$WORK/matticket"); STATUS=$?
+check mat_ticket 1 'FAIL no-ticket-ids'
+
 # a ticket id on a line that also contains the literal substring /.git/
 # still fails no-ticket-ids: the .git filter must anchor to the grep -rn
 # output's path segment, not match anywhere on the line (a whole-line
