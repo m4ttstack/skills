@@ -139,7 +139,10 @@ that write when the caller already handed the decision -- nothing is
 pending in that case.
 
 Execute posting per review-posting (below), handing it the decided
-selection as `{findings: <ids>, disposition: <outcome>}`. A terminal run's
+selection as `{findings: <ids>, disposition: <outcome>}`, where `<outcome>`
+is the answered label carried in posting's vocabulary -- Comment, Approve
+and Request changes travel as `comment`, `approve` and `request_changes` in
+every payload, the hand-off and the record alike. A terminal run's
 `tiers` answer becomes those ids first: take every finding whose `tier` the
 answer named from the report json, in report order. A caller that hands a
 tier-shaped selection (an unmigrated wrapper), or a `tiers` answer with no
