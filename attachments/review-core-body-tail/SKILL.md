@@ -19,24 +19,28 @@ read the draft by them. Return the draft; never post it, approve, or ship.
 
 ## Structured findings file
 
-Whenever the draft is written to a report file, write a sibling
-`<same basename>.json` in the same directory, machine-readable, mirroring
-the draft exactly (never re-judged):
+Whenever the draft is written to a report file, write a sibling with the
+report path's `.md` swapped for `.json`, machine-readable, mirroring the
+draft exactly (never re-judged):
 
 - Required: `summary` ({`readiness`: `yes` | `no` | `with-fixes`,
   `reasoning`: the assessment's qualifier in one or two sentences; the
   draft's spaced "Ready to merge: with fixes" maps to readiness
   `with-fixes`, hyphenated, never the spaced form) and
   `findings`: one entry per finding, in report order, `id` stable
-  (`f1, f2, ...`), with `tier`, `kind` (nitpick / suggestion / thought /
+  (`f1, f2, ...`), with `tier` (`Critical` | `Important` | `Minor`,
+  exactly the draft's buckets), `kind` (nitpick / suggestion / thought /
   confirmation / question, or the closest word), `title`, `file` and
   `line` when the finding anchors to the diff (else `fileLabel` with the
   anchor text, e.g. "not inline-anchorable"), and `fix` (one line).
-- Optional, include when the draft has the material: `depth` (one line),
-  `strengths` (`[{lead, detail}]`, the claim split from its receipts),
-  `checks` (`[{tag, text}]`, tag `PASS` | `N/A` | `FAIL`), `notes`
-  (observations that are neither strengths nor findings, including
-  post-merge follow-ups).
+- From the run, not just the draft: `depth` (one line -- the REVIEW DEPTH
+  line and what that setup found), `checks` (`[{tag, text}]`, tag `PASS` |
+  `N/A` | `FAIL` -- the EVIDENCE CHECK line and each thing the setup
+  observed, one entry apiece), `notes` (observations that are neither
+  strengths nor findings, including post-merge follow-ups), `strengths`
+  (`[{lead, detail}]`, the claim split from its receipts). A run that
+  printed the depth and evidence lines has the material for `depth` and
+  `checks`; omit a block only when the run produced nothing for it.
 - The markdown report stays the human artifact and does not change; the
   json is the only machine-read path. No terminal run without a report
   path writes either file.
@@ -59,4 +63,4 @@ the draft exactly (never re-judged):
 | Inputs in hand | Print REVIEW DEPTH / EVIDENCE CHECK and provider lines. |
 | Criteria bound | Its triage lines into the block, its addendum into the dispatch. |
 | About to judge the diff | Don't. The review dispatch flow (the dispatch step), reviewer shape, full payload. |
-| Draft assembled | Buckets, `file:line`-what-why-fix, assessment word; return it. |
+| Draft assembled | Buckets, `file:line`-what-why-fix, assessment word; return it; write the json sibling when a report path exists. |

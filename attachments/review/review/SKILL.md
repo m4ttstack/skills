@@ -114,10 +114,12 @@ before any selection narrows what posts.
 Decision intake: when the caller hands this step a decided selection (a
 board wrapper, or any @2 caller, handing `{findings, outcome}` down through
 the fill -- findings naming the finding ids from the report json, outcome
-naming the disposition), use it and ask nothing. Otherwise (a direct
-terminal run) ask ONE gate with the runtime's structured-question tool,
-these questions, each its own question (never fold one list into another
--- a question over 4 options sends the whole gate to the wait queue):
+naming the disposition; an unmigrated caller hands the legacy `{tiers,
+outcome}` instead, tiers naming severity levels), use it and ask nothing.
+Otherwise (a direct terminal run) ask ONE gate with the runtime's
+structured-question tool, these questions, each its own question (never
+fold one list into another -- a question over 4 options sends the whole
+gate to the wait queue):
 
 - `tiers`: a multi-select over the levels present, every level with
   findings pre-selected -- a terminal run has no per-finding UI, so this

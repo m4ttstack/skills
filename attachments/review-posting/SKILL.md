@@ -23,21 +23,24 @@ caller.
   "approve" | "request_changes"}`. `findings` names ids from the report
   json, and each selected entry's `file`, `line`, `title` and `fix` feed
   the inline-thread mechanics directly -- never re-parsed out of the
-  draft's prose. A selected entry with no `file` anchor (its `fileLabel`
-  says why) posts into the summary comment instead of an inline thread.
-  `disposition` names the one the caller already chose, in that lowercase
-  vocabulary. Legacy `{levels: [...], disposition: ...}` stays accepted
-  unchanged and posts whole tiers (whichever of Critical / Important /
-  Minor the draft carries), for callers not yet migrated. Arriving with
-  neither shape, or without a disposition, is a caller bug -- see the
-  guard below.
+  draft's prose. A selected id with no matching json entry stops and says
+  so, never mapped to a neighbouring finding. A selected entry with no
+  `file` anchor (its `fileLabel` says why) posts into the summary comment
+  instead of an inline thread. `disposition` names the one the caller
+  already chose, in that lowercase vocabulary. Legacy `{levels: [...],
+  disposition: ...}` stays accepted unchanged and posts whole tiers
+  (whichever of Critical / Important / Minor the draft carries), for
+  callers not yet migrated. Arriving with neither shape, or without a
+  disposition, is a caller bug -- see the guard below.
 - The draft, in the review flow's Strengths / Issues shape: Strengths /
   Issues (Critical / Important / Minor, each `file:line`) / Assessment
   (yes | no | with fixes), when it is in context -- take it as given, never
   re-derive or re-judge a finding here. When the draft is not in context
   (the parked-resume case), read the written report file AND its json
   sibling; the json's findings are what you execute from, ids and anchors
-  alike, and the markdown carries the human-facing wording.
+  alike, and the markdown carries the human-facing wording. With no json
+  sibling (a report written before this contract), the report's fixed
+  severity buckets are enough to execute the legacy form from.
 - A postable target: an MR/PR whose posting mechanics -- anchoring an inline
   comment to a line, verifying it landed, composing the summary body -- the
   caller owns. This part decides how to execute, not what posts or where.
@@ -49,10 +52,12 @@ caller.
 ## Guard: never asks
 
 This part never asks a question. Arriving without a decided selection --
-neither `{findings, disposition}` nor the legacy `{levels, disposition}` --
-is a caller bug: stop and say so in one line, never improvise a severity or
-disposition question to cover the gap. A payload carrying finding ids is
-the contract, not a bug. Deciding what posts is one layer up, not here.
+neither `{findings, disposition}` nor the legacy `{levels, disposition}`,
+which a resumed board path may spell `{tiers, disposition}` and which is
+accepted the same either way -- is a caller bug: stop and say so in one
+line, never improvise a severity or disposition question to cover the
+gap. A payload carrying finding ids is the contract, not a bug. Deciding
+what posts is one layer up, not here.
 
 ## No side door
 
@@ -128,7 +133,7 @@ left as a bare id or number. Required every time, on every disposition.
 
 | Signal | Action |
 |---|---|
-| Decided `{findings, disposition}`, or legacy `{levels, disposition}`, + draft (or report json) + target in hand | Post per the sections above. |
+| Decided `{findings, disposition}`, or legacy `{levels, disposition}`, + draft (parked: the report file AND its json sibling) + target in hand | Post per the sections above. |
 | No decided selection arrived | Stop; name it a caller bug. Never ask a question here. |
 | Posting inline threads | Selected findings only (legacy: whole selected levels); deselected findings drop, no side door. |
 | A selected finding carries no `file` anchor | It rides in the summary comment; never invent a line for it. |
