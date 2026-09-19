@@ -17,6 +17,30 @@ Fold your observations in; present exactly this shape:
 Those names and those three words are fixed vocabulary: downstream callers
 read the draft by them. Return the draft; never post it, approve, or ship.
 
+## Structured findings file
+
+Whenever the draft is written to a report file, write a sibling
+`<same basename>.json` in the same directory, machine-readable, mirroring
+the draft exactly (never re-judged):
+
+- Required: `summary` ({`readiness`: `yes` | `no` | `with-fixes`,
+  `reasoning`: the assessment's qualifier in one or two sentences; the
+  draft's spaced "Ready to merge: with fixes" maps to readiness
+  `with-fixes`, hyphenated, never the spaced form) and
+  `findings`: one entry per finding, in report order, `id` stable
+  (`f1, f2, ...`), with `tier`, `kind` (nitpick / suggestion / thought /
+  confirmation / question, or the closest word), `title`, `file` and
+  `line` when the finding anchors to the diff (else `fileLabel` with the
+  anchor text, e.g. "not inline-anchorable"), and `fix` (one line).
+- Optional, include when the draft has the material: `depth` (one line),
+  `strengths` (`[{lead, detail}]`, the claim split from its receipts),
+  `checks` (`[{tag, text}]`, tag `PASS` | `N/A` | `FAIL`), `notes`
+  (observations that are neither strengths nor findings, including
+  post-merge follow-ups).
+- The markdown report stays the human artifact and does not change; the
+  json is the only machine-read path. No terminal run without a report
+  path writes either file.
+
 ## Red flags
 
 | Thought | Reality |
