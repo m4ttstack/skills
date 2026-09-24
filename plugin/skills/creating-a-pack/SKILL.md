@@ -35,17 +35,24 @@ Do not improvise a substitute.
 
 ## 2. Run init
 
-From the repo root:
+Resolve the zone before anything is written. A zone is a directory under
+`~/.mattstack/teams/` whose `mattstack/mattstack.jsonc` says `role: team`.
+When the team's zone is absent, create it first:
 
 ```bash
-rt skills init --json
+rt team create <Name> --remote <url>    # an empty repo the team owns
 ```
 
-Init picks the zone by detection: the zone declaring this repo, else the
-one packless zone on the repo's host. When the author named the team and
-a zone with that slug exists (`ls ~/.mattstack/teams`), pass
-`--zone <slug>` so another team's packless zone is never chosen. When the
-team is unclear, ask before running.
+When the team is unclear, ask which team this is before running. Then,
+from the repo root, always name the zone:
+
+```bash
+rt skills init --json --zone <slug>
+```
+
+Without `--zone`, init picks by detection (the zone declaring this repo,
+else the one packless zone on the host), which can land the pack in another
+team's zone.
 
 Read the envelope:
 
@@ -76,8 +83,9 @@ know the repo, so the branch was made in the checkout; `glab` was absent, so
 the MR went through the forge API.
 
 Until the restarted run has reported back, the pack is scaffolded, not
-proven: say "scaffolded, proof pending" and carry the run's result into the
-report when it arrives. A hand-off is not a proof.
+proven: say "scaffolded, proof pending". In a herdr pane the continuation
+brings the run's result back to this session, which then reports it;
+otherwise the restarted session owns the report. A hand-off is not a proof.
 
 The `work` verb's description in `pack/stubs.jsonc` is a placeholder seeded
 from the engine. Rewording it in the team's words is the first, smallest

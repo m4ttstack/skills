@@ -284,8 +284,9 @@ can review and migrate that state with
 
 ## Usage
 
-Once the plugin is installed, four skills are on the slash menu (or trigger
-on the phrasing in their own description):
+Once the plugin is installed, the public doors listed under [What's
+inside](#whats-inside) are on the slash menu (or trigger on the phrasing in
+their own description). Two examples:
 
 ```
 $ claude

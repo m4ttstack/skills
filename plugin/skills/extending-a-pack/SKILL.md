@@ -17,7 +17,8 @@ The output of one round, in this order, each part required:
 2. a RED record: the stage or verb run without the rule, the miss quoted
 3. the skill or fill written, in the fill's frontmatter form
 4. bound, certified, checked, with the fragment carrying the binding
-5. handed to `mattstack:editing-skills` to publish
+5. a GREEN record: the same run from the pack source, the miss gone
+6. handed to `mattstack:editing-skills` to publish
 
 ## 1. Sort the ask
 
@@ -53,14 +54,14 @@ metadata:
 RED, in the author's repo, in a worktree: run the stage or verb without the
 rule on a small real task (`/<pack>:work` for a stage, `/<pack>:ship` for a
 door) and record verbatim where it missed the rule. A worktree isolates
-files, not the remote: when the ask concerns `ship` or `watch-ci`, stop the
-run at the ship gate, before any push or MR, and record the miss at that
-boundary. Running the tool the rule is about (the linter, the test runner)
-in the checkout is not the RED pass; it tests the tool, not the pipeline.
-Then write the body: the rule, its reason, and the decision it changes. The
-stage keeps its own flow; the fill carries only what the team adds. GREEN
-comes after the bind in section 3, not here: the stage runs the old binding
-until then.
+files, not the remote: when the ask concerns `ship`, answer the ship gate
+with proceed and stop at the push or MR-create command itself (a ship
+fill's rules run after the gate); when it concerns `watch-ci`, run against
+a branch and MR that already exist on the remote. Running the tool the rule
+is about (the linter, the test runner) in the checkout is not the RED pass;
+it tests the tool, not the pipeline. Then write the body: the rule, its
+reason, and the decision it changes. The stage keeps its own flow; the fill
+carries only what the team adds.
 
 ## 3. Bind, certify, check
 
@@ -75,15 +76,22 @@ manifest is regenerated on every materialize. Confirm the fragment carries
 the new `bindings` entry before moving on. A `context` skill is certified
 the same way, `sh <mattstack-skills>/tests/certify.sh <context dir> --domain`.
 
-GREEN, now that the stage compiles with the fill: re-run the same stage or
-verb on the same task, with the same stop before any push for `ship` and
-`watch-ci`, and record that the miss is gone. The round is not done until
-this run has happened.
-
 A verb-level bind (`mattstack:ship`) needs the door rostered first; the
 stage-level bind (`mattstack:stage-ship`) works either way. Bind both when
 both exist. `context` needs no bind: it is public by being under `skills/`;
 add it to `pack/surface.jsonc`'s `public` list.
+
+GREEN, now that the pack compiles with the rule. The running session still
+loads the pack from the installed cache, so GREEN starts a session that
+loads the pack source instead:
+
+```bash
+claude --plugin-dir <pack dir>     # in the worktree; the pack's verbs come from its source, not the cache
+```
+
+In it, re-run the same stage or verb on the same task with the same stop
+point, and record that the miss is gone. The round is not done until this
+run has happened.
 
 ## 4. Doors and wording
 
