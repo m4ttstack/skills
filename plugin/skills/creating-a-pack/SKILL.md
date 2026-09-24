@@ -41,6 +41,12 @@ From the repo root:
 rt skills init --json
 ```
 
+Init picks the zone by detection: the zone declaring this repo, else the
+one packless zone on the repo's host. When the author named the team and
+a zone with that slug exists (`ls ~/.mattstack/teams`), pass
+`--zone <slug>` so another team's packless zone is never chosen. When the
+team is unclear, ask before running.
+
 Read the envelope:
 
 - A refusal is `{ "error": { "code", "message", "refused": true } }`: relay
@@ -68,6 +74,10 @@ generic path; that is the expected shape of a pack with no fills. Name each
 fallback the run took in the report, for example: the provisioner did not
 know the repo, so the branch was made in the checkout; `glab` was absent, so
 the MR went through the forge API.
+
+Until the restarted run has reported back, the pack is scaffolded, not
+proven: say "scaffolded, proof pending" and carry the run's result into the
+report when it arrives. A hand-off is not a proof.
 
 The `work` verb's description in `pack/stubs.jsonc` is a placeholder seeded
 from the engine. Rewording it in the team's words is the first, smallest

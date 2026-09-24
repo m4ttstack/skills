@@ -52,11 +52,15 @@ metadata:
 
 RED, in the author's repo, in a worktree: run the stage or verb without the
 rule on a small real task (`/<pack>:work` for a stage, `/<pack>:ship` for a
-door) and record verbatim where it missed the rule. Running the tool the
-rule is about (the linter, the test runner) in the checkout is not the RED
-pass; it tests the tool, not the pipeline. Then write the body: the rule,
-its reason, and the decision it changes. The stage keeps its own flow; the
-fill carries only what the team adds. Re-run: the miss is gone.
+door) and record verbatim where it missed the rule. A worktree isolates
+files, not the remote: when the ask concerns `ship` or `watch-ci`, stop the
+run at the ship gate, before any push or MR, and record the miss at that
+boundary. Running the tool the rule is about (the linter, the test runner)
+in the checkout is not the RED pass; it tests the tool, not the pipeline.
+Then write the body: the rule, its reason, and the decision it changes. The
+stage keeps its own flow; the fill carries only what the team adds. GREEN
+comes after the bind in section 3, not here: the stage runs the old binding
+until then.
 
 ## 3. Bind, certify, check
 
@@ -68,7 +72,13 @@ rt skills check --pack <pack>
 
 The write into `pack/skills.jsonc` is what reaches teammates; the per-repo
 manifest is regenerated on every materialize. Confirm the fragment carries
-the new `bindings` entry before moving on.
+the new `bindings` entry before moving on. A `context` skill is certified
+the same way, `sh <mattstack-skills>/tests/certify.sh <context dir> --domain`.
+
+GREEN, now that the stage compiles with the fill: re-run the same stage or
+verb on the same task, with the same stop before any push for `ship` and
+`watch-ci`, and record that the miss is gone. The round is not done until
+this run has happened.
 
 A verb-level bind (`mattstack:ship`) needs the door rostered first; the
 stage-level bind (`mattstack:stage-ship`) works either way. Bind both when

@@ -42,9 +42,11 @@ pick up.
 
 ## What's inside
 
-Only four skills are directly invocable once the plugin is installed:
-`mattstack:shepherdr`, `mattstack:subagent-review-loop`,
-`mattstack:editing-skills`, and `mattstack:getting-current-time` (see
+Only a handful of skills are directly invocable once the plugin is
+installed: `mattstack:shepherdr`, `mattstack:subagent-review-loop`,
+`mattstack:editing-skills`, `mattstack:creating-a-pack`,
+`mattstack:extending-a-pack`, `mattstack:getting-current-time`,
+`mattstack:wrap-up`, and the three writing-style presets (see
 [Usage](#usage)). Everything else below is an engine: it is not on any slash
 menu, and it becomes runnable only once a team's own pack compiles it into a
 verb with `rt skills compile`. That split is deliberate; see
