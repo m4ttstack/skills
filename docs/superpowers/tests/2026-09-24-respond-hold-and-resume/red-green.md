@@ -91,3 +91,20 @@ posting.
 | hold-at-gate-2 | 5/5 | Nothing acts, and every rep now reads the forge before the re-ask and drops a thread that carries this run's reply. Rep 1: "A pane can post and die before it records, and a thread that already carries this run's reply counts as posted and is not offered." Reps 2 and 4: "T1 and T3 stay pending in the record." The registry variance persists (reps 3 and 4 submit the hold answer), unchanged by this slice. |
 | iterate-at-gate-2 | 5/5 | Converged: no push, post, resolve or record in any rep; T3 redrafted with the note; the forge read before the re-ask; T1 and T3 re-offered, T2 waiting. Rep 3: "Iterate here decides nothing. Only `next: proceed` (or a caller-handed `post`) acts." |
 | resume-after-posting | 5/5 | Converged: every rep reads `glab api user` and the discussions before anything posts, applies the two-part test, and spells out the branches. Rep 4: "A posted thread is never posted or offered again." Rep 2, both already posted: "I open no gate. I record T3 as `{"post":true,"resolve":<the forge's resolved flag>}`." |
+
+## Review round (CodeRabbit on d95c616)
+
+One finding, Major: the "Posted already" paragraph counted a posted
+thread as posted "in the respond-post record", but a `gate-1: reply`
+row never gets a respond-post entry (only offered threads do), so for
+T2 the sentence contradicted step 6.
+
+- Before: "count it as posted, in the respond-post record and at the
+  close"
+- After: "the close no longer waits on it, an offered thread's
+  respond-post entry reads `post: true` (a `gate-1: reply` row gets no
+  entry, as ever)"
+
+| Scenario | Result | Notes |
+|---|---|---|
+| resume-after-posting | 5/5 | Every rep still reads the forge first and never posts or offers a posted thread. Four keep T2 out of the record explicitly (rep 3: "T2 gets no entry, only offered threads are recorded here"); rep 4 would still mark a posted T2 `post: true` in the selection, against the paragraph's own parenthetical. |

@@ -53,10 +53,11 @@ forge (its full note chain, step 1's fetch) before its reply posts or a
 re-asked `respond-post` offers it. A thread that already carries this
 run's reply, a note whose text is the reply due to post or any note by
 the account this run posts as dated after the run's `started_at`, is
-posted: count it as posted, in the respond-post record and at the close,
-never offer it at a re-asked gate, and never post it again, whatever the
-snapshot or the report says of it. Only a thread with no such note posts
-or is offered.
+posted: the close no longer waits on it, an offered thread's respond-post
+entry reads `post: true` (a `gate-1: reply` row gets no entry, as ever),
+it is never offered at a re-asked gate, and it is never posted again,
+whatever the snapshot or the report says of it. Only a thread with no
+such note posts or is offered.
 
 Fresh. The flags for this verb, rendered by the compiler:
 
