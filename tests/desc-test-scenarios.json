@@ -58,5 +58,17 @@
   {
     "task": "I edited a fill in our team pack and the change is not showing up in my session",
     "expect": "editing-skills"
+  },
+  {
+    "task": "Our pipeline opened an MR without running lint; make ship run lint first on this repo",
+    "expect": "extending-a-pack"
+  },
+  {
+    "task": "Add a /acme:review verb to our pack",
+    "expect": "extending-a-pack"
+  },
+  {
+    "task": "Reword what our work verb says it is for",
+    "expect": "extending-a-pack"
   }
 ]
