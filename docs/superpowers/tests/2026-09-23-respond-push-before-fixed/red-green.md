@@ -1,23 +1,30 @@
 # RED/GREEN: push the fix before its Fixed reply posts
 
-Scope: `attachments/review/receive-review/SKILL.md`, step 6. The rule:
+Scope: `attachments/review/receive-review/SKILL.md`, step 6. The final
+rule, after the review round below:
 
-- **Push first.** Once respond-post proceeds, or a caller hands `post`,
-  and before any `gate-1: fix` row posts or resolves, the verb pushes the
-  MR's source branch with a plain `git push`. The proceed is the
-  authorization, so the verb asks nothing more.
-- **A failed push** holds every `gate-1: fix` row (no post, no resolve),
-  records no respond-post decision until they post, reports the push error
-  verbatim (in the hand-back when a caller owns the gates), and leaves the
-  run open. The verb never forces, rebases or merges past a rejection.
+- **Push first, only when needed.** Only when the picks post or resolve a
+  `gate-1: fix` row: once respond-post proceeds, or a caller hands `post`,
+  and before acting on those rows, the verb checks that `git branch
+  --show-current` is the MR's source branch and `git rev-parse
+  --abbrev-ref @{push}` is that branch on its remote, then runs a plain
+  `git push`. The proceed is the authorization, so the verb asks nothing
+  more.
+- **A failed push** (a target mismatch or a push error) holds those rows
+  (no post, no resolve), reports the mismatch or error verbatim (in the
+  hand-back when a caller owns the gates), and leaves the run open. The
+  verb never switches branches, forces, rebases or merges past it.
 - **Other replies** (`gate-1: reply` rows, overrides) post as decided
   either way.
-- **Tables:** a red-flag row and the `respond-post answered` quick
+- **Record.** After a failed push the respond-post decision is recorded
+  at once, the held thread ids under `"held"`. A resume acts only on the
+  held threads, then records again without `"held"`.
+- **Tables:** three red-flag rows and the `respond-post answered` quick
   reference row match.
 
 ## Scenarios
 
-Committed beside this record, both on the invented MR !87 (reviewer
+Committed beside this record, all on the invented MR !87 (reviewer
 renee, branch `renee/queue-retry`). T1 is a `gate-1: fix` row committed as
 ab12cd3 in step 5; T2 is a `gate-1: reply` row.
 
@@ -74,9 +81,73 @@ snapshot resume reads it that way.
 - After: "hold them, record no respond-post decision until they post,
   report the push error verbatim"
 
-## GREEN round 2 (the committed engine)
+## GREEN round 2 (the first commit, 8c3ba2f)
 
 | Scenario | Result | Notes |
 |---|---|---|
 | push-before-fixed | 5/5 | Unchanged. Every rep's failure branch now also records nothing. |
 | push-fails | 5/5 | Converged: no respond-post record in any rep, the error verbatim, T2 posted, the run open. |
+
+## Review round (three findings on 8c3ba2f)
+
+1. The push ran even when no `gate-1: fix` row posts or resolves, and a
+   rejection then blocked the record with nothing to hold.
+2. A bare `git push` pushes whatever branch is checked out, so a wrong
+   branch could go up and a false "Fixed" follow.
+3. After a failed push, a posted override had no record, so a snapshot
+   resume would offer it again and could post it twice.
+
+The decisions table keys on (run, contract, scope) with `INSERT OR
+REPLACE`, so a second respond-post record replaces the first. That rules
+out a partial record now plus a second one later. The fix is one full
+record with the pending threads under `"held"`, recorded again without it
+once they post. It also retires round 1's "record no respond-post
+decision until they post".
+
+### Scenarios added
+
+T1 is the `gate-1: fix` row at ab12cd3 throughout; T3 is a
+`gate-1: override` row.
+
+- `scenarios/push-no-fix-picked.md` (finding 1): gate 2 offers T1 and T3,
+  answered `{"thread-1": [], "thread-2": ["post:T3"], "next": "proceed"}`,
+  and any push is rejected.
+- `scenarios/push-wrong-branch.md` (finding 2): the checkout is on
+  `renee/retry-docs` with `@{push}` `origin/renee/retry-docs`, and a push
+  would succeed.
+- `scenarios/push-fails-override.md` (finding 3): T1 and T3 both picked
+  `post:`, the push is rejected, and the pane may die right after.
+
+### Pass criteria
+
+- **push-no-fix-picked:** no git command; T3 posts unresolved; the
+  record holds both threads, T1 both `false`, no `"held"`; the run closes.
+- **push-wrong-branch:** no push; T1 held; T2 posts; the mismatch is
+  reported; the record carries `"held":["T1"]`; the run stays open.
+- **push-fails-override:** T3 posts once; T1 held; the record is
+  `{"threads":{"T1":{"post":true,"resolve":true},"T3":{"post":true,"resolve":false}},"held":["T1"]}`;
+  the run stays open.
+- **push-before-fixed (added):** the branch and `@{push}` checks run
+  before the push.
+- **push-fails (changed):** the record is
+  `{"threads":{"T1":{"post":true,"resolve":true}},"held":["T1"]}`, in place
+  of no record.
+
+### RED (8c3ba2f)
+
+| Scenario | Result | Notes |
+|---|---|---|
+| push-no-fix-picked | 5/5 | A guard. Every rep already reads "before posting or resolving any `gate-1: fix` row" as conditional and skips the push. Rep 3: "It applies only before posting or resolving a `gate-1: fix` row." |
+| push-before-fixed (branch check) | 0/5 | No rep checks the branch or push destination; each runs a bare `git push`. The earlier round's 5 reps of this scenario do the same (0/10 in all). |
+| push-wrong-branch | 5/5 | A guard for the mismatch path only: the scenario lists the check commands and their output, which cues the check. A rewrite that named no commands still cued it ("shared with other agents"), so the uncued criterion lives on push-before-fixed instead. |
+| push-fails-override | 0/5 | Every rep posts T3 and writes no respond-post record. Four name the hazard themselves. Rep 5: "a resume from the snapshot alone has no respond-post record. It would see T3 as still unposted and could post it a second time." Rep 3 improvises a free-text `hold` field. |
+
+### GREEN (the committed engine)
+
+| Scenario | Result | Notes |
+|---|---|---|
+| push-no-fix-picked | 5/5 | No git command in any rep; "There is no `"held"` key, since no push failed." |
+| push-before-fixed | 5/5 | Every rep runs `git branch --show-current` and `git rev-parse --abbrev-ref @{push}` before the plain push, and states the `"held"` record on the failure branch. |
+| push-wrong-branch | 5/5 | No push, T1 held, T2 posted, the mismatch quoted, `"held":["T1"]`, run open. |
+| push-fails-override | 5/5 | Converged: the same record in every rep. Rep 5: "a fresh pane reads `held: ["T1"]` from the record and treats T3 as already posted, so it never posts it twice." |
+| push-fails | 5/5 | The `"held":["T1"]` record in every rep, the error verbatim, T2 posted, run open. |
