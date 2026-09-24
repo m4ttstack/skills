@@ -34,6 +34,21 @@ The right place (a fill on the ship stage's `domain` slot, not the compiled stag
 - **Side effect in the author's repo.** `bun install` ran in the checkout to try the lint script.
 - **Read the retired template** (`templates/domain-pack/README.md`) as reference, which Task 12 removes.
 
+## With the skill
+
+Same guest, pack reverted to zero fills, mattstack 0.19.5 (the draft skill) installed, same prompt verbatim. The agent invoked `mattstack:extending-a-pack` on its own and followed the round:
+
+1. **Sorted the ask:** "MR preflight, a `ship-domain@1` fill on `mattstack:stage-ship` (and `mattstack:ship` if the door exists)", read `slots.md`, checked the pack's composition.
+2. **RED, for real.** Dispatched a subagent to run the pipeline on a small task in an isolated worktree with a deliberate unused variable, stopping at the ship gate so nothing pushed: "The RED pass confirmed the gap. Stage-ship's only check before pushing is 'tests you have seen pass'. Nothing in the pipeline runs lint before the push, and the branch fails `bun run lint` with an unused debug variable."
+3. **Wrote the fill** in the contract's form: `description: "Use when mattstack:stage-ship resolves its domain slot here; the pack manifest binds ship-domain@1 to this skill. Not for manual invocation."`, `disable-model-invocation: true`, `metadata.provides: "ship-domain@1"`, then the rule, its reason, and the decisions it changes (no `eslint-disable`, no config edits, no `--no-verify`; passing tests and reviewer waivers do not count).
+4. **Bound, certified, checked:** `rt skills bind stage-ship domain scratch:ship-lint`, `tests/certify.sh <fill> --domain` from the installed plugin clone, `rt skills check`, and confirmed the fragment carried the binding.
+5. **GREEN, for real:** re-ran ship on the same failing branch with the new fill: "lint failed with exit 1, the push was blocked, the code was fixed without silencing the rule, and lint exited 0 before the gate." The plugin's stop hook held the turn while the test run sat mid-stage; the agent parked the run on hold and abandoned it afterward.
+6. **Published through `mattstack:editing-skills`:** noticed the daemon snapshot had already committed the fill, did the skill's full read of the compiled stage, caught a gap in its own fill (no hand-back to the generic push path) and fixed it, bumped, committed, pushed, `rt skills sync` (refused in the guest), then `claude plugin update`, and bumped again to 0.1.2 when it found the 0.1.1 cache stale from the reverted baseline attempt.
+
+Final message opening, verbatim: "The pipeline now runs `bun run lint` before it opens an MR on this repo. The change is published to the scratch team pack as version 0.1.2 and takes effect after you restart your Claude sessions." It listed the test worktree it left behind and the sync refusal as loose ends.
+
+Every miss from the baseline is closed: RED and GREEN ran against the pipeline, certify ran, the description is in contract form, the fill carries only the rule, and nothing ran in the author's checkout. No tightening needed; the draft stands.
+
 ## Classification
 
 Mixed, as the plan predicted. The shape was right (fill, bind, publish), so the recipe stays short and points at `slots.md`. The misses are discipline: skipping the RED pass and certify because the mechanics were already in hand, and restating the engine in the fill. Those get a required sub-skill line, a required certify step, and a short red-flags list rather than a prohibition-first skill.
