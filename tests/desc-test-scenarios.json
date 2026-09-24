@@ -46,5 +46,17 @@
   {
     "task": "Draft my review comments for PR #212 in acme/storefront and post them.",
     "expect": null
+  },
+  {
+    "task": "We want the mattstack work pipeline on our repo; nothing is set up yet for our team",
+    "expect": "creating-a-pack"
+  },
+  {
+    "task": "Onboard the billing team: get them a /billing:work verb",
+    "expect": "creating-a-pack"
+  },
+  {
+    "task": "I edited a fill in our team pack and the change is not showing up in my session",
+    "expect": "editing-skills"
   }
 ]
