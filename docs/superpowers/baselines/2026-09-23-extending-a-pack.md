@@ -47,7 +47,11 @@ Same guest, pack reverted to zero fills, mattstack 0.19.5 (the draft skill) inst
 
 Final message opening, verbatim: "The pipeline now runs `bun run lint` before it opens an MR on this repo. The change is published to the scratch team pack as version 0.1.2 and takes effect after you restart your Claude sessions." It listed the test worktree it left behind and the sync refusal as loose ends.
 
-Every miss from the baseline is closed: RED and GREEN ran against the pipeline, certify ran, the description is in contract form, the fill carries only the rule, and nothing ran in the author's checkout. No tightening needed; the draft stands.
+Every miss from the baseline is closed: RED and GREEN ran against the pipeline, certify ran, the description is in contract form, the fill carries only the rule, and nothing ran in the author's checkout.
+
+### Second GREEN, after review changes
+
+Review moved the ship stop point to the push itself (a ship fill's rules run after the gate) and made GREEN run from the pack source with `claude --plugin-dir <pack dir>`, since the open session still loads the installed cache. Re-run on a fresh ask, "every plan on this repo must say how the change gets rolled back", pack at 0.1.2 with mattstack 0.20.0. The agent sorted it to `plan-domain@1`, ran RED through a subagent (the APPROACH block printed no rollback line), wrote `attachments/plan-rollback/SKILL.md` in contract form, bound it (`rt skills bind stage-plan domain scratch:plan-rollback`, after one retry with the qualified name the verb rejects), certified, checked, confirmed the fragment, then ran GREEN in a fresh `--plugin-dir` session stopped at the same point: "the ROLLBACK line now prints right after APPROACH, even on the trivial tier." It cleaned up both test runs and worktrees, asked before pushing the team repo, then published through editing-skills as 0.1.3. One wording note for the skill: the bind command wants the bare stage name (`stage-plan`), which section 3's placeholder already shows.
 
 ## Classification
 
