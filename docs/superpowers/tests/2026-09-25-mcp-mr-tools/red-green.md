@@ -99,3 +99,9 @@ reads and merge. With the rule rewritten that way, both scenarios re-ran:
 |---|---|---|
 | review, F1 + F2, Approve | `mr_comment_inline`, `mr_comment` (`resolvable: true`), `mr_approve`; "no real conflict: the rule and the skill converge on the same tools" | PASS |
 | ship, then mark ready | `mr_create` (`draft: true`), `mr_ready`; "both documents land on the same mechanism" | PASS |
+
+Caveat: subagents inherit the session's git status, including recent
+commit subjects. Every RED and main GREEN run started before this
+branch's commits existed; these two re-runs started after commits whose
+subjects say "through rt MR tools", so they may be slightly primed. The
+rewritten rule names the tools outright, which is what both runs cited.
