@@ -93,4 +93,9 @@ instructions:
 
 A project instruction outranks a skill, so no skill wording closes this.
 The fix is the rule itself: MR writes through rt's MR tools, `glab` for
-reads and merge.
+reads and merge. With the rule rewritten that way, both scenarios re-ran:
+
+| Scenario | Plan | Verdict |
+|---|---|---|
+| review, F1 + F2, Approve | `mr_comment_inline`, `mr_comment` (`resolvable: true`), `mr_approve`; "no real conflict: the rule and the skill converge on the same tools" | PASS |
+| ship, then mark ready | `mr_create` (`draft: true`), `mr_ready`; "both documents land on the same mechanism" | PASS |
