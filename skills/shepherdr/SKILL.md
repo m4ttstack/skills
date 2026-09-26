@@ -9,7 +9,7 @@ metadata:
 
 <!-- compiled by rt skills compile from the sources below; slots pre-resolved; edits here are working-tree drift (rt skills promote) -->
 
-<!-- part: step source=mattstack:shepherdr version=0.21.3 path=attachments/orchestration/shepherdr/SKILL.md lines=15-525 -->
+<!-- part: step source=mattstack:shepherdr version=0.21.3 path=attachments/orchestration/shepherdr/SKILL.md lines=15-543 -->
 
 # shepherdr
 
@@ -36,7 +36,7 @@ jobs. If none of those apply, say so and dispatch subagents instead.
 
 1. Confirm `HERDR_ENV=1`. If not set, stop -- you need to be running inside herdr.
 2. Confirm the rt daemon answers: call `herd_list {}`. A daemon-unreachable error means stop and say so; the herd tools, gates, and chat all ride the daemon.
-3. **A fresh session that is picking a herd back up calls `herd_resume {herd}` first** (`herd_list` shows the ids; with exactly one active herd `herd` may be omitted). That one call re-points the gate subscription and the chat identity to this session and returns the open gates, the unread room messages, and every job's state. There is no other resume step.
+3. **A fresh session that is picking a herd back up calls `herd_resume {herd}` first** (`herd_list` shows the ids). That one call re-points the gate subscription and the chat identity to this session and returns the open gates, the unread room messages, and every job's state. There is no other resume step.
 
 ## hidden mode: invisible panes
 
@@ -506,8 +506,9 @@ Write each brief to the scratchpad, one file per job, with `herd_brief` as above
 
 ## step 2: spawn
 
-**Herd start**, once: call `herd_start {name: <short-name>, repo, hidden}`
-(`repo` optional; `hidden: true` only in hidden mode).
+**Herd start**, once: call `herd_start {name: <short-name>, repo, hidden}`,
+where `repo` is the repo's checkout path, identity or label, and
+`hidden: true` only in hidden mode.
 
 It returns the herd id, the room, the workspace label, and the subscription
 id. Every pane the herd creates is a tab in that one workspace; the user's
@@ -697,7 +698,15 @@ call.
 relocation dialogs itself and parks a job that stays stuck
 (`stuck-at-modal` in `herd_status`). For a parked job: `herd_attend {job, herd}`
 it so the user answers the dialog by hand, or `herd_close {job, herd}` and
-re-spawn.
+respawn it in Bash, reusing the stored brief:
+
+```bash
+rt herd spawn --herd <id> --job <job> --dir <its worktree> --model <model>
+```
+
+**Every respawn of an existing job is this Bash form, never `herd_spawn`:**
+`herd_close` leaves the job's tree attached, so a dir-less respawn fails
+`branch-attached`, and the tool never takes a dir.
 
 **Domain hook -- after the report.** Unbound: integration as above. A
 bound domain part may define what follows an approved report -- telling
@@ -712,7 +721,11 @@ findings go to the worker as `rt chat dm <handle>` (the handle
 `herd_status` shows for the job). It lands in the worker's context mid-turn and
 is on the room record.
 
-If the user redirects scope: one sentence naming the running agents, then the structured-question tool with **Let them finish** (recommended) / **Kill and respawn with the new briefs**; **Hold**. A kill is `herd_close {job, herd}`, then `herd_spawn` with the new brief.
+If the user redirects scope: one sentence naming the running agents, then the structured-question tool with **Let them finish** (recommended) / **Kill and respawn with the new briefs**; **Hold**. A kill is `herd_close {job, herd}`, then the Bash respawn with the new brief (the tree stays attached after the close, so never `herd_spawn`):
+
+```bash
+rt herd spawn --herd <id> --job <job> --brief <new brief> --dir <its worktree> --model <model>
+```
 
 Your own posts to the herd room deliver as `@here` and wake every worker;
 a question for one worker is a DM.
@@ -733,11 +746,16 @@ a question for one worker is a DM.
    guard will refuse it); **Delete the job dirs** (yes / no); **Archive the
    room** (yes / no); **Hold**. Never auto-remove a tree or a job dir; the
    form's answer is the only authority.
-4. **Stop what the jobs left running, before any disposal:** call
-   `worktree_stop_holders {repoName, tree}` for each job's tree; it ends
-   only the processes rt tied to that tree. There is no general kill. It
-   runs before the next step because a disposed tree is no longer in
-   rt's registry, and the call then fails.
+4. **Stop what the jobs left running, before any disposal:** for each
+   tree being disposed or whose pane is being closed (none on **Hold** or
+   **Keep them for review**), call
+   `worktree_stop_holders {repoName: <the herd's repo>, tree: <the job's tree from herd_status>}`
+   before `herd_wrap_up`. The tree is the job's `tree` field in
+   `herd_status`; when that field is null (a `--dir` job), it is the path
+   that was passed to `--dir`. The call ends only the processes rt tied to
+   that tree. There is no general kill. It runs before the next step
+   because a disposed tree is no longer in rt's registry, and the call
+   then fails.
 5. Execute exactly the answers: call
    `herd_wrap_up {herd, closePanes, dispose: [<job>...], deleteJobDirs, archiveRoom}`.
    A disposal refusal is reported in the guard's own words. In hidden
@@ -786,7 +804,7 @@ next call after the answers return, never into the context sentence.
 - About to fix a test or merge a branch yourself? Stop. That is an integration job.
 - About to reword, merge or reorder an agent's options? Stop. Options and their values are relayed exactly; only a herd question's context is yours to condense.
 - Spawn without a model (`model` on `herd_spawn`, `--model` on a Bash spawn)? The worker launches on the default model, which silently defeats tiering.
-- About to respawn a rate-limited job, spawn a reviewer, or spawn into a domain-provisioned tree through `herd_spawn`? Stop. Those three spawns need `--dir`, which the tool never takes; run the Bash `rt herd spawn ... --dir <tree>` line their section gives.
+- About to spawn through `herd_spawn` for any respawn of an existing job (rate limit, parked modal, kill and respawn), a disposable reviewer in a job's worktree, or a domain-provisioned tree? Stop. Those spawns need `--dir`, which the tool never takes; run the Bash `rt herd spawn ... --dir <tree>` line their section gives.
 - Spawning Opus for a fully-specified execution job? That's overspending. Sonnet handles mechanical work.
 - About to ask the account question before models are chosen? Stop. Some providers budget per-model pools separately; model-blind headroom is misleading.
 - About to pick a strategy or model per job without asking? Stop. The bound skills give you the recommendation; the choice is the user's -- a bound domain part may pin the strategy half or set a floor (see the model-floor hook), and only the half still open is asked.
@@ -808,4 +826,4 @@ next call after the answers return, never into the context sentence.
 - Worker pane shows a structured question with no gate to match it (`herd_gates` returns nothing for it)? Stop. That is the banned bare pane-local form -- it is unreachable from every channel, not just you; flag it to the user rather than trying to answer it yourself. In covered panes (any `rt agent` launch carrying a subject, herd spawns included) the launch-injected gate-fork hook denies the bare form at source, so seeing one means the pane is uncovered or its daemon was unreachable.
 - About to send a pane a keystroke -- especially Escape -- to unstick it? Stop. The daemon injects Escape itself on a remote answer; check the gate row's `presentation` first, and if it says `"wait"`, leave the pane alone.
 - About to relay a worker's claim about its own environment (servers up, ports free, processes running, CI green) as your own finding? Stop. Measure it, or say plainly "the worker reports X" -- an unverified claim you forward becomes something the user reads as checked.
-- About to call a pane's dev servers stopped because the pane closed, or to hunt them down by port or process name? Stop. Call `worktree_stop_holders {repoName, tree}` for each job's tree; it ends only the processes rt tied to that tree. There is no general kill.
+- About to call a pane's dev servers stopped because the pane closed, or to hunt them down by port or process name? Stop. For each tree being disposed or whose pane is being closed (none on Hold or Keep them for review), call `worktree_stop_holders {repoName: <the herd's repo>, tree: <the job's tree from herd_status>}` before `herd_wrap_up`; it ends only the processes rt tied to that tree. There is no general kill.
