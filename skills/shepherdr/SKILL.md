@@ -9,7 +9,7 @@ metadata:
 
 <!-- compiled by rt skills compile from the sources below; slots pre-resolved; edits here are working-tree drift (rt skills promote) -->
 
-<!-- part: step source=mattstack:shepherdr version=0.21.3 path=attachments/orchestration/shepherdr/SKILL.md lines=15-543 -->
+<!-- part: step source=mattstack:shepherdr version=0.21.3 path=attachments/orchestration/shepherdr/SKILL.md lines=15-553 -->
 
 # shepherdr
 
@@ -433,6 +433,14 @@ written as an absolute path. Both paths come from that directory and
 nothing else; the tool accepts them because it is an installed plugin or
 pack root, and rt never guesses skill paths.
 
+A refusal that a path is outside every root means the loaded skill dir is
+stale (the plugin updated while this session ran) or a dev checkout. Run
+`/reload-plugins` (in a herdr pane, queue it on yourself with
+`rt pane send self --text "/reload-plugins" --then "Continue: ..."` and end
+the turn), then retry from the reloaded base directory; if it still
+refuses, report the refusal. Never copy the template or the strategies
+file elsewhere to get past it.
+
 It copies `references/job-template.md` verbatim, copies the named
 strategy body verbatim from `parts/strategy/references/strategies.md`
 into `## Method`, and fills the template's literal `<angle-bracket>`
@@ -673,7 +681,7 @@ is routinely stale or wrong; forwarding it to the user as fact launders an
 unverified claim into something they read as checked. Measure it yourself
 before you assert it
 (`rt_verb {args: ["endpoint", "lookup", "<role>", "--path", "<the job's worktree>"]}`,
-a `curl`, a CI status call); when you are not going to measure it, attribute it out loud -- "the
+a `curl`, `lsof`, a CI status call); when you are not going to measure it, attribute it out loud -- "the
 worker reports X" -- rather than state it as your own finding.
 
 The daemon marked the job `done` when the report was published; nothing
@@ -746,16 +754,18 @@ a question for one worker is a DM.
    guard will refuse it); **Delete the job dirs** (yes / no); **Archive the
    room** (yes / no); **Hold**. Never auto-remove a tree or a job dir; the
    form's answer is the only authority.
-4. **Stop what the jobs left running, before any disposal:** for each
-   tree being disposed or whose pane is being closed (none on **Hold** or
-   **Keep them for review**), call
-   `worktree_stop_holders {repoName: <the herd's repo>, tree: <the job's tree from herd_status>}`
-   before `herd_wrap_up`. The tree is the job's `tree` field in
-   `herd_status`; when that field is null (a `--dir` job), it is the path
-   that was passed to `--dir`. The call ends only the processes rt tied to
-   that tree. There is no general kill. It runs before the next step
-   because a disposed tree is no longer in rt's registry, and the call
-   then fails.
+4. **Stop what the jobs left running, before any disposal:** for every
+   job in the form's dispose list, plus every job whose pane is closing
+   (nothing on **Hold**), call
+   `worktree_stop_holders {repoName: <the herd's repo>, tree: <the job's tree>}`
+   before `herd_wrap_up`. `tree` is the job's `tree` field from
+   `herd_status`, a registry name, never a path. When that field is null
+   (a `--dir` job), skip the job unless its dir is an rt tree; then pass
+   that tree's name as `rt_verb {args: ["worktree", "list"]}` prints it.
+   An error of `not-held` means nothing was running in that tree, not a
+   failure. The call ends only the processes rt tied to that tree. There
+   is no general kill. It runs before the next step because a disposed
+   tree is no longer in rt's registry, and the call then fails.
 5. Execute exactly the answers: call
    `herd_wrap_up {herd, closePanes, dispose: [<job>...], deleteJobDirs, archiveRoom}`.
    A disposal refusal is reported in the guard's own words. In hidden
@@ -826,4 +836,4 @@ next call after the answers return, never into the context sentence.
 - Worker pane shows a structured question with no gate to match it (`herd_gates` returns nothing for it)? Stop. That is the banned bare pane-local form -- it is unreachable from every channel, not just you; flag it to the user rather than trying to answer it yourself. In covered panes (any `rt agent` launch carrying a subject, herd spawns included) the launch-injected gate-fork hook denies the bare form at source, so seeing one means the pane is uncovered or its daemon was unreachable.
 - About to send a pane a keystroke -- especially Escape -- to unstick it? Stop. The daemon injects Escape itself on a remote answer; check the gate row's `presentation` first, and if it says `"wait"`, leave the pane alone.
 - About to relay a worker's claim about its own environment (servers up, ports free, processes running, CI green) as your own finding? Stop. Measure it, or say plainly "the worker reports X" -- an unverified claim you forward becomes something the user reads as checked.
-- About to call a pane's dev servers stopped because the pane closed, or to hunt them down by port or process name? Stop. For each tree being disposed or whose pane is being closed (none on Hold or Keep them for review), call `worktree_stop_holders {repoName: <the herd's repo>, tree: <the job's tree from herd_status>}` before `herd_wrap_up`; it ends only the processes rt tied to that tree. There is no general kill.
+- About to call a pane's dev servers stopped because the pane closed, or to hunt them down by port or process name? Stop. For every job in the dispose list plus every job whose pane is closing (nothing on Hold), call `worktree_stop_holders {repoName: <the herd's repo>, tree: <the job's tree name from herd_status>}` before `herd_wrap_up` (a null tree: skip it unless the dir is an rt tree, then pass that tree's name from `rt_verb {args: ["worktree", "list"]}`); `not-held` means nothing was running there. It ends only the processes rt tied to that tree. There is no general kill.

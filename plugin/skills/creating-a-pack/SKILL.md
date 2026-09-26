@@ -23,15 +23,14 @@ Each step is required; the flow is not done until the last one has run:
 
 | check | command | pass |
 | --- | --- | --- |
-| rt daemon | `rt_verb {args: ["daemon", "status"]}` | `"ok":true` |
+| rt daemon | `rt_verb {args: ["daemon", "status"]}` | `"state":"running"` |
 | mattstack plugin | `claude plugin list --json` | an id starting `mattstack@` |
 | superpowers | `claude plugin list --json` | an id starting `superpowers@` |
-| glab | none directly -- the `mr_*` tools depend on it | a missing binary surfaces as an `mr_*` tool error, not a failed check here |
 | a GitLab remote | `git remote get-url origin` | host is a GitLab host |
 
 A miss is reported as the missing thing and the command that installs it
-(`rt setup pack`, run once, not routine, covers the first three; the
-mattstack app bundles glab). Do not improvise a substitute.
+(`rt setup pack`, run once, not routine, covers the first three). Do not
+improvise a substitute.
 
 ## 2. Run init
 
@@ -110,11 +109,11 @@ skill.
 
 The daemon's team snapshot commits the zone on its own within a minute of
 init (a `snapshot:` commit covering the pack dir, `team.jsonc`, and
-`marketplace.json`). From inside the zone checkout, confirm it landed and
-reached the remote with a bare `git status -sb`.
+`marketplace.json`). `cd <zone checkout>` as its own Bash call, then
+confirm it landed and reached the remote with a bare `git status -sb`.
 
 Clean and not ahead means published. Ahead means the daemon could not push;
-from inside the zone checkout, push it with a bare `git push`. Then say that
+push it from the same directory with a bare `git push`. Then say that
 teammates receive the pack through `rt setup`, and hand any later change to
 `mattstack:editing-skills`.
 

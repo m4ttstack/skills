@@ -1,8 +1,8 @@
 #!/bin/sh
 # PreToolUse hook on EnterWorktree: hands the hook's stdin to rt so the
-# daemon can answer the relocation dialog on this pane. rt currently paints
-# no relocation dialog for ExitWorktree, so the matcher and this hook cover
-# EnterWorktree only. Every path exits 0 and prints nothing; a missing rt or
+# daemon can answer the relocation dialog on this pane. rt's endpoint acts
+# only on EnterWorktree, so the matcher and this hook cover EnterWorktree
+# only. Every path exits 0 and prints nothing; a missing rt or
 # daemon is the human's dialog, never a blocked tool call.
 set -u
 : "${HOME:=}"

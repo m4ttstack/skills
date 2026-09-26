@@ -23,10 +23,12 @@ The output of one round, in this order, each part required:
 ## 1. Sort the ask
 
 Skills verbs go through `rt_verb {args: [...]}`: `--pack <pack>` sits in
-`args` (plus `--pack-dir <dir>` where a command needs one), and the call
-never carries a `cwd`. `rt skills composition` and `rt skills packs` refuse
-`rt_verb` (not agent-safe); run them as plain Bash, and only as a one-time
-lookup, not a per-round call.
+`args`, and the call never carries a `cwd`. `--pack-dir <dir>` rides in
+`args` for `check` only; compiling a checkout's or worktree's sources is
+the bare Bash `rt skills compile --pack <pack> --pack-dir <dir>`, because
+`rt_verb` refuses that flag on compile. `rt skills composition` and
+`rt skills packs` refuse `rt_verb` (not agent-safe); run them as plain
+Bash, and only as a one-time lookup, not a per-round call.
 
 | the ask is about | goes to |
 | --- | --- |

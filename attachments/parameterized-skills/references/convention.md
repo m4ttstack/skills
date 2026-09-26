@@ -292,7 +292,7 @@ pipelines at run time.
 A skill is one of two kinds, never both.
 
 **Compile-native** engines are consumed only after `rt_verb {args: ["skills",
-"compile", "--pack", "<pack>", "--pack-dir", "<pack dir>"]}` runs. They
+"compile", "--pack", "<pack>"]}` runs. They
 declare typed top-level `slots:` and `type: pipeline-step`, and their
 bodies carry `{{placeholder}}` markers that only the compiler fills
 (`slot`, `include`, `pipeline.stages`, `work-type`, `stage.fields`,
@@ -434,9 +434,11 @@ stage}`. Every reader treats it as absent: `run_field_get` returning `-`
 reads as not set, and the orchestrator's completeness check is "non-null
 and not `-`".
 
-When no runDb is available (no run started by this session, and none
-inherited from the caller's context), the `run_field_set` / `run_decision`
-calls are skipped and the form alone is the gate -- for an ATTENDED
+Pass `runDb` when the engine handed you one; otherwise pass `cwd` (the
+worktree's absolute path), and the tool resolves the run this session
+started, else the newest running run in that worktree. When neither
+resolves a run, the `run_field_set` / `run_decision` calls are skipped
+and the form alone is the gate -- for an ATTENDED
 invocation. A SPAWNED pane with no resolved run never presents that form:
 nobody is watching it and no gate row reaches any surface, so it ends the
 path with one error line instead (see the forge parts' dirty-tree,
@@ -463,8 +465,9 @@ sentence, end the turn; under a run also record `hold:<stage>:<attempt>`
 and `run_field_set {runDb, key: "hold", value: "<their words>", stage}`;
 outside a run nothing is recorded.
 
-Every `run_*` call takes `runDb` explicitly: the value `run_start`
-returned, carried in the calling agent's context. A compiled stage
+Every `run_*` call takes `runDb` whenever one reached you: the value
+`run_start` returned, carried in the calling agent's context; `cwd` is
+only the fallback for a call no runDb reached. A compiled stage
 receives it already, since the engine passes `runDb` into each stage's
 context; call `run_start` yourself only to open a run other than the one
 you inherited.

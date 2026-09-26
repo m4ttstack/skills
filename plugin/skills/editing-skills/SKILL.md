@@ -63,18 +63,22 @@ it does gives a real-looking command that updates nothing.
 4. Bump `version` in the manifest -- same commit as the skill change. For
    mattstack, this is step 1 of "Releasing an engine, include, or fill change"
    below; finish that section's step 3 for each compiled pack.
-5. Commit and push, as bare commands (`git add`, `git commit`, `git push`)
-   from inside the checkout -- never `git -C <path> ...`, which the worktree
-   Bash guard refuses. For the team pack, push IS the team publish
-   (teammates' installs read the same repo). For mattstack, the commit on
+5. Commit and push: `cd <checkout>` as its own Bash call, then the bare
+   commands (`git add`, `git commit`, `git push`) -- never
+   `git -C <path> ...`, which the worktree Bash guard refuses. For the team
+   pack, push IS the team publish (teammates' installs read the same
+   repo). For mattstack, the commit on
    `main` is what the update clones, so it is required; push is
    backup/other-machines. To try an uncommitted edit for one session
    without touching the cache: `claude --plugin-dir
 ~/Documents/GitHub/mattstack-skills`.
 6. **Bring the caches current**: call `rt_verb {args: ["skills", "sync", "--pack", "<pack>"]}`,
    one call per pack. Skills verbs go through `rt_verb` this way everywhere
-   below: `--pack <pack>` (and `--pack-dir <dir>` where a command needs one)
-   sits in `args`, and the call never carries a `cwd`. Sync runs the whole
+   below: `--pack <pack>` sits in `args`, and the call never carries a
+   `cwd`. `--pack-dir <dir>` rides in `args` for `check` only; compiling a
+   checkout's or worktree's sources is the bare Bash
+   `rt skills compile --pack <pack> --pack-dir <dir>`, because `rt_verb`
+   refuses that flag on compile. Sync runs the whole
    deterministic tail as code -- a fast-forward pull in both checkouts,
    engine cache update, check, patch-bump, compile, recheck, a commit + push
    scoped to the pack, pack cache update, verify -- and reports
