@@ -82,8 +82,7 @@ small real ticket"`) and end the turn; otherwise ask the author to type
 block printed, a commit, an MR, and a CI verdict. Every stage runs its
 generic path; that is the expected shape of a pack with no fills. Name each
 fallback the run took in the report, for example: the provisioner did not
-know the repo, so the branch was made in the checkout; `glab` was absent, so <!-- mcp-lint: allow -->
-the MR went through the forge API.
+know the repo, so the branch was made in the checkout.
 
 Until the first `/<pack>:work` run has reported back, the pack is
 scaffolded, not proven: say "scaffolded, proof pending". In a herdr pane
