@@ -74,7 +74,8 @@ carries only what the team adds.
 Before a fill tells an agent to run a command, open
 `${CLAUDE_SKILL_DIR}/../../../attachments/mcp-tools/reference.md` (the
 `mcp-tools` reference): every rt call, forge call and git write a pipeline
-needs is a tool there. The fill's sentence names that tool (a push is
+needs has a tool there, except the few its header lists as staying on Bash
+(`git commit` is one). The fill's sentence names that tool (a push is
 `git_push {tree: <checkout>}`), not the command, and `rt skills check`
 flags the shell form. `rt skills audit --pack <pack>` is the slower read
 for plain-words instructions.
