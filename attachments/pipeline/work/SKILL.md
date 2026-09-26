@@ -40,6 +40,9 @@ fabricate a ticket.
 The result must carry `ok: true` and a `runDb`. Anything else means this
 rt predates the run tools: stop and tell the user to update rt. Keep
 `runDb` and pass it to every `run_*` call below; nothing is exported.
+`runDb` is the one value to carry forward when summarising; if it is gone
+mid-run, recover it through `## Resume` (the running run in this repo)
+rather than treating the request as new work.
 
 When the run carries a ticket, update its tracker now as the opening act:
 set it In Progress and ensure it is assigned to the operating user (for

@@ -63,8 +63,10 @@ guess.
 When nothing is inlined above, follow the generic path below.
 
 Unbound (generic fallback): push with the `git_push` tool (`tree` = this
-worktree's absolute path, `setUpstream: true`), then open the MR/PR the
-way the forge-host rule names, as draft unless the gate said ready, title
+worktree's absolute path, `setUpstream: true`); if `git_push` errors
+saying the repo is not registered with rt or the rt daemon is down, push
+with plain git on Bash instead (`git push -u origin <branch>`). Then open
+the MR/PR the way the forge-host rule names, as draft unless the gate said ready, title
 from the ticket or first commit subject, body linking the ticket and the `evidence` field's entries. Never
 force-push; never push a branch whose tests you have not seen pass in this
 session.

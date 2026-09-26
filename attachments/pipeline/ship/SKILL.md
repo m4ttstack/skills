@@ -101,7 +101,9 @@ When nothing is inlined above, follow the generic path below.
 get-url origin`): a GitLab host means rt's MR tools (`mr_create`,
 `mr_ready`), a GitHub host means `gh`, anything else is a `clarify` gate.
 Push with the `git_push` tool (`tree` = this worktree's absolute path,
-`setUpstream: true`), then create the MR/PR against the
+`setUpstream: true`); if `git_push` errors saying the repo is not
+registered with rt or the rt daemon is down, push with plain git on Bash
+instead (`git push -u origin <branch>`). Then create the MR/PR against the
 repo's default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`,
 minus `origin/`): on GitLab the `mr_create` tool (`draft: false` only when
 the gate said ready; write the title from the branch's commits), on GitHub

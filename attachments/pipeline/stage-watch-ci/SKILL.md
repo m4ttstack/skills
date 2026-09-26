@@ -95,7 +95,12 @@ MR with `repoName` = this worktree's absolute path and `iid` = the iid in
 `mr`. On GitLab poll the `mr_pipeline` tool (`repoName`, `iid`; live by
 default) until the pipeline settles, then `mr_job_trace` (`repoName`,
 `iid`, `jobId`) for each failed job; on GitHub
-`gh pr checks <mr> --watch`. GitLab with no MR: do not poll; go straight
+`gh pr checks <mr> --watch`. Between `mr_pipeline` calls wait about 60
+seconds by running `sleep 60` as a background Bash task (never a
+foreground sleep) and poll again when it finishes; refresh the attendant
+lease heartbeat each round, and if the pipeline has not settled after 45
+minutes, treat it as a timeout and go to the `ci` gate.
+GitLab with no MR: do not poll; go straight
 to the `ci` gate with the reason "no MR to watch; ship first".
 Green: the mark-ready gate below. Red: read the failing job log, classify
 REAL (the change broke it) vs INFRA/flake (unrelated, retry once: on
@@ -149,7 +154,7 @@ id as `jobId`); any REAL failure is the `ci` gate below.
 - Go back: hand control back to the orchestrator with one sentence naming
   the answer; it runs `## Redirect`.
 - Yes: the forge-host rule (read `git remote get-url origin`; GitLab means
-  the `mr_ready` tool with `repoName`, `iid`, GitHub means
+  the `mr_ready` tool with `repoName` and `iid`; GitHub means
   `gh pr ready <number>`, anything else is a `clarify` gate).
 
 Finish by writing `ci` (`green`, or `red: <one-line triage>` when the

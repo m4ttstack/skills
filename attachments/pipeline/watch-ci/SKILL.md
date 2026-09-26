@@ -147,7 +147,12 @@ verb targets the MR with `repoName` = this worktree's absolute path and
 `iid` = the MR's iid. On GitLab poll the `mr_pipeline` tool (`repoName`,
 `iid`; live by default) until the pipeline settles, then `mr_job_trace`
 (`repoName`, `iid`, `jobId`) for each failed job; on GitHub
-`gh pr checks <mr> --watch`. GitLab with no MR: do not poll; go straight
+`gh pr checks <mr> --watch`. Between `mr_pipeline` calls wait about 60
+seconds by running `sleep 60` as a background Bash task (never a
+foreground sleep) and poll again when it finishes; refresh the attendant
+lease heartbeat each round, and if the pipeline has not settled after 45
+minutes, treat it as a timeout and go to the `ci` gate.
+GitLab with no MR: do not poll; go straight
 to the `ci` gate with the reason "no MR to watch; ship first".
 Green: done. Red: read the failing job log, classify REAL (the change
 broke it) vs INFRA/flake (unrelated, retry once: on GitLab the `mr_retry`
@@ -173,7 +178,7 @@ run, `mr` is set, and the MR is a draft, gate `mark-ready`:
     it **Go back to `<stage>`** in `next` and skip this question
 - `run_decision` with `contract: "gate@1"`, `scope: "mark-ready"`, `selection: {"ready":true|false,"next":"proceed|iterate|redirect|hold","to":"<stage or null>","note":"<their words or null>"}`, `decidedBy: <the answer's by>`
 - Yes: the forge-host rule (read `git remote get-url origin`; GitLab means
-  the `mr_ready` tool with `repoName`, `iid`, GitHub means
+  the `mr_ready` tool with `repoName` and `iid`; GitHub means
   `gh pr ready <number>`, anything else
   is a `clarify` gate).
 
@@ -202,9 +207,11 @@ its mark-ready answer when that gate fired), or after the `ci` gate's Hand
 back, `run_stage` with `action: "done"`, `stage: "watch-ci"`, then
 `run_status` with `status: "done"`; Abandon the run closes with
 `status: "abandoned"` instead.
-Fix and re-push keeps the run `running` and re-enters section 3 after
-pushing with the `git_push` tool (`tree` = this worktree's absolute path)
-(a new `run_stage` start for `watch-ci`). Retry the job: on GitLab the
+Fix and re-push keeps the run `running`: push with the `git_push` tool
+(`tree` = this worktree's absolute path); if `git_push` errors saying the
+repo is not registered with rt or the rt daemon is down, push with plain
+`git push` on Bash instead. Then re-enter section 3 (a new `run_stage`
+start for `watch-ci`). Retry the job: on GitLab the
 `mr_retry` tool with `repoName`, `iid`, and the failed job's id as
 `jobId`; on GitHub `gh run rerun <run-id> --failed`, the run id taken
 from the failed check's link in `gh pr checks <mr>`. A job retry is not a
