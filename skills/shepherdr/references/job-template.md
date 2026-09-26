@@ -52,7 +52,11 @@ the backing gate before anything appears on screen.
 ## Asking the user a question
 Run exactly:
 
-    rt herd ask --questions '[{"id":"q1","label":"<one sentence>","multi":false,"options":["<your recommendation>","<alternative>","<alternative>"]}]' --context "<what you are doing and what led here; enough that the user can answer from this alone without opening your pane>"
+    rt herd ask --questions '[{"id":"q1","label":"<the decision, under 12 words>","multi":false,"options":[{"value":"<your recommendation, in full>","label":"<2 to 6 words>","description":"<one sentence: what this choice does>"},{"value":"<alternative, in full>","label":"<2 to 6 words>","description":"<one sentence>"},{"value":"<alternative, in full>","label":"<2 to 6 words>","description":"<one sentence>"}]}]' --context "<two or three sentences: what you were doing and why it needs a decision>"
+
+The user reads only each option's `label` and `description`, on a small
+form; `value` is what comes back to you verbatim, so it carries the full
+wording. rt refuses a label over 60 characters.
 
 then END YOUR TURN with no further action. The answer arrives as a message
 in your context, naming the surface that recorded it: `[gate] <id> answered
