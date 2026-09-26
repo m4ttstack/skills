@@ -195,8 +195,9 @@ batch. Otherwise:
 - When this conversation holds a run's `runDb`: the `run_decision` tool with that `runDb`, `contract` `gate@1`, `scope` `push`, `selection` `{"push":true|false,"next":"proceed|iterate|hold","note":"<their words or null>"}`, `decidedBy` `<the answer's by>`.
 
 On **Push with force-with-lease now**, call the `git_push` tool with
-`tree` = the worktree's absolute path and `forceWithLease: true`. Never
-push unasked.
+`tree` = the worktree's absolute path and `forceWithLease: true`. A
+`git_push` error: report it; the rebase stands unpushed. Never push
+unasked.
 
 **These thoughts mean you are skipping the gate -- STOP:**
 

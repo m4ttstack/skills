@@ -77,10 +77,9 @@ forge username is known, MRs whose author is someone else) and why. When
 the username is not known, the sentence also says the author could not be
 confirmed, and each `branches` option's label carries its MR's author
 (`<branch> (by <author>)`). Every branch starts pre-selected only when the
-username is known or every row shares one author; otherwise every option
-starts deselected and the human picks their own, because step 3's fast
-path pushes without a gate, so a pre-checked teammate branch would be
-force-pushed on one click. Then the gate, once for the whole batch, never
+username is known; otherwise every option starts deselected and the
+human picks their own, because step 3's fast path pushes without a gate,
+so a pre-checked teammate branch would be force-pushed on one click. Then the gate, once for the whole batch, never
 per branch:
 
 - The `run_field_set` tool with the run's `runDb`, `key` `gate`, `value` `sweep`, `stage` `sync-open-mrs`.
@@ -104,7 +103,10 @@ In the order from step 2, follow the pack's compiled `rebase-worktree` verb
 conflict stops only that branch -- `rebase-worktree` hands it back
 mid-rebase; record it in a needs-hands list and move on. A precondition
 refusal (dirty tree, no upstream) stops it too -- record it as skipped with
-the reason and move on; neither ever blocks the rest of the sweep.
+the reason and move on. So does any other stop (a `branch_sync` refusal
+such as "run git_pull first", a stack refusal, a `git_rebase` error):
+skipped, with its error text as the reason. None of these ever blocks the
+rest of the sweep.
 A branch `rebase-worktree` synced through `branch_sync` comes back
 already pushed ("pushed by branch_sync"); record it as pushed. One that
 comes back "already current; nothing pushed" is recorded as current. A
