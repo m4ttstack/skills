@@ -31,6 +31,11 @@ The written purity rule and per-skill certification checklist for this repo
       authorship; certification does not restate it).
 - [ ] GREEN transcript shows no shell command a mattstack MCP tool covers
 
+`rt skills check --strict` is the merge gate in CI and `rt skills sync`
+refuses on hits for the mattstack pack; a team pack sees hits as advisory
+on sync until its manifest sets `"strictLint": true`. A deliberate don't
+that quotes a shell form carries `<!-- mcp-lint: allow -->`.
+
 ## Ledger
 
 | date | skill | classification | certify | desc-test | notes |

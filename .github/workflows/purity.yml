@@ -25,3 +25,27 @@ jobs:
             [ -f "${d}SKILL.md" ] || continue
             sh tests/certify.sh "$d"
           done
+
+  mcp-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: m4ttstack/rt
+          # A sha, never a floating branch: rt main must not be able to turn
+          # this repo red without a change here. Moved deliberately, together
+          # with any hit fixes, when the pin needs to advance.
+          ref: 8123d8c3239821a8c53486fb804dcfa35ab0a5e1
+          path: rt
+      - uses: oven-sh/setup-bun@v2
+      - name: Install rt's dependencies
+        run: bun install --frozen-lockfile
+        working-directory: rt
+      - name: mcp lint (strict)
+        run: bun cli.ts skills check --pack-dir "$GITHUB_WORKSPACE" --strict
+        working-directory: rt
+        env:
+          RT_SKIP_SETUP: "1"
+          RT_BATCH: "1"
