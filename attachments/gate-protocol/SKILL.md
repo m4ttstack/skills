@@ -1,6 +1,6 @@
 ---
 name: gate-protocol
-description: "Use when a gated pane or wrapper needs to publish a human decision point and carry it to an answer -- opening it through the gate_ask tool, presenting the in-pane form, blocking in gate wait, handling a CAS rejection, or reconciling a doorbell push. Not for direct invocation; a gated verb includes this part."
+description: "Use when a gated pane or wrapper needs to publish a human decision point and carry it to an answer -- opening it through the gate_ask tool, presenting the in-pane form, blocking in gate wait, handling a lost answer CAS, or reconciling a doorbell push. Not for direct invocation; a gated verb includes this part."
 disable-model-invocation: true
 ---
 
@@ -146,10 +146,10 @@ option's `label` when it has one and its `description` when it has one
 option's `value` verbatim through the `gate_answer` tool: `id` = the
 gate's id, `answers` = one object keyed by question id,
 `{"<question id>": "<value>" | ["<value>", ...] | {"value": ..., "note": "..."}}`.
-A question with no options takes what the human typed as its value. When the gate carries more questions than one form
-call fits, chunk the forms but submit exactly ONE answer after the last
-chunk; a CAS rejection at that point discards every chunk's answer
-together.
+A question with no options takes what the human typed as its value.
+When the gate carries more questions than one form call fits, chunk the
+forms but submit exactly ONE answer after the last chunk; a lost CAS at
+that point (`conflict: true`) discards every chunk's answer together.
 
 **`presentation: "wait"`, attended pane** (a human's interactive
 non-herdr session; the default for a human-invoked verb): take the plain
@@ -183,10 +183,11 @@ the same `gate_answer` tool.
 
 ## CAS and the doorbell
 
-If the answer CAS reports an earlier answer, discard your form's answer,
-say in the pane in one line which answer won and from where, and proceed
-on the recorded one; the rejection payload carries it, no second read
-needed. A `gate@1` record's `decidedBy` always names the WINNER, never
+A losing `gate_answer` is not an error: it returns a successful result
+carrying `conflict: true` and the winner's `row`. On `conflict: true`,
+discard your form's answer, say in the pane in one line which answer won
+and from where (`row.answer.by`), and proceed on `row`'s recorded answer;
+no second read needed. A `gate@1` record's `decidedBy` always names the WINNER, never
 `pane` when a different surface won.
 
 Answered externally while a form still sits open: the daemon queues the
@@ -262,10 +263,10 @@ question problem is not daemon-down: fix the call.
 | Thought | Reality |
 |---|---|
 | "I'll compute presentation / build --origin / branch on HERDR_ENV myself" | The daemon owns the ceremony. `gate_ask` returns the presentation; act on it. |
-| "The CAS lost, I'll resubmit the form's answer anyway" | The rejection already carries the winner. Discard the form's answer and proceed on the recorded one. |
+| "The CAS lost, I'll resubmit the form's answer anyway" | The `conflict: true` result already carries the winner's `row`. Discard the form's answer and proceed on the recorded one. |
 | "The doorbell push tells me what they picked" | It's verify-only. It never carries or implies the answer -- go read the registry. |
 | "A closed gate means I should ask again" | `closed` means the decision site is abandoned. End that path per the verb's own policy; never invent an answer, never re-ask on your own initiative. |
-| "I'll submit each form chunk's answer as it completes" | One `gate_answer` call after the LAST chunk; a CAS rejection there discards all of them together. |
+| "I'll submit each form chunk's answer as it completes" | One `gate_answer` call after the LAST chunk; a `conflict: true` result there discards all of them together. |
 | "`decidedBy` is whoever just submitted the form" | It names the CAS WINNER, which may be a different surface than the one that just submitted. |
 | "I'll ask the human whether this pane is attended" | Attendance comes from the invocation context (`spawnedBy`), never asked. |
 | "I'll run the wait as a tool call" | The wait is `rt gate wait` as background bash, ending the turn; a synchronous tool call cannot park the pane. |
