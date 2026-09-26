@@ -29,7 +29,7 @@ The written purity rule and per-skill certification checklist for this repo
 - [ ] Skill-local script tests (if the skill ships any) are green.
 - [ ] Prose reviewed against superpowers:writing-skills (authority on
       authorship; certification does not restate it).
-- [ ] GREEN transcript shows no shell command a mattstack MCP tool covers
+- [ ] GREEN transcript shows no shell command a mattstack MCP tool covers.
 
 `rt skills check --strict` is the merge gate in CI and `rt skills sync`
 refuses on hits for the mattstack pack; a team pack sees hits as advisory

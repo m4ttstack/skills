@@ -14,6 +14,4 @@ would otherwise carry the command. `rt skills check` lints for the shell
 forms the tools replace; `rt skills audit --pack <pack>` reads for the
 plain-words cases a lint cannot see.
 
-Kept on Bash on purpose: `rt gate answer <id> --answers <json> --by shepherd`,
-`rt gate wait <id>`, `rt chat tail`, `rt events wait`, `git commit`, `git add`,
-`git fetch`, `git merge-base`, `git rebase --continue` and `--skip`, and project tooling.
+`reference.md`'s header lists what stays on Bash on purpose.

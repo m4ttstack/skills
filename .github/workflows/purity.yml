@@ -40,11 +40,25 @@ jobs:
           ref: 8123d8c3239821a8c53486fb804dcfa35ab0a5e1
           path: rt
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: rt/package.json
       - name: Install rt's dependencies
         run: bun install --frozen-lockfile
         working-directory: rt
-      - name: mcp lint (strict)
+      - name: skills check (compile drift and strict mcp lint)
         run: bun cli.ts skills check --pack-dir "$GITHUB_WORKSPACE" --strict
+        working-directory: rt
+        env:
+          RT_SKIP_SETUP: "1"
+          RT_BATCH: "1"
+      - name: Check attachments/mcp-tools/reference.md against the pinned rt
+        run: |
+          set -o pipefail
+          bun cli.ts mcp tools --json | bun "$GITHUB_WORKSPACE/scripts/gen-mcp-tools.ts" | cmp - "$GITHUB_WORKSPACE/attachments/mcp-tools/reference.md" || {
+            echo "reference.md is stale against the pinned rt sha. Regenerate with:"
+            echo "  rt mcp tools --json | bun scripts/gen-mcp-tools.ts > attachments/mcp-tools/reference.md"
+            exit 1
+          }
         working-directory: rt
         env:
           RT_SKIP_SETUP: "1"
