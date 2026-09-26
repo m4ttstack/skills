@@ -37,7 +37,7 @@ jobs:
           # A sha, never a floating branch: rt main must not be able to turn
           # this repo red without a change here. Moved deliberately, together
           # with any hit fixes, when the pin needs to advance.
-          ref: 8123d8c3239821a8c53486fb804dcfa35ab0a5e1
+          ref: d1adefa8be6bd14ac0142bdb1f053dd59299ff99
           path: rt
       - uses: oven-sh/setup-bun@v2
         with:
