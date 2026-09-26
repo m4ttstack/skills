@@ -63,8 +63,8 @@ only when this section called `run_start`: `run_stage` with `action:
 
 From the conversation: an MR/PR URL, a bare !iid or #number, a ticket id,
 or a branch name. Resolve to one MR/PR: on GitLab with the `mr_view` tool
-(`mrUrl` when you were given a URL, else `repoName` = the checkout path
-plus `iid`; a branch name resolves first with `mr_for_branch`, `repoName`
+and `maxAgeMs: 5000`, so the read is live (`mrUrl` when you were given a
+URL, else `repoName` = the checkout path plus `iid`; a branch name resolves first with `mr_for_branch`, `repoName`
 = the checkout path and `branches: [<branch>]`, then `mr_view` on the iid
 it returns; a ticket id with no URL, iid or branch is gate `clarify`), on
 GitHub with `gh pr view <ref>`. An `mr_view` not found
@@ -94,7 +94,8 @@ MR itself names in branch, title, or description, when one exists).
 Fetch the diff. On GitHub, `gh pr diff`. On GitLab, git reads in Bash,
 fetching the MR ref so any MR works, as two separate commands: `git fetch
 origin <targetBranch> refs/merge-requests/<iid>/head`, then `git diff
-origin/<targetBranch>...<sha>` with `mr_view`'s `targetBranch` and `sha`.
+origin/<targetBranch>...<sha>` with step 1's live `mr_view` `targetBranch`
+and `sha`.
 Then follow the review flow
 below for depth triage, fresh-context reviewer dispatch, and the structured
 draft. Its Criteria section carries the domain's review standards when the
