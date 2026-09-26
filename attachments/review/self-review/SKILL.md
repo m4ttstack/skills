@@ -27,7 +27,8 @@ the Stop hook covers its pane. Skip this section when a caller handed you
 a `runDb` (a pipeline invoking this verb carries it in context) and
 `run_snapshot` with that `runDb` shows `run.status` = `running`: you were
 invoked from inside that run, you inherit it, `run.current_stage` is your
-stage, and you close nothing at the end.
+stage, you pass that handed `runDb` on every `run_*` call, and you close
+nothing at the end.
 
 Otherwise, when a surface launched this pane (the `spawnedBy` case
 below), start fresh: another pane's live run is not yours to resume.
