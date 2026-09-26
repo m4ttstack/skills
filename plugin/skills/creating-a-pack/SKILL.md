@@ -82,7 +82,7 @@ small real ticket"`) and end the turn; otherwise ask the author to type
 block printed, a commit, an MR, and a CI verdict. Every stage runs its
 generic path; that is the expected shape of a pack with no fills. Name each
 fallback the run took in the report, for example: the provisioner did not
-know the repo, so the branch was made in the checkout; `glab` was absent, so
+know the repo, so the branch was made in the checkout; `glab` was absent, so <!-- mcp-lint: allow -->
 the MR went through the forge API.
 
 Until the first `/<pack>:work` run has reported back, the pack is
@@ -113,7 +113,7 @@ init (a `snapshot:` commit covering the pack dir, `team.jsonc`, and
 confirm it landed and reached the remote with a bare `git status -sb`.
 
 Clean and not ahead means published. Ahead means the daemon could not push;
-push it from the same directory with a bare `git push`. Then say that
+push it from the same directory with a bare `git push`. Then say that <!-- mcp-lint: allow -->
 teammates receive the pack through `rt setup`, and hand any later change to
 `mattstack:editing-skills`.
 
