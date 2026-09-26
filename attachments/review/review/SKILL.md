@@ -69,7 +69,8 @@ URL, else `repoName` = the checkout path plus `iid`; a branch name
 resolves first with `mr_for_branch`, `repoName` = the checkout path and
 `branches: [<branch>]`, then `mr_view` on the iid it returns; a ticket id
 with no URL, iid or branch is gate `clarify`), on GitHub with `gh pr view
-<ref>`. An `mr_view` not found means rt's open-MR cache does not hold it
+<ref>`. An `mr_view` not found, or a null `mr_for_branch` entry for the
+branch, means rt's open-MR cache does not hold it
 (outside its author or time window): say so, then Hold as below with that
 message as the reason (`decidedBy: "pane"`), never a fallback to the
 forge CLI. Ambiguity is gate `clarify`:
@@ -96,7 +97,7 @@ MR itself names in branch, title, or description, when one exists).
 Fetch the diff. On GitHub, `gh pr diff`. On GitLab, git reads in Bash,
 fetching the MR ref so any MR works, as two separate commands:
 `git fetch origin <targetBranch>
-refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>`, then
++refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>`, then
 `git diff origin/<targetBranch>...origin/mr-<iid>`, with `targetBranch`
 from step 1's live `mr_view`.
 Then follow the review flow

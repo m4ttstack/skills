@@ -101,7 +101,9 @@ names, when one exists).
 - Fetch the threads: on GitLab, `mr_threads` with the MR (`mrUrl`, or
   `repoName` plus `iid`; with neither in hand, `mr_for_branch` with
   `repoName` = this checkout and `branches: [<the checked-out branch>]`
-  gives the iid) and `refresh: true`; on GitHub, `gh`.
+  gives the iid, and a null entry means no open MR in rt's cache has that
+  branch as its source: report that and stop) and `refresh: true`; on
+  GitHub, `gh`.
 - Keep only **unresolved human** threads: drop system notes and bot authors.
   Capture each thread's id, its `file:line`, and its full note chain.
 - Zero unresolved human threads: say so and stop. Close, only when `## Run`
