@@ -64,8 +64,10 @@ it does gives a real-looking command that updates nothing.
    mattstack, this is step 1 of "Releasing an engine, include, or fill change"
    below; finish that section's step 3 for each compiled pack.
 5. Commit and push: `cd <checkout>` as its own Bash call, then the bare
-   commands (`git add`, `git commit`, `git push`) -- never
-   `git -C <path> ...`, which the worktree Bash guard refuses. For the team
+   commands (`git add`, `git commit`), never `git -C <path> ...`. Push a
+   checkout on its default branch with a bare `git push`; push a feature
+   branch with `git_push {tree: <checkout path>}`, which refuses the
+   default branch. For the team
    pack, push IS the team publish (teammates' installs read the same
    repo). For mattstack, the commit on
    `main` is what the update clones, so it is required; push is
@@ -78,7 +80,15 @@ it does gives a real-looking command that updates nothing.
    `cwd`. `--pack-dir <dir>` rides in `args` for `check` only; compiling a
    checkout's or worktree's sources is the bare Bash
    `rt skills compile --pack <pack> --pack-dir <dir>`, because `rt_verb`
-   refuses that flag on compile. Sync runs the whole
+   refuses that flag on compile. An `rt_verb` check or sync that comes
+   back `failed (exit 1)` is drift (check) or a refusal (sync), and only
+   the tail of its output comes back with it. Read what moved with the
+   bare Bash `rt skills check --pack <pack>`. For a sync, run `git status`
+   in the pack checkout first: a modified `plugin.json` plus compiled
+   output is the `content drift survives recompile` handoff below, and a
+   re-run would only refuse on the clean-checkout guard; a clean tree
+   means another step refused or failed, and the bare Bash
+   `rt skills sync --pack <pack>` prints each step's reason. Sync runs the whole
    deterministic tail as code -- a fast-forward pull in both checkouts,
    engine cache update, check, patch-bump, compile, recheck, a commit + push
    scoped to the pack, pack cache update, verify -- and reports
@@ -134,8 +144,9 @@ Writing a fill:
   host-anchored path; the file must exist at compile time, and a compiled
   verb's output is not addressable this way). Nothing else
   placeholder-shaped belongs in a fill.
-- `rt_verb {args: ["skills", "check", "--pack", "<pack>"]}` names what moved on each stale line
-  (source, fill, include, vendored, frontmatter, structure); a stage's slot
+- The bare Bash `rt skills check --pack <pack>` names what moved on each stale line
+  (source, fill, include, vendored, frontmatter, structure); through
+  `rt_verb`, a stale check returns only `failed (exit 1)` and a tail. A stage's slot
   binds with `rt_verb {args: ["skills", "bind", "<stage>", "<slot>", "<plugin:fill>", "--pack", "<pack>"]}`,
   and `rt_verb {args: ["skills", "surface", "set", "<stage>", "--public", "--pack", "<pack>"]}`
   works before the stage's first compile.
@@ -160,10 +171,13 @@ What `compile` and `check` read:
    compiled verb share a checkout, so the chain collapses to one pull and one
    update.
 3. Call `rt_verb {args: ["skills", "sync", "--pack", "<pack>"]}` for each other compiled pack.
-   `rt_verb {args: ["skills", "check", "--pack", "<pack>"]}` names which packs are stale, and its
-   `installed cache: lagging (<a> installed vs <b> source) -- run rt skills sync`
-   line is the other trigger; lag alone leaves check's exit code at 0, so read
-   the line, not the status.
+   `rt_verb {args: ["skills", "check", "--pack", "<pack>"]}` names which packs are stale (a
+   stale pack comes back `failed (exit 1)`), and a lagging installed cache
+   is the other trigger: the call's `installed` object reads
+   `status: "lagging"` with its `version` and `sourceVersion` (the bare
+   Bash check prints it as `installed cache: lagging (<a> installed vs <b> source)`).
+   Lag alone leaves check's exit code at 0, so the call succeeds; read the
+   `installed` object, not the success.
 4. When sync reports `restartNeeded`, run `/reload-plugins` in each running
    session (step 7 of the pipeline above).
 

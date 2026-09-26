@@ -2,7 +2,8 @@
 # Exercises hooks/relocation-announce.sh with a PATH-stubbed rt: the hook
 # must exit 0 and print nothing, forward the hook's stdin verbatim to
 # `rt worktree announce-relocation`, stay silent and exit 0 when rt writes
-# to both streams and fails, and still exit 0 with no rt anywhere.
+# to both streams and fails, fall back to ~/.local/bin/rt when PATH has
+# none, and still exit 0 with no rt anywhere.
 set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HOOK="$ROOT/hooks/relocation-announce.sh"
@@ -49,6 +50,25 @@ stdin_seen="$(cat "$TMP/stdin")"
 out2=$(printf '%s' "$PAYLOAD" | PATH="$TMP/noisy:$PATH" sh "$HOOK" 2>&1) && code2=0 || code2=$?
 [ "$code2" -eq 0 ] || { echo "FAIL: failing-rt case exit code $code2"; exit 1; }
 [ -z "$out2" ] || { echo "FAIL: failing-rt case printed output: $out2"; exit 1; }
+
+# No rt on PATH but one at ~/.local/bin/rt: the hook falls back to it.
+mkdir -p "$TMP/fallhome/.local/bin"
+cp "$TMP/bin/rt" "$TMP/fallhome/.local/bin/rt"
+rm -f "$TMP/argv" "$TMP/stdin"
+out4=$(printf '%s' "$PAYLOAD" | \
+  PATH="/usr/bin:/bin" HOME="$TMP/fallhome" FAKE_ARGV="$TMP/argv" FAKE_STDIN="$TMP/stdin" \
+  sh "$HOOK" 2>&1) && code4=0 || code4=$?
+[ "$code4" -eq 0 ] || { echo "FAIL: fallback case exit code $code4"; exit 1; }
+[ -z "$out4" ] || { echo "FAIL: fallback case printed output: $out4"; exit 1; }
+[ -f "$TMP/argv" ] || { echo "FAIL: ~/.local/bin/rt fallback was not called"; exit 1; }
+argv4="$(cat "$TMP/argv")"
+[ "$argv4" = "worktree announce-relocation" ] || {
+  echo "FAIL: fallback rt not called with worktree announce-relocation (got: $argv4)"; exit 1;
+}
+stdin4="$(cat "$TMP/stdin")"
+[ "$stdin4" = "$PAYLOAD" ] || {
+  echo "FAIL: fallback rt did not receive the hook stdin (got: $stdin4)"; exit 1;
+}
 
 # No rt on PATH and no ~/.local/bin/rt: the dialog falls to the human, not a
 # blocked tool call.

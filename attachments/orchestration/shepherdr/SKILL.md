@@ -407,13 +407,14 @@ read the artifact.
 
 On a report line from `<job>`:
 
-1. Two objective checks:
+1. Two objective checks: the commits, with
+   `rt_verb {args: ["git", "log"], cwd: <worktree>}`; the changed files,
+   with `cd <worktree>` as its own Bash call, then the bare
    ```bash
-   git -C <worktree> log --oneline
-   git -C <worktree> diff --stat
+   git diff --stat
    ```
    Compare against the write fence. Files outside the fence = drift; flag it to the user.
-2. Cross-job overlap: for every other active job, `git -C <its worktree> diff --stat` and compare changed-file sets. A file two jobs both changed is a collision; flag it now, not at integration.
+2. Cross-job overlap: for every other active job, the same `cd <its worktree>` then bare `git diff --stat`, and compare changed-file sets. A file two jobs both changed is a collision; flag it now, not at integration.
 3. Update the status table (`herd_status {herd}` is its source).
 
 **Relay only what you measured.** A worker's report is its own account of
@@ -450,12 +451,14 @@ it so the user answers the dialog by hand, or `herd_close {job, herd}` and
 respawn it in Bash, reusing the stored brief:
 
 ```bash
-rt herd spawn --herd <id> --job <job> --dir <its worktree> --model <model>
+rt herd spawn --herd <id> --job <job> --dir <its worktree> --model <model> [--effort <effort>] [--account <A>]
 ```
 
 **Every respawn of an existing job is this Bash form, never `herd_spawn`:**
 `herd_close` leaves the job's tree attached, so a dir-less respawn fails
-`branch-attached`, and the tool never takes a dir.
+`branch-attached`, and the tool never takes a dir. Pass the job's
+`--effort` and `--account` again: a respawn keeps neither from the prior
+spawn.
 
 **Domain hook -- after the report.** Unbound: integration as above. A
 bound domain part may define what follows an approved report -- telling
@@ -473,7 +476,7 @@ is on the room record.
 If the user redirects scope: one sentence naming the running agents, then the structured-question tool with **Let them finish** (recommended) / **Kill and respawn with the new briefs**; **Hold**. A kill is `herd_close {job, herd}`, then the Bash respawn with the new brief (the tree stays attached after the close, so never `herd_spawn`):
 
 ```bash
-rt herd spawn --herd <id> --job <job> --brief <new brief> --dir <its worktree> --model <model>
+rt herd spawn --herd <id> --job <job> --brief <new brief> --dir <its worktree> --model <model> [--effort <effort>] [--account <A>]
 ```
 
 Your own posts to the herd room deliver as `@here` and wake every worker;
@@ -502,11 +505,20 @@ a question for one worker is a DM.
    before `herd_wrap_up`. `tree` is the job's `tree` field from
    `herd_status`, a registry name, never a path. When that field is null
    (a `--dir` job), skip the job unless its dir is an rt tree; then pass
-   that tree's name as `rt_verb {args: ["worktree", "list"]}` prints it.
-   An error of `not-held` means nothing was running in that tree, not a
-   failure. The call ends only the processes rt tied to that tree. There
-   is no general kill. It runs before the next step because a disposed
-   tree is no longer in rt's registry, and the call then fails.
+   that tree's name as
+   `rt_verb {args: ["worktree", "list", "--repo", "<the herd's repo>"]}`
+   prints it. An error of `not-held` means rt has no recorded hold on that
+   tree, not that nothing is running there: rt records a process hold only
+   after the tree's MR merges or closes with a process still inside, so a
+   normal wrap-up tree answers `not-held` with its dev servers still up.
+   The call ends only the processes rt tied to a held tree. There is no
+   general kill. It runs before the next step because a disposed tree is
+   no longer in rt's registry, and the call then fails.
+   Before you tell the user a job's servers are stopped, measure it: a
+   port read (`lsof -ti tcp:<port>`) or
+   `rt_verb {args: ["endpoint", "lookup", "<role>", "--path", "<the job's worktree>"]}`.
+   Report a survivor to the user as still running; never kill it by hand.
+   Anything you did not measure, report as "not verified".
 5. Execute exactly the answers: call
    `herd_wrap_up {herd, closePanes, dispose: [<job>...], deleteJobDirs, archiveRoom}`.
    A disposal refusal is reported in the guard's own words. In hidden
@@ -550,4 +562,4 @@ work merges, what a disposal refusal means) -- follow it over item 5.
 - Worker pane shows a structured question with no gate to match it (`herd_gates` returns nothing for it)? Stop. That is the banned bare pane-local form -- it is unreachable from every channel, not just you; flag it to the user rather than trying to answer it yourself. In covered panes (any `rt agent` launch carrying a subject, herd spawns included) the launch-injected gate-fork hook denies the bare form at source, so seeing one means the pane is uncovered or its daemon was unreachable.
 - About to send a pane a keystroke -- especially Escape -- to unstick it? Stop. The daemon injects Escape itself on a remote answer; check the gate row's `presentation` first, and if it says `"wait"`, leave the pane alone.
 - About to relay a worker's claim about its own environment (servers up, ports free, processes running, CI green) as your own finding? Stop. Measure it, or say plainly "the worker reports X" -- an unverified claim you forward becomes something the user reads as checked.
-- About to call a pane's dev servers stopped because the pane closed, or to hunt them down by port or process name? Stop. For every job in the dispose list plus every job whose pane is closing (nothing on Hold), call `worktree_stop_holders {repoName: <the herd's repo>, tree: <the job's tree name from herd_status>}` before `herd_wrap_up` (a null tree: skip it unless the dir is an rt tree, then pass that tree's name from `rt_verb {args: ["worktree", "list"]}`); `not-held` means nothing was running there. It ends only the processes rt tied to that tree. There is no general kill.
+- About to call a pane's dev servers stopped because the pane closed, or because `worktree_stop_holders` answered `not-held`, or to kill them by port or process name? Stop. For every job in the dispose list plus every job whose pane is closing (nothing on Hold), call `worktree_stop_holders {repoName: <the herd's repo>, tree: <the job's tree name from herd_status>}` before `herd_wrap_up` (a null tree: skip it unless the dir is an rt tree, then pass that tree's name from `rt_verb {args: ["worktree", "list", "--repo", "<the herd's repo>"]}`). `not-held` means rt has no recorded hold on the tree, not that nothing runs there; it ends only the processes rt tied to a held tree, and there is no general kill. Measure before you say stopped (`lsof -ti tcp:<port>`, or `rt_verb {args: ["endpoint", "lookup", ...]}`): a survivor is reported as still running, never killed by hand, and anything unmeasured is "not verified".
