@@ -102,10 +102,10 @@ run whose `status` is `running`; never read the run dbs by hand. One
 found: gate `clarify`, one sentence naming it, the structured-question
 tool with **Resume it** (recommended) / **Start fresh**; **Hold**. Start
 fresh: `## 3. Start the run`; the found run keeps its status. Resume: use
-`runDb` = `<runs root>/<repo>/<its id>/state.db` (the candidate row's
-`id`), written as an absolute path: the runs root is `$RT_RUNS_ROOT` when
-set, else `~/.mattstack/runs` with `~` expanded to the home directory,
-since the run tools refuse `~` and relative paths. Re-enter at
+`runDb` = `<absolute home>/.mattstack/runs/<repo>/<its id>/state.db` (the
+candidate row's `id`; the run tools refuse `~` and relative paths). If a
+run tool refuses it with an error naming a different runs root, use that
+root instead. Re-enter at
 `run.current_stage` with `run_snapshot`'s fields and decisions (a fresh
 `run_stage` start for that stage records the new attempt). Do not re-ask
 decided questions. Re-entering a held run clears the hold as `## Hold`

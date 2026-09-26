@@ -39,12 +39,12 @@ dbs by hand. Any found: gate
 and `current_stage`, then the structured-question tool with one **Resume**
 option per candidate (recommended for a run this session started earlier; a
 run another live pane owns is not yours) / **Start fresh**; **Hold**.
-Resume: use `runDb` = `<runs root>/<repo>/<its id>/state.db` (the
-candidate row's `id`), written as an absolute path: the runs root is
-`$RT_RUNS_ROOT` when set, else `~/.mattstack/runs` with `~` expanded to
-the home directory, since the run tools refuse `~` and relative paths.
-Then `run_stage` with `action: "start"`, `stage: "watch-ci"` (a new
-attempt, which re-records this session) and `run_field_set` with
+Resume: use
+`runDb` = `<absolute home>/.mattstack/runs/<repo>/<its id>/state.db` (the
+candidate row's `id`; the run tools refuse `~` and relative paths). If a
+run tool refuses it with an error naming a different runs root, use that
+root instead. Then `run_stage` with `action: "start"`,
+`stage: "watch-ci"` (a new attempt, which re-records this session) and `run_field_set` with
 `key: "hold"`, `value: "-"`, `stage: "watch-ci"`; re-enter with
 `run_snapshot`'s decisions and do not re-ask a question it already
 answered.
@@ -78,7 +78,10 @@ when this section ran `run_start`: `run_stage` with `action: "done"`,
   branch by the forge-host rule (`git remote get-url origin`): on GitLab
   the `mr_for_branch` tool (`repoName` = this worktree's absolute path,
   `branches: ["<branch>"]`), on GitHub `gh pr list --head <branch>`. No
-  MR is fine -- branch pipelines still watch; the lease step is skipped.
+  MR: the lease step is skipped. The branch pipeline still watches on
+  GitHub and on the forge-bound path (`ci-watch.sh --ref`); on GitLab's
+  generic path there is nothing to watch, which section 3 sends to the
+  `ci` gate.
 
 When the run is yours, record the target per Run identity above:
 `branch`, and `mr` when one exists.
@@ -142,7 +145,8 @@ was pushed, then the `ci` gate.
 **Neither section above has content:** on GitLab poll the `mr_pipeline`
 tool (`repoName`, `iid`; live by default) until the pipeline settles,
 then `mr_job_trace` (`repoName`, `iid`, `jobId`) for each failed job; on
-GitHub `gh pr checks <mr> --watch`.
+GitHub `gh pr checks <mr> --watch`. GitLab with no MR: do not poll; go
+straight to the `ci` gate with the reason "no MR to watch; ship first".
 Green: done. Red: read the failing job log, classify REAL (the change
 broke it) vs INFRA/flake (unrelated, retry once: on GitLab the `mr_retry`
 tool with the failed job's id as `jobId`); any REAL failure is the `ci`

@@ -31,12 +31,12 @@ by hand. Any found: gate
 and `current_stage`, then the structured-question tool with one **Resume**
 option per candidate (recommended for a run this session started earlier; a
 run another live pane owns is not yours) / **Start fresh**; **Hold**.
-Resume: use `runDb` = `<runs root>/<repo>/<its id>/state.db` (the
-candidate row's `id`), written as an absolute path: the runs root is
-`$RT_RUNS_ROOT` when set, else `~/.mattstack/runs` with `~` expanded to
-the home directory, since the run tools refuse `~` and relative paths.
-Then `run_stage` with `action: "start"`, `stage: "ship"` (a new attempt,
-which re-records this session) and `run_field_set` with `key: "hold"`,
+Resume: use
+`runDb` = `<absolute home>/.mattstack/runs/<repo>/<its id>/state.db` (the
+candidate row's `id`; the run tools refuse `~` and relative paths). If a
+run tool refuses it with an error naming a different runs root, use that
+root instead. Then `run_stage` with `action: "start"`, `stage: "ship"`
+(a new attempt, which re-records this session) and `run_field_set` with `key: "hold"`,
 `value: "-"`, `stage: "ship"`; re-enter with `run_snapshot`'s decisions
 and do not re-ask a question it already answered.
 
