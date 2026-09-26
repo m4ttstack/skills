@@ -57,10 +57,10 @@ Start the run with the `run_start` tool: `flags` is the `watch-ci` flag
 string from the block above, verbatim (the value, never its key);
 `skillDir` is this skill's own directory, `${CLAUDE_SKILL_DIR}`, as an
 absolute path; add `spawnedBy` when a board or another surface launched
-this pane. The result must carry `ok: true` and a `runDb`; anything else
-means this rt predates the run tools: stop and tell the user to update
-rt. Keep `runDb` and pass it to every `run_*` call in this verb; nothing
-is exported. Then `run_stage` with `action: "start"`,
+this pane. The result must carry `ok: true` and a `runDb`. A tool error:
+stop and report its message. No `run_start` tool available at all: this
+rt is too old; stop and tell the user to update rt. Keep `runDb` and
+pass it to every `run_*` call in this verb; nothing is exported. Then `run_stage` with `action: "start"`,
 `stage: "watch-ci"`.
 
 Every gate in this verb then writes its `gate` field and its decision with
@@ -79,9 +79,8 @@ when this section ran `run_start`: `run_stage` with `action: "done"`,
   the `mr_for_branch` tool (`repoName` = this worktree's absolute path,
   `branches: ["<branch>"]`), on GitHub `gh pr list --head <branch>`. No
   MR: the lease step is skipped. The branch pipeline still watches on
-  GitHub and on the forge-bound path (`ci-watch.sh --ref`); on GitLab's
-  generic path there is nothing to watch, which section 3 sends to the
-  `ci` gate.
+  the forge-bound path (`ci-watch.sh --ref`); on the generic path there
+  is nothing to watch, which section 3 sends to the `ci` gate.
 
 When the run is yours, record the target per Run identity above:
 `branch`, and `mr` when one exists.
@@ -152,7 +151,7 @@ seconds by running `sleep 60` as a background Bash task (never a
 foreground sleep) and poll again when it finishes; refresh the attendant
 lease heartbeat each round, and if the pipeline has not settled after 45
 minutes, treat it as a timeout and go to the `ci` gate.
-GitLab with no MR: do not poll; go straight
+No MR or PR (either forge): do not poll; go straight
 to the `ci` gate with the reason "no MR to watch; ship first".
 Green: done. Red: read the failing job log, classify REAL (the change
 broke it) vs INFRA/flake (unrelated, retry once: on GitLab the `mr_retry`
@@ -208,14 +207,19 @@ back, `run_stage` with `action: "done"`, `stage: "watch-ci"`, then
 `run_status` with `status: "done"`; Abandon the run closes with
 `status: "abandoned"` instead.
 Fix and re-push keeps the run `running`: push with the `git_push` tool
-(`tree` = this worktree's absolute path); if `git_push` errors saying the
-repo is not registered with rt or the rt daemon is down, push with plain
-`git push` on Bash instead. Then re-enter section 3 (a new `run_stage`
-start for `watch-ci`). Retry the job: on GitLab the
-`mr_retry` tool with `repoName`, `iid`, and the failed job's id as
-`jobId`; on GitHub `gh run rerun <run-id> --failed`, the run id taken
-from the failed check's link in `gh pr checks <mr>`. A job retry is not a
-new stage attempt: no `run_stage` start; re-enter section 3.
+(`tree` = the worktree root, the absolute path
+`git rev-parse --show-toplevel` prints). An error starting
+`tree must be the absolute path of the root` fires for a subdirectory as
+well as for a repo not registered with rt: retry once with that root, and
+only when the root is refused too, push on Bash instead with plain
+`git push`. <!-- mcp-lint: allow -->
+Then re-enter section 3 (a new `run_stage` start for `watch-ci`). Retry
+the job, forge bound: the report's retry command, then relaunch the
+watcher. Retry the job, neither bound: on GitLab the `mr_retry` tool with
+`repoName`, `iid`, and the failed job's id as `jobId`; on GitHub
+`gh run rerun <run-id> --failed`, the run id taken from the failed
+check's link in `gh pr checks <mr>`. A job retry is not a new stage
+attempt: no `run_stage` start; re-enter section 3.
 
 ## Gate protocol
 

@@ -48,10 +48,10 @@ Start the run with the `run_start` tool: `flags` is the `ship` flag
 string from the block above, verbatim (the value, never its key);
 `skillDir` is this skill's own directory, `${CLAUDE_SKILL_DIR}`, as an
 absolute path; add `spawnedBy` when a board or another surface launched
-this pane. The result must carry `ok: true` and a `runDb`; anything else
-means this rt predates the run tools: stop and tell the user to update
-rt. Keep `runDb` and pass it to every `run_*` call in this verb; nothing
-is exported. Then `run_stage` with `action: "start"`, `stage: "ship"`.
+this pane. The result must carry `ok: true` and a `runDb`. A tool error:
+stop and report its message. No `run_start` tool available at all: this
+rt is too old; stop and tell the user to update rt. Keep `runDb` and
+pass it to every `run_*` call in this verb; nothing is exported. Then `run_stage` with `action: "start"`, `stage: "ship"`.
 
 Every gate in this verb then writes its `gate` field and its decision with
 `stage: "ship"`. The close, after the final gate's answer and only when
@@ -100,10 +100,13 @@ When nothing is inlined above, follow the generic path below.
 **Generic path:** the forge is read from the origin remote (`git remote
 get-url origin`): a GitLab host means rt's MR tools (`mr_create`,
 `mr_ready`), a GitHub host means `gh`, anything else is a `clarify` gate.
-Push with the `git_push` tool (`tree` = this worktree's absolute path,
-`setUpstream: true`); if `git_push` errors saying the repo is not
-registered with rt or the rt daemon is down, push with plain git on Bash
-instead (`git push -u origin <branch>`). Then create the MR/PR against the
+Push with the `git_push` tool (`tree` = the worktree root, the absolute
+path `git rev-parse --show-toplevel` prints; `setUpstream: true`). An
+error starting `tree must be the absolute path of the root` fires for a
+subdirectory as well as for a repo not registered with rt: retry once with
+that root, and only when the root is refused too, push with plain git on
+Bash instead (`git push -u origin <branch>`). <!-- mcp-lint: allow -->
+Then create the MR/PR against the
 repo's default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`,
 minus `origin/`): on GitLab the `mr_create` tool (`draft: false` only when
 the gate said ready; write the title from the branch's commits), on GitHub

@@ -37,8 +37,9 @@ fabricate a ticket.
 
 {{run-start.flags}}
 
-The result must carry `ok: true` and a `runDb`. Anything else means this
-rt predates the run tools: stop and tell the user to update rt. Keep
+The result must carry `ok: true` and a `runDb`. A tool error: stop and
+report its message. No `run_start` tool available at all: this rt is too
+old; stop and tell the user to update rt. Keep
 `runDb` and pass it to every `run_*` call below; nothing is exported.
 `runDb` is the one value to carry forward when summarising; if it is gone
 mid-run, recover it through `## Resume` (the running run in this repo)

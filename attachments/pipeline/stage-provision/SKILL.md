@@ -39,16 +39,19 @@ When nothing is inlined above, follow the generic path below.
 Unbound (generic fallback): call `worktree_provision` with `repoName`
 (the repo's checkout path) and `ticket` (plus `ticketTitle` when known).
 Pass `ticketTitle` whenever a ticket title is known -- without it the
-branch gets no slug.
+branch gets no slug. With no ticket, pass `branch` = a short kebab slug
+of the task description instead of `ticket`.
 
 - `ok`: `EnterWorktree` with `path` set to the result's `path`; write
   `branch` and `worktree` (the result's `path`) with `run_field_set`. A
   cold create can take minutes -- tell the user it's provisioning.
-- a tool error whose message carries `branch-attached:<tree>`: the
-  provision gate, scope `provision`, below. Never pick a side yourself.
-- a tool error saying the rt daemon is down or the repo is not registered
-  with rt: fall back to the old generic path -- confirm `repo` is a git
-  checkout
+- a tool error reading
+  `branch is already checked out in worktree "<tree>"` (the daemon's
+  `branch-attached` code): the provision gate, scope `provision`, below.
+  Never pick a side yourself.
+- a tool error carrying `rt daemon unreachable`,
+  `not registered with rt`, or `did not match a registered repo`: fall
+  back to the old generic path -- confirm `repo` is a git checkout
   (`git -C <repo> rev-parse --git-dir`); derive a branch name from the
   ticket id and a short kebab slug of its title (or from the task
   description when there is no ticket); create it from the default branch
@@ -57,17 +60,17 @@ branch gets no slug.
 
 ## Gate `provision`
 
-Reached on `branch-attached:<tree>`, and for any question the bound domain
-rules above declare for this gate (a ticket that could not be found, a
-title too generic for a slug, a classification the domain tracks):
+Reached on the `branch is already checked out in worktree "<tree>"`
+error, and for any question the bound domain rules above declare for
+this gate (a ticket that could not be found, a title too generic for a slug, a classification the domain tracks):
 
 - `run_field_set` with `key: "gate"`, `value: "provision"`, `stage: "provision"`
 - One sentence: what was found (the tree, the missing ticket, the title).
 - Run gate-protocol's Runs integration with kind `provision` and these
   questions, each its own question (never fold one list into another --
   a question over 4 options sends the whole gate to the wait queue):
-  - `resume_in`, only on `branch-attached`: **Resume in `<tree>`**
-    (recommended) / **Fresh tree**
+  - `resume_in`, only on that already-checked-out error: **Resume in
+    `<tree>`** (recommended) / **Fresh tree**
   - `ticket`, only on a missing ticket: **Create one** / **I will
     recheck the id**
   - `slug`, only on a generic title: the slug as their text. A slug they
