@@ -45,8 +45,13 @@ jobs:
       - name: Install rt's dependencies
         run: bun install --frozen-lockfile
         working-directory: rt
+      # --mattstack-dir names an empty root so rt resolves plugins from it
+      # instead of shelling out to `claude plugin list`; the runner has no
+      # Claude CLI, and this pack's compiled verbs resolve against itself.
       - name: skills check (compile drift and strict mcp lint)
-        run: bun cli.ts skills check --pack-dir "$GITHUB_WORKSPACE" --strict
+        run: |
+          mkdir -p "$RUNNER_TEMP/mattstack"
+          bun cli.ts skills check --pack-dir "$GITHUB_WORKSPACE" --mattstack-dir "$RUNNER_TEMP/mattstack" --strict
         working-directory: rt
         env:
           RT_SKIP_SETUP: "1"
