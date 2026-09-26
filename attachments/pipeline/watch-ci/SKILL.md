@@ -142,15 +142,17 @@ gate below. 2 = the pipeline outran the timeout: relaunch the watcher
 once, then the `ci` gate. 4 = no pipeline ever appeared: verify the branch
 was pushed, then the `ci` gate.
 
-**Neither section above has content:** on GitLab poll the `mr_pipeline`
-tool (`repoName`, `iid`; live by default) until the pipeline settles,
-then `mr_job_trace` (`repoName`, `iid`, `jobId`) for each failed job; on
-GitHub `gh pr checks <mr> --watch`. GitLab with no MR: do not poll; go
-straight to the `ci` gate with the reason "no MR to watch; ship first".
+**Neither section above has content:** every GitLab MR tool call in this
+verb targets the MR with `repoName` = this worktree's absolute path and
+`iid` = the MR's iid. On GitLab poll the `mr_pipeline` tool (`repoName`,
+`iid`; live by default) until the pipeline settles, then `mr_job_trace`
+(`repoName`, `iid`, `jobId`) for each failed job; on GitHub
+`gh pr checks <mr> --watch`. GitLab with no MR: do not poll; go straight
+to the `ci` gate with the reason "no MR to watch; ship first".
 Green: done. Red: read the failing job log, classify REAL (the change
 broke it) vs INFRA/flake (unrelated, retry once: on GitLab the `mr_retry`
-tool with the failed job's id as `jobId`); any REAL failure is the `ci`
-gate below.
+tool with `repoName`, `iid`, and the failed job's id as `jobId`); any
+REAL failure is the `ci` gate below.
 
 ## Verdict
 
@@ -171,7 +173,8 @@ run, `mr` is set, and the MR is a draft, gate `mark-ready`:
     it **Go back to `<stage>`** in `next` and skip this question
 - `run_decision` with `contract: "gate@1"`, `scope: "mark-ready"`, `selection: {"ready":true|false,"next":"proceed|iterate|redirect|hold","to":"<stage or null>","note":"<their words or null>"}`, `decidedBy: <the answer's by>`
 - Yes: the forge-host rule (read `git remote get-url origin`; GitLab means
-  the `mr_ready` tool, GitHub means `gh pr ready <number>`, anything else
+  the `mr_ready` tool with `repoName`, `iid`, GitHub means
+  `gh pr ready <number>`, anything else
   is a `clarify` gate).
 
 Then the close below (own run only; on green with no `mark-ready` gate,
@@ -202,8 +205,10 @@ back, `run_stage` with `action: "done"`, `stage: "watch-ci"`, then
 Fix and re-push keeps the run `running` and re-enters section 3 after
 pushing with the `git_push` tool (`tree` = this worktree's absolute path)
 (a new `run_stage` start for `watch-ci`). Retry the job: on GitLab the
-`mr_retry` tool with the failed job's id as `jobId`, on GitHub
-`gh run rerun <run-id> --failed`, then re-enter section 3.
+`mr_retry` tool with `repoName`, `iid`, and the failed job's id as
+`jobId`; on GitHub `gh run rerun <run-id> --failed`, the run id taken
+from the failed check's link in `gh pr checks <mr>`. A job retry is not a
+new stage attempt: no `run_stage` start; re-enter section 3.
 
 ## Gate protocol
 
