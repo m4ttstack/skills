@@ -199,8 +199,11 @@ its mark-ready answer when that gate fired), or after the `ci` gate's Hand
 back, `run_stage` with `action: "done"`, `stage: "watch-ci"`, then
 `run_status` with `status: "done"`; Abandon the run closes with
 `status: "abandoned"` instead.
-Fix and re-push keeps the run `running` and re-enters section 3 after the
-push (a new `run_stage` start for `watch-ci`).
+Fix and re-push keeps the run `running` and re-enters section 3 after
+pushing with the `git_push` tool (`tree` = this worktree's absolute path)
+(a new `run_stage` start for `watch-ci`). Retry the job: on GitLab the
+`mr_retry` tool with the failed job's id as `jobId`, on GitHub
+`gh run rerun <run-id> --failed`, then re-enter section 3.
 
 ## Gate protocol
 
