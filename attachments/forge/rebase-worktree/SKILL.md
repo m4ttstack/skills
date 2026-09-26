@@ -63,11 +63,11 @@ The result decides, and nothing else does:
 
 | result | carries | next |
 |---|---|---|
-| `status: "synced"` | `divergedFromOrigin` (true when local and origin had diverged before the sync) | Synced: `branch_sync` rebased (or found the branch current) and pushed with force-with-lease. Report the move as in **After a clean rebase**; the push already happened, so no push gate. |
+| `status: "synced"` | `divergedFromOrigin` (true when local and origin had diverged before the sync) | Synced: `branch_sync` rebased and pushed with force-with-lease, or found the branch current and pushed nothing. Report the move as in **After a clean rebase**; the push already happened, so no push gate. |
 | `status: "conflict"` | rt sync's bundle (`unresolvedFiles`, `backupBranch`, `state: mid-rebase`) | The rebase is paused in the worktree. Go to **On conflict** with `unresolvedFiles` as the files. |
-| error `rt sync refused (exit 4): could not determine the default branch ...` or `rt sync refused (exit 4): could not list open MRs to rule out a stack: ...` | error text only | The stack could not be verified either way. Run **Manual path** from its Stack guards; if those fail for the same reason, stop and report both failures. Never rebase an unverified branch. |
-| any other `rt sync refused (exit 4): ...` error: a stack refusal, whose text ends `Run: <tool>` (e.g. `<branch> is a member of stack <name> (parent <parent>); rebasing it alone onto <default> would break the stack. Run: <tool>`) | error text only | REFUSE: report the error text and name the tool after `Run:`. The run ends here; the restack belongs to the stack tool. |
-| error `rt sync timed out after ...`, `could not start rt sync`, or `rt sync refused (exit N): ...` with N other than 4 | error text only | rt sync itself failed. Report it, then **Manual path**. |
+| error `rt sync refused (exit 4): could not determine the default branch ...` or `rt sync refused (exit 4): could not list open MRs to rule out a stack: ...` | error text only | The stack could not be verified either way. Run **Manual path** from its Stack guards; if those fail for the same reason, stop and report both failures. Never rebase an unverified branch. | <!-- mcp-lint: allow -->
+| any other `rt sync refused (exit 4): ...` error: a stack refusal, whose text ends `Run: <tool>` (e.g. `<branch> is a member of stack <name> (parent <parent>); rebasing it alone onto <default> would break the stack. Run: <tool>`) | error text only | REFUSE: report the error text and name the tool after `Run:`. The run ends here; the restack belongs to the stack tool. | <!-- mcp-lint: allow -->
+| error `rt sync timed out after ...`, `could not start rt sync`, or `rt sync refused (exit N): ...` with N other than 4 | error text only | rt sync itself failed. Report it, then **Manual path**. | <!-- mcp-lint: allow -->
 | any other error: `branch_sync` refused before rt sync ran (`refusing to sync <branch>: ...`, `refusing to reset <branch> to origin: ...`, `origin/<branch> has commits this tree lacks; ...`, `a rebase is in progress; ...`, or a git read that failed) | error text only | Report the error text and stop. The manual path's force-with-lease push would not protect what the tool refused over. When the text ends `run git_pull first`, name the `git_pull` tool as the next step. |
 
 | Thought | Reality |
@@ -105,7 +105,9 @@ live (`mr_for_branch` takes no `maxAgeMs`, so it is not used here).
 A `mr_list` error, a `syncError`, or `syncedAt` 0 means the guards could
 not run: stop and report it, never read it as stack-free. When the
 result's `scope` limits the cache to certain authors or a time window,
-say the verdict covers only that scope.
+say the verdict covers only that scope, and carry "stack check covered
+<scope> only" on the old head -> new head line (**After a clean rebase**)
+so it reaches whoever gates the push.
 
 Either refusal is a restack signal: the chain moves together or not at
 all. Say so and point at the stack tool (`gitq:sync` where available);
@@ -128,7 +130,8 @@ git -C <worktree> log --oneline origin/<default>..HEAD
 
 Then call the `git_rebase` tool with `tree` = the worktree's absolute
 path and `onto` = `origin/<default>`. A `status: "conflict"` result goes
-to **On conflict**.
+to **On conflict**. Any other `git_rebase` error: report it and stop; the
+tree may be mid-rebase, and aborting is not this path's call unasked.
 
 ## On conflict: gate `conflict`
 
@@ -162,14 +165,19 @@ Report the move as old head -> new head: note the branch's
 `git -C <worktree> log -1 --oneline` before the fetch, then run the same
 command again once the rebase finishes, and show both.
 
-On the fast path the line ends with "pushed by branch_sync": the push is
-done, and this section is finished. When a caller is composing this as a
+When old head equals new head, the branch was already current: the line
+ends "already current; nothing pushed", there is no push gate on either
+path, and this section is finished.
+
+Otherwise, on the fast path the line ends with "pushed by branch_sync":
+the push is done, and this section is finished. When a caller is composing this as a
 per-branch step, hand that line back; it has nothing to gate for this
 branch.
 
 On the manual path pushing is a separate decision, gate `push`. When a
 caller is composing this as a per-branch step, hand back the old head ->
-new head line and let it gate the batch. Otherwise:
+new head line (with any stack-check scope caveat) and let it gate the
+batch. Otherwise:
 
 - When this conversation holds a run's `runDb`: the `run_field_set` tool with that `runDb`, `key` `gate`, `value` `push`, `stage` `<run.current_stage>`.
 - The sentence is the old head -> new head line above; nothing else

@@ -59,7 +59,8 @@ current checkout's absolute path and `branch` = the branch from step 1.
 Pass `ticketTitle` when a title came out of the step 1 lookup (the MR/PR
 view or ticket search): without it the branch gets no slug. On success,
 report the `path` the result returns and that the branch is checked out
-there.
+there. Do not enter the worktree, whatever the tool suggests: a review
+checkout leaves the session where it is.
 
 An error (the daemon is down, or the repo is unknown to rt) is the end of
 this path: report the error text and stop. There is no plain-git

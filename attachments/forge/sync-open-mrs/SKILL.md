@@ -11,9 +11,9 @@ slots: {}
 
 # sync-open-mrs
 
-Batch maintenance for "all my open MRs are stale": discover every open
-item, rebase each onto the default branch, and offer to push and watch CI,
-all in one sweep. This skill is a delegator -- it owns sequencing, the user
+Batch maintenance for "all my open MRs are stale": discover the open items
+the forge lists, rebase each onto the default branch, and offer to push
+and watch CI, all in one sweep. This skill is a delegator -- it owns sequencing, the user
 gates, and the final report; discovery, rebasing, and CI watching belong to
 a focused skill it calls, not reimplemented here.
 
@@ -76,15 +76,19 @@ is not empty, which `rebase-worktree` would refuse, and, when the user's
 forge username is known, MRs whose author is someone else) and why. When
 the username is not known, the sentence also says the author could not be
 confirmed, and each `branches` option's label carries its MR's author
-(`<branch> (by <author>)`) so the human deselects anyone else's. Then the
-gate, once for the whole batch, never per branch:
+(`<branch> (by <author>)`). Every branch starts pre-selected only when the
+username is known or every row shares one author; otherwise every option
+starts deselected and the human picks their own, because step 3's fast
+path pushes without a gate, so a pre-checked teammate branch would be
+force-pushed on one click. Then the gate, once for the whole batch, never
+per branch:
 
 - The `run_field_set` tool with the run's `runDb`, `key` `gate`, `value` `sweep`, `stage` `sync-open-mrs`.
 - Run gate-protocol's Runs integration with kind `sweep` and these
   questions, each its own question (never fold one list into another --
   a question over 4 options sends the whole gate to the wait queue):
-  - `branches`: a multi-select of the branches to rebase, in order, all
-    pre-selected (deselecting skips one); over 4 branches it splits into
+  - `branches`: a multi-select of the branches to rebase, in order,
+    pre-selected by the rule above (deselecting skips one); over 4 branches it splits into
     `branches-1`, `branches-2`, ... of up to 4 options each, in order,
     whose answers read as one union
   - `next`: **Proceed** (recommended) / **Iterate here** (their text
@@ -102,16 +106,19 @@ mid-rebase; record it in a needs-hands list and move on. A precondition
 refusal (dirty tree, no upstream) stops it too -- record it as skipped with
 the reason and move on; neither ever blocks the rest of the sweep.
 A branch `rebase-worktree` synced through `branch_sync` comes back
-already pushed ("pushed by branch_sync"); record it as pushed. A branch
-that took its manual path comes back with the push still to decide --
-defer that; step 4 makes the push call once for all of those.
+already pushed ("pushed by branch_sync"); record it as pushed. One that
+comes back "already current; nothing pushed" is recorded as current. A
+branch that took its manual path comes back with the push still to
+decide -- defer that; step 4 makes the push call once for all of those.
 
 ## 4. Gate `push`, then watch CI
 
 Once the rebase pass finishes, one sentence: which branches rebased clean
-(old head -> new head each, "pushed by branch_sync" where that happened). Then
-the gate, once for the batch of still-unpushed branches; never push one of
-those unasked, never one-by-one as each rebase completes:
+(old head -> new head each, "pushed by branch_sync" where that happened,
+with any "stack check covered <scope> only" caveat a branch handed back)
+and which were already current. Then the gate, once for the batch of
+still-unpushed branches; never push one of those unasked, never
+one-by-one as each rebase completes:
 
 - The `run_field_set` tool with the run's `runDb`, `key` `gate`, `value` `push`, `stage` `sync-open-mrs`.
 - Run gate-protocol's Runs integration with kind `push` and these
@@ -126,15 +133,17 @@ those unasked, never one-by-one as each rebase completes:
 - The `run_decision` tool with the run's `runDb`, `contract` `gate@1`, `scope` `push`, `selection` `{"branches":[...],"watch_ci":true|false}`, `decidedBy` `<the answer's by>`.
 
 Push each selected branch with the `git_push` tool, `tree` = its worktree
-path and `forceWithLease: true`, then, when asked, follow the pack's compiled
-`watch-ci` verb (a public verb; invoke it by its pack-qualified skill name)
+path and `forceWithLease: true`. A `git_push` error (a lease refusal, a
+protected branch) records that branch as push failed, with the error as
+the reason, and the rest carry on. Then, when asked, follow the pack's
+compiled `watch-ci` verb (a public verb; invoke it by its pack-qualified skill name)
 per pushed branch (it inherits this run and hands back its verdict).
 
 ## 5. Report
 
 One table, every branch from step 1 landing in exactly one bucket:
-rebased (old head -> new head), pushed, conflicted (needs-hands), or
-skipped (with reason -- dirty tree, no upstream, NONE row, another
+rebased (old head -> new head), pushed, current (nothing to push),
+conflicted (needs-hands), push failed (with reason), or skipped (with reason -- dirty tree, no upstream, NONE row, another
 author's MR).
 
 **These thoughts mean you are skipping the gate -- STOP:**
