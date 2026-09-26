@@ -63,19 +63,23 @@ it does gives a real-looking command that updates nothing.
 4. Bump `version` in the manifest -- same commit as the skill change. For
    mattstack, this is step 1 of "Releasing an engine, include, or fill change"
    below; finish that section's step 3 for each compiled pack.
-5. Commit and push. For the team pack, push IS the team publish
+5. Commit and push, as bare commands (`git add`, `git commit`, `git push`)
+   from inside the checkout -- never `git -C <path> ...`, which the worktree
+   Bash guard refuses. For the team pack, push IS the team publish
    (teammates' installs read the same repo). For mattstack, the commit on
    `main` is what the update clones, so it is required; push is
    backup/other-machines. To try an uncommitted edit for one session
    without touching the cache: `claude --plugin-dir
 ~/Documents/GitHub/mattstack-skills`.
-6. **Bring the caches current**: `rt skills sync --pack <pack>`, one call per
-   pack. It runs the whole deterministic tail as code -- `git pull --ff-only`
-   in both checkouts, engine cache update, check, patch-bump, compile,
-   recheck, a commit + push scoped to the pack, pack cache update, verify --
-   and reports `restartNeeded`. The pull is the step hand-runs forget: a
-   checkout parked on a merged branch compiles stale engines and nothing says
-   so.
+6. **Bring the caches current**: call `rt_verb {args: ["skills", "sync", "--pack", "<pack>"]}`,
+   one call per pack. Skills verbs go through `rt_verb` this way everywhere
+   below: `--pack <pack>` (and `--pack-dir <dir>` where a command needs one)
+   sits in `args`, and the call never carries a `cwd`. Sync runs the whole
+   deterministic tail as code -- a fast-forward pull in both checkouts,
+   engine cache update, check, patch-bump, compile, recheck, a commit + push
+   scoped to the pack, pack cache update, verify -- and reports
+   `restartNeeded`. The pull is the step hand-runs forget: a checkout parked
+   on a merged branch compiles stale engines and nothing says so.
    The middle of that chain (patch-bump, compile, recheck, commit + push)
    fires ONLY when check finds compiled output drifting from its sources, so
    your step 4 bump is never doubled: a hand-authored skill compiles to
@@ -102,7 +106,7 @@ every case.
 
 ## When a pack compiles verbs from a shared engine
 
-A pack that runs `rt skills compile --pack <pack>` does not hand-author its
+A pack that runs `rt_verb {args: ["skills", "compile", "--pack", "<pack>"]}` does not hand-author its
 verbs. The compiler fills the `{{placeholder}}` markers in the mattstack
 engines (`work`, `stage-*`, `review`, `self-review`, `receive-review`,
 `ship`, `watch-ci`, `shepherdr`) with the pack's fills and writes public
@@ -126,10 +130,11 @@ Writing a fill:
   host-anchored path; the file must exist at compile time, and a compiled
   verb's output is not addressable this way). Nothing else
   placeholder-shaped belongs in a fill.
-- `rt skills check` names what moved on each stale line (source, fill,
-  include, vendored, frontmatter, structure); a stage's slot binds with
-  `rt skills bind <stage> <slot> <plugin:fill>`, and `rt skills surface set
-<stage> --public` works before the stage's first compile.
+- `rt_verb {args: ["skills", "check", "--pack", "<pack>"]}` names what moved on each stale line
+  (source, fill, include, vendored, frontmatter, structure); a stage's slot
+  binds with `rt_verb {args: ["skills", "bind", "<stage>", "<slot>", "<plugin:fill>", "--pack", "<pack>"]}`,
+  and `rt_verb {args: ["skills", "surface", "set", "<stage>", "--public", "--pack", "<pack>"]}`
+  works before the stage's first compile.
 
 What `compile` and `check` read:
 
@@ -147,10 +152,11 @@ What `compile` and `check` read:
    together; push `main`. Sync consumes whatever `main` says and never bumps
    the engine, so a skipped bump leaves the engine cache -- and therefore
    every pack that compiles against it -- silently on the old version.
-2. `rt skills sync --pack mattstack`. The engine and its own compiled verb
-   share a checkout, so the chain collapses to one pull and one update.
-3. `rt skills sync --pack <pack>` for each other compiled pack. `rt skills
-   check --pack <pack>` names which packs are stale, and its
+2. Call `rt_verb {args: ["skills", "sync", "--pack", "mattstack"]}`. The engine and its own
+   compiled verb share a checkout, so the chain collapses to one pull and one
+   update.
+3. Call `rt_verb {args: ["skills", "sync", "--pack", "<pack>"]}` for each other compiled pack.
+   `rt_verb {args: ["skills", "check", "--pack", "<pack>"]}` names which packs are stale, and its
    `installed cache: lagging (<a> installed vs <b> source) -- run rt skills sync`
    line is the other trigger; lag alone leaves check's exit code at 0, so read
    the line, not the status.
@@ -160,7 +166,8 @@ What `compile` and `check` read:
 Sync refuses with `content drift survives recompile` when the pack has real
 content changes pending. That is a handoff to this skill, not a failure: sync
 leaves its version bump and compiled output in the pack working tree, so carry
-that tree forward by hand -- compile, check, commit, push, then
+that tree forward by hand: call `rt_verb {args: ["skills", "compile", "--pack", "<pack>"]}`,
+then `rt_verb {args: ["skills", "check", "--pack", "<pack>"]}`, commit, push, then
 `claude plugin update <pack>@<marketplace>`.
 
 Proof the fix landed: in the installed pack copy
