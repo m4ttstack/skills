@@ -72,8 +72,9 @@ digraph watch_ci {
     "mr_ready {repoName, iid}" [shape=plaintext];
     "gh pr ready <number>" [shape=plaintext];
     "run_field_set {key: ci, value: green, stage: watch-ci}" [shape=plaintext];
+    "Was a lease claimed?" [shape=diamond];
     "<scripts>/ci-attendant.sh release <mr-url> <iid>" [shape=plaintext];
-    "Which exit is releasing the lease?" [shape=diamond];
+    "Which exit is this?" [shape=diamond];
     "Fixed the claim call once already?" [shape=diamond];
     "run_stage {action: fail, stage: watch-ci, reason}" [shape=plaintext];
     "Stage failed" [shape=doublecircle];
@@ -134,9 +135,9 @@ digraph watch_ci {
     "ci answer?" -> "Hand Fix and re-push to the orchestrator: Redirect to implement" [label="fix and re-push: write no ci"];
     "ci answer?" -> "Which flow?" [label="retry the job, then watch again"];
     "ci answer?" -> "run_field_set {key: ci, value: red: <triage>, stage: watch-ci}" [label="hand back"];
-    "ci answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="abandon"];
-    "ci answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="go back"];
-    "ci answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="hold"];
+    "ci answer?" -> "Was a lease claimed?" [label="abandon"];
+    "ci answer?" -> "Was a lease claimed?" [label="go back"];
+    "ci answer?" -> "Was a lease claimed?" [label="hold"];
     "ci answer?" -> "Gate ci (table below)" [label="iterate: re-triage with their note"];
     "run_status {status: abandoned}" -> "Run abandoned";
     "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" -> "MR still a draft?";
@@ -145,8 +146,8 @@ digraph watch_ci {
     "Gate mark-ready (table below)" -> "ready answer?";
     "ready answer?" -> "Forge host?" [label="mark ready now"];
     "ready answer?" -> "run_field_set {key: ci, value: green, stage: watch-ci}" [label="keep it draft"];
-    "ready answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="go back"];
-    "ready answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="hold"];
+    "ready answer?" -> "Was a lease claimed?" [label="go back"];
+    "ready answer?" -> "Was a lease claimed?" [label="hold"];
     "ready answer?" -> "Gate mark-ready (table below)" [label="iterate: re-ask with their note"];
     "Forge host?" -> "mr_ready {repoName, iid}" [label="GitLab"];
     "Forge host?" -> "gh pr ready <number>" [label="GitHub"];
@@ -154,13 +155,15 @@ digraph watch_ci {
     "Gate clarify: which forge?" -> "Forge host?" [label="answered: the named forge"];
     "mr_ready {repoName, iid}" -> "run_field_set {key: ci, value: green, stage: watch-ci}";
     "gh pr ready <number>" -> "run_field_set {key: ci, value: green, stage: watch-ci}";
-    "run_field_set {key: ci, value: green, stage: watch-ci}" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>";
-    "run_field_set {key: ci, value: red: <triage>, stage: watch-ci}" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>";
-    "<scripts>/ci-attendant.sh release <mr-url> <iid>" -> "Which exit is releasing the lease?";
-    "Which exit is releasing the lease?" -> "Watch-ci done: return to the orchestrator" [label="ci written"];
-    "Which exit is releasing the lease?" -> "Held per the gate part" [label="hold"];
-    "Which exit is releasing the lease?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
-    "Which exit is releasing the lease?" -> "run_status {status: abandoned}" [label="abandon"];
+    "run_field_set {key: ci, value: green, stage: watch-ci}" -> "Was a lease claimed?";
+    "run_field_set {key: ci, value: red: <triage>, stage: watch-ci}" -> "Was a lease claimed?";
+    "Was a lease claimed?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="yes: mr was set and claimed"];
+    "Was a lease claimed?" -> "Which exit is this?" [label="no: mr unset, nothing to release"];
+    "<scripts>/ci-attendant.sh release <mr-url> <iid>" -> "Which exit is this?";
+    "Which exit is this?" -> "Watch-ci done: return to the orchestrator" [label="ci written"];
+    "Which exit is this?" -> "Held per the gate part" [label="hold"];
+    "Which exit is this?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
+    "Which exit is this?" -> "run_status {status: abandoned}" [label="abandon"];
 }
 ```
 
