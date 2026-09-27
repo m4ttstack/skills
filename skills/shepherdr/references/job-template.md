@@ -131,6 +131,12 @@ digraph herd_job {
 report contract and its own budgets. Come back to the graph whenever the
 Method needs something the graph names.
 
+### End the turn until the gate answer arrives
+
+Nothing arms: no background wait, no polling, no reading the registry
+yourself. The answer arrives in your context as a message; only then call
+`herd_answer`.
+
 ### Revise the artifact
 
 Apply the note from `herd_answer`, or the reviewer's DM findings, to the

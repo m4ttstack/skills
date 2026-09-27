@@ -9,7 +9,7 @@ metadata:
 
 <!-- compiled by rt skills compile from the sources below; slots pre-resolved; edits here are working-tree drift (rt skills promote) -->
 
-<!-- part: step source=mattstack:shepherdr version=0.25.0 path=attachments/orchestration/shepherdr/SKILL.md lines=15-826 -->
+<!-- part: step source=mattstack:shepherdr version=0.25.0 path=attachments/orchestration/shepherdr/SKILL.md lines=15-825 -->
 
 # shepherdr
 
@@ -879,7 +879,7 @@ digraph shepherdr_lanes {
 
     "Trigger: a job's report, or a nag about a done job's open pane" [shape=ellipse];
     "rt_verb {args: [git, log], cwd: <worktree>}" [shape=plaintext];
-    "git diff --stat, bare, after cd into each active job's tree" [shape=plaintext];
+    "cd <tree> as its own Bash call, then bare git diff --stat, per active job" [shape=plaintext];
     "Drift outside the fence, or a file two jobs changed?" [shape=diamond];
     "Flag the drift or collision to the user" [shape=box];
     "Relay only what you measured" [shape=box];
@@ -920,8 +920,8 @@ digraph shepherdr_lanes {
     "Herd wrapped up" [shape=doublecircle style=filled fillcolor=lightgreen];
 
     "Trigger: a job's report, or a nag about a done job's open pane" -> "rt_verb {args: [git, log], cwd: <worktree>}";
-    "rt_verb {args: [git, log], cwd: <worktree>}" -> "git diff --stat, bare, after cd into each active job's tree";
-    "git diff --stat, bare, after cd into each active job's tree" -> "Drift outside the fence, or a file two jobs changed?";
+    "rt_verb {args: [git, log], cwd: <worktree>}" -> "cd <tree> as its own Bash call, then bare git diff --stat, per active job";
+    "cd <tree> as its own Bash call, then bare git diff --stat, per active job" -> "Drift outside the fence, or a file two jobs changed?";
     "Drift outside the fence, or a file two jobs changed?" -> "Flag the drift or collision to the user" [label="yes"];
     "Drift outside the fence, or a file two jobs changed?" -> "Relay only what you measured" [label="no"];
     "Flag the drift or collision to the user" -> "Relay only what you measured";
@@ -1028,14 +1028,13 @@ authority, and `herd_wrap_up` executes exactly it.
 
 ### Measure what still runs
 
-The stop calls before this step cover every job in the dispose list plus
-every job whose pane is closing. Their `repoName` is the herd's repo, and
-their `tree` is the job's `tree` field from `herd_status`, a registry name,
-never a path. A null tree (a job
-spawned in a given dir) is skipped unless that dir is an rt tree; then pass
-the name `rt_verb {args: ["worktree", "list", "--repo", "<the herd's repo>"]}`
-prints for it. They run before `herd_wrap_up` because a disposed tree
-leaves rt's registry and the call then fails.
+The stop calls before this step cover every job in the dispose list plus every
+job whose pane is closing. Their `repoName` is the herd's repo, and their
+`tree` is the job's `tree` field from `herd_status`, a registry name, never a
+path. A null tree (a job spawned in a given dir) is skipped unless that dir is
+an rt tree; then pass the name `rt_verb {args: ["worktree", "list", "--repo",
+"<the herd's repo>"]}` prints for it. They run before `herd_wrap_up` because a
+disposed tree leaves rt's registry and the call then fails.
 
 `not-held` means rt has no recorded hold on the tree, not that nothing runs
 there: rt records a hold only after the tree's MR merges or closes with a
