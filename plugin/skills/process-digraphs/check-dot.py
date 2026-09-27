@@ -54,12 +54,14 @@ def check(graph):
     shape = {i: o.get("shape", "ellipse") for i, o in enumerate(objects)}
     index = {o["_gvid"]: i for i, o in enumerate(objects)}
     out, into = {i: [] for i in index.values()}, {i: 0 for i in index.values()}
+    into_labels = {i: [] for i in index.values()}
     for e in graph.get("edges", []):
         t, h = index.get(e["tail"]), index.get(e["head"])
         if t is None or h is None:
             continue
         out[t].append((h, e.get("label", "")))
         into[h] += 1
+        into_labels[h].append(e.get("label", ""))
 
     problems = []
     for i, name in enumerate(names):
@@ -84,6 +86,11 @@ def check(graph):
             problems.append(f'"{name}": an outcome ends the path; it has {len(out[i])} outgoing edge(s)')
         if shape[i] == "octagon" and len(out[i]) > 1:
             problems.append(f'"{name}": a STOP has at most one way out (found {len(out[i])}); a choice after it is a gate step')
+        if shape[i] == "octagon" and len(out[i]) == 1:
+            h = out[i][0][0]
+            guard = bool(into_labels[i]) and all(lab.strip().lower().startswith("tempted") for lab in into_labels[i])
+            if not (guard or shape[h] == "doublecircle" or "off-script" in names[h].lower()):
+                problems.append(f'"{name}" -> "{names[h]}": only a guard STOP (every edge in is labelled "tempted to ...") redirects to a step; any other STOP ends, or exits to an outcome or the off-script gate')
 
     success = [i for i, o in enumerate(objects) if shape[i] == "doublecircle" and o.get("style", "") == "filled"]
     if not success:
