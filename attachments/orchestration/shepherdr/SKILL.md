@@ -641,8 +641,8 @@ digraph shepherdr_lanes {
     "STOP: never merge, fix or push by hand; route by who merges" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Every lane job done?" [shape=diamond];
     "Integration job spawned already?" [shape=diamond];
-    "herd_brief {job: integration, template, strategy, strategies, fill, out}" [shape=plaintext];
-    "herd_spawn {herd, job: integration, brief, model}" [shape=plaintext];
+    "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" [shape=plaintext];
+    "herd_spawn {herd, job: integration-<n>, brief, model}" [shape=plaintext];
     "chat_dm {to: <job>, body: ship through your skill chain}" [shape=plaintext];
     "Gate: merge this lane?" [shape=box];
     "Forge?" [shape=diamond];
@@ -693,10 +693,11 @@ digraph shepherdr_lanes {
     "STOP: never merge, fix or push by hand; route by who merges" -> "Who merges this lane?";
     "Every lane job done?" -> "Back to the watch loop: end the turn" [label="no"];
     "Every lane job done?" -> "Integration job spawned already?" [label="yes"];
-    "Integration job spawned already?" -> "herd_brief {job: integration, template, strategy, strategies, fill, out}" [label="no"];
+    "Integration job spawned already?" -> "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" [label="no"];
     "Integration job spawned already?" -> "Unmerged reports for this lane = 2?" [label="yes: it reported no merge"];
-    "herd_brief {job: integration, template, strategy, strategies, fill, out}" -> "herd_spawn {herd, job: integration, brief, model}";
-    "herd_spawn {herd, job: integration, brief, model}" -> "Back to the watch loop: end the turn";
+    "Integration job spawned already?" -> "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" [label="yes, but before this lane joined: a new one for it"];
+    "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" -> "herd_spawn {herd, job: integration-<n>, brief, model}";
+    "herd_spawn {herd, job: integration-<n>, brief, model}" -> "Back to the watch loop: end the turn";
     "chat_dm {to: <job>, body: ship through your skill chain}" -> "Back to the watch loop: end the turn";
     "Gate: merge this lane?" -> "Forge?" [label="merge"];
     "Gate: merge this lane?" -> "Back to the watch loop: end the turn" [label="not yet, or hold"];
@@ -824,7 +825,7 @@ the Bash command `rt herd stop --hidden` (no tool runs it); never run it unpromp
 - **The two objective checks.** The commits come from the graph's `rt_verb` git log call on the job's worktree. The changed files come from two separate Bash calls per active job: the `cd` alone, then the bare `git diff --stat`; never chain them. Compare each job's files against its write fence and across jobs.
 - **Job state is the daemon's.** It marked the job `done` when the report was published; `herd_status` is the status table's source. Nothing to record by hand.
 - **A report is a claim, not a merge.** Answer "Merged on the repo?" from the repo itself (`gh pr view --json state,mergeCommit`, or the sha on `origin/main`), never from the report alone.
-- **The integration job.** Its brief merges or cherry-picks the job branches, runs full verification, and reports; it carries the repo's shipping conventions. Never merge, fix or push on the agents' behalf.
+- **The integration job.** Its brief merges or cherry-picks the job branches, runs full verification, and reports; it carries the repo's shipping conventions. Never merge, fix or push on the agents' behalf. The first is `integration-1`; a lane that joined the herd after it spawned gets the next number, and its brief covers only the lanes no integration job has merged.
 - **Domain hook: after the report.** Unbound: the integration job merges. A bound domain part may define what follows a job's report (the worker ships through its own skill chain, or the shepherd merges after a gate; how several jobs feeding one deliverable integrate) and whether that step waits for the user to ask. Fixing and pushing stay with workers either way.
 - **Domain hook: wrap-up.** Unbound: as drawn. A bound domain part may state its own tree lifecycle (trees that dispose themselves when their work merges, what a disposal refusal means); follow it over the disposal defaults here.
 
