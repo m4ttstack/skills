@@ -754,7 +754,9 @@ next report row.
 
 Commit the fix. Finalize its reply to "Fixed -- `file:line` / what
 changed" and write it over the draft in the thread's report row, with
-` · sha: <short sha>` before its `reply` field.
+` · sha: <short sha>` before its `reply` field. The sha belongs to the
+report row only: the reply posted to the forge is the Fixed text alone,
+never the ` · sha:` field.
 
 ### Redraft the override's reply
 
