@@ -95,6 +95,10 @@ digraph receive_review {
 
     "Resumed, or re-asking after respond-post Hold or Iterate?" [shape=diamond];
     "Posted already: read each thread on the forge" [shape=box];
+    "Forge for the posted-already read?" [shape=diamond];
+    "mr_threads {mrUrl, refresh: true} for the posted-already read" [shape=plaintext];
+    "Read the PR's threads with gh for the posted-already test" [shape=box];
+    "Posted-already read returned every thread's notes?" [shape=diamond];
     "Resuming a respond-post record that carries held?" [shape=diamond];
     "Any thread offered (a finalized fix or an override)?" [shape=diamond];
     "Nothing offered: caller handed a respond-post decision?" [shape=diamond];
@@ -261,7 +265,13 @@ digraph receive_review {
 
     "Resumed, or re-asking after respond-post Hold or Iterate?" -> "Posted already: read each thread on the forge" [label="yes"];
     "Resumed, or re-asking after respond-post Hold or Iterate?" -> "Any thread offered (a finalized fix or an override)?" [label="no"];
-    "Posted already: read each thread on the forge" -> "Resuming a respond-post record that carries held?";
+    "Posted already: read each thread on the forge" -> "Forge for the posted-already read?";
+    "Forge for the posted-already read?" -> "mr_threads {mrUrl, refresh: true} for the posted-already read" [label="GitLab"];
+    "Forge for the posted-already read?" -> "Read the PR's threads with gh for the posted-already test" [label="GitHub"];
+    "mr_threads {mrUrl, refresh: true} for the posted-already read" -> "Posted-already read returned every thread's notes?";
+    "Read the PR's threads with gh for the posted-already test" -> "Posted-already read returned every thread's notes?";
+    "Posted-already read returned every thread's notes?" -> "Resuming a respond-post record that carries held?" [label="yes: test each thread from those notes"];
+    "Posted-already read returned every thread's notes?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="no, or an error: hold, the error verbatim"];
     "Resuming a respond-post record that carries held?" -> "Picks post or resolve a gate-1: fix row?" [label="yes: act on the held threads only"];
     "Resuming a respond-post record that carries held?" -> "Any thread offered (a finalized fix or an override)?" [label="no, or a held override has no recorded text: offer it again"];
     "Any thread offered (a finalized fix or an override)?" -> "Nothing offered: caller handed a respond-post decision?" [label="no"];
@@ -847,6 +857,13 @@ it is never offered at a re-asked gate, and it is never posted again,
 whatever the snapshot or the report says of it. Only a thread with no
 such note posts or is offered.
 
+This read is made here, after the report rows, every time the graph
+reaches this box: `mr_threads {mrUrl, refresh: true} for the posted-already read` on GitLab, Read the PR's threads with gh for the posted-already test on GitHub. A read made earlier
+in the run, for a redraft or at the start, never stands in for it; its
+result, and only its result, is what the post-site test uses. With no
+result (an error, or a thread whose notes did not come back), nothing
+posts and nothing is offered: the run holds, with the error verbatim.
+
 The ask that follows a respond-post hold, once it lifts, or an iteration,
 once it is applied, is a NEW gate (gate-protocol's Closed gates, Hold /
 Iterate). Read the forge first, then build its open: the report rows
@@ -866,6 +883,11 @@ thread: if it carries this run's reply, count it posted and post nothing;
 if not, post it. Only a run that was never resumed or re-asked answers no
 without a read, and only for a thread it has not yet tried to post; after
 an `mr_reply_thread` error, re-read that thread before the retry.
+
+### Read the PR's threads with gh for the posted-already test
+
+Read every thread's full note chain with `gh`, fresh, for this test. The
+earlier read of the PR's review threads does not stand in for it.
 
 ### Build the respond-post open
 
