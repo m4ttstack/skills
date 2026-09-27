@@ -12,8 +12,8 @@ single arbiter; no per-verb conflict logic belongs anywhere downstream of
 it. Every gate walks this graph: the site names the scope, the questions
 and the selection; this part publishes, answers and records.
 
-If a rule in the including verb asks for a move this graph marks STOP, take
-the off-script edge instead (Off-script gate, below).
+If a site's questions or a rule in the including verb ask for a move this
+graph marks STOP, open the Off-script gate (below) instead.
 
 ```dot
 digraph gate_protocol {
@@ -49,6 +49,7 @@ digraph gate_protocol {
     "Trigger: the gate wait finished and re-invoked this pane" [shape=ellipse];
     "Gate wait result for an already reconciled gate?" [shape=diamond];
     "Trigger: the human answers in words at a held gate" [shape=ellipse];
+    "Words answer for an already reconciled gate?" [shape=diamond];
     "Trigger: a gate doorbell push arrives" [shape=ellipse];
     "Doorbell for an already reconciled gate?" [shape=diamond];
     "rt gate wait <id> --timeout 2s" [shape=plaintext];
@@ -114,7 +115,9 @@ digraph gate_protocol {
     "Trigger: the gate wait finished and re-invoked this pane" -> "Gate wait result for an already reconciled gate?";
     "Gate wait result for an already reconciled gate?" -> "Late gate signal discarded" [label="yes"];
     "Gate wait result for an already reconciled gate?" -> "waiting-gate set on this run?" [label="no"];
-    "Trigger: the human answers in words at a held gate" -> "waiting-gate set on this run?";
+    "Trigger: the human answers in words at a held gate" -> "Words answer for an already reconciled gate?";
+    "Words answer for an already reconciled gate?" -> "Late gate signal discarded" [label="yes: say in one line which surface already decided it"];
+    "Words answer for an already reconciled gate?" -> "waiting-gate set on this run?" [label="no"];
     "Trigger: a gate doorbell push arrives" -> "Doorbell for an already reconciled gate?";
     "Doorbell for an already reconciled gate?" -> "Late gate signal discarded" [label="yes"];
     "Doorbell for an already reconciled gate?" -> "rt gate wait <id> --timeout 2s" [label="no"];
@@ -215,8 +218,8 @@ run, or ends the verb.
 
 ### Present the in-pane gate form
 
-This is the `presentation: "form"` branch; an attended pane on `wait` lands
-here too (Attendance, below). The native in-pane structured form is this
+This is the `presentation: "form"` branch; an attended non-herdr pane on
+`wait` lands here too (Attendance, below). The native in-pane structured form is this
 gate's registry face: where the launch-injected AskUserQuestion hook is
 active, an open gate matching the pane's LAUNCH subject is what lets the
 form through, and so is the pane's own worktree carrying its own open run:
@@ -250,14 +253,15 @@ A losing `gate_answer` is not an error: it returns a successful result
 carrying `conflict: true` and the winner's `row`. Discard the form's
 answer, say in the pane in one line which answer won and from where
 (`row.answer.by`), and proceed on `row`'s recorded answer; no second read
-is needed.
+is needed. On the words path the discarded answer is the human's words,
+not a form's.
 
 ### End the turn: holding at gate <id>
 
-Launch ONE background `rt gate wait <id>` (the shell tool's
-run-in-background mode; the wait is never a tool call, since no tool blocks
-on a gate) and end the turn in one line: `holding at gate <id>`. When a
-wait for this gate is already running, do not launch another. The wait
+The node before launched the one background `rt gate wait <id>` (the
+shell tool's run-in-background mode; the wait is never a tool call, since
+no tool blocks on a gate); never launch a second while one for this gate
+runs. End the turn in one line: `holding at gate <id>`. The wait
 loops internally around the daemon clamp, survives daemon restarts, and
 exits only on answered or closed, printing
 `{"ok":true,"status":"answered","row":{...}}` as its last stdout. The pane
@@ -288,8 +292,14 @@ non-herdr session takes the plain in-pane form anyway, because the stamp
 names what OTHER surfaces reconcile against, not a command to this pane,
 and a non-herdr pane has no herdr PTY to receive the remote-answer Escape
 that makes the idle wait safe. A spawned pane, or any herdr pane whether
-attended or not, goes to the wait. A human who opens an unattended pane
-can interrupt the wait and answer in words: the graph's words trigger.
+attended or not, goes to the wait. The herdr bit is `HERDR_ENV=1` in the
+pane's environment, read only to pick this `wait` branch, never to compute
+presentation. A human who opens an unattended pane can interrupt the wait
+and answer in words: the graph's words trigger, which first checks that
+no surface already reconciled the gate.
+
+A cancelled form holds on the wait even outside herdr: no form is open, so
+nothing needs the remote-answer Escape.
 
 ## Runs integration
 
@@ -320,12 +330,12 @@ routes here opens this gate through the graph above, scope
 
 Selection: `{"move":"<the move>","why":"<the refusal or line>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`,
 recorded only under a run, like every `run_decision`. Take: make exactly
-that move, once, then continue from the node after the STOP's origin. Hand
-back: under a run, `run_stage {action: fail}` with the why as the reason;
-with no run, end the verb quoting the why. A host graph draws one
-off-script node per STOP origin, never one shared node: "continue from the
-node after it" needs to know where it came from, and a shared node cannot
-return to the right place.
+that move, once, then continue from the node the forbidden move would have
+led to. Hand back: under a run, `run_stage {action: fail}` with the why as
+the reason; with no run, end the verb quoting the why. A host graph draws
+one off-script node per STOP origin, never one shared node: continuing
+needs to know where the move came from, and a shared node cannot return to
+the right place.
 
 ## Structured context (gate-ctx@1)
 
@@ -425,7 +435,7 @@ push for a gate already reconciled is discarded.
 
 | Thought | Reality |
 |---|---|
-| "I'll compute presentation / build --origin / branch on HERDR_ENV myself" | The daemon owns the ceremony. `gate_ask` returns the presentation; act on it. |
+| "I'll compute presentation / build --origin myself" | The daemon owns the ceremony. `gate_ask` returns the presentation; act on it. |
 | "The doorbell push tells me what they picked" | It's verify-only. It never carries or implies the answer: re-read the registry. |
 | "`decidedBy` is whoever just submitted the form" | It names the CAS WINNER, which may be a different surface than the one that just submitted. |
 | "I'll ask the human whether this pane is attended" | Attendance comes from the invocation context, never asked. |
