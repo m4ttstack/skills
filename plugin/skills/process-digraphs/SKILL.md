@@ -65,8 +65,8 @@ tests") is a `box`.
 5. **A STOP forbids one move and has at most one way out.** It ends the
    path, exits to an outcome, or hands to the off-script gate ("STOP: push
    only with git_push" -> "Off-script gate"). A guard STOP, entered only on
-   an edge labelled `tempted to ...`, may instead redirect to the sanctioned
-   move it names ("STOP: rt reads go through rt_verb" -> the `rt_verb`
+   edges labelled `tempted to ...` that leave a decision, may redirect to
+   the move it names ("STOP: rt reads go through rt_verb" -> the `rt_verb`
    node); the real branch goes straight there, never through the STOP. A
    STOP never branches. Asking a human and continuing is a gate step (a box
    or `gate_ask` node) with labelled answers, not a STOP. An outcome
@@ -79,14 +79,16 @@ tests") is a `box`.
 7. **Leaving the graph is explicit.** When the right move is not on the map
    (a tool refused past its budget, a data source switch, a rule conflict),
    take an off-script edge: open a gate naming the proposed move, record
-   why, and continue only on the human's answer.
+   why, and continue only on the human's answer: take, iterate, hold or
+   hand back.
 8. **STOP text never quotes the shell form.** Write "STOP: push only with
    git_push", not the command it forbids. The strict mcp lint reads fenced
    blocks and fails a quoted shell form; name the tool instead of splitting
    words to dodge it.
 9. **Two levels for pipelines.** An orchestrator graph whose nodes are the
    stages, one graph per stage, and a shared gate-step graph included where
-   each stage asks a question, instead of repeating gate prose per stage.
+   each stage asks a question, instead of repeating gate prose per stage:
+   the include is shared, each gate node stays one per origin.
 
 ## Example
 
@@ -110,10 +112,10 @@ digraph hotfix_push {
     "git_push {tree, setUpstream: true}" -> "git_push refused the tree?";
     "git_push refused the tree?" -> "mr_create {repoName, sourceBranch, targetBranch, title, description}" [label="no: pushed"];
     "git_push refused the tree?" -> "Push attempt = 2?" [label="yes"];
+    "git_push refused the tree?" -> "STOP: push only with git_push" [label="tempted to push from the shell"];
     "Push attempt = 2?" -> "Use the repo root git_push printed" [label="no: retry once"];
     "Use the repo root git_push printed" -> "git_push {tree, setUpstream: true}";
     "Push attempt = 2?" -> "Open the off-script gate: push refused" [label="yes: budget spent"];
-    "Push attempt = 2?" -> "STOP: push only with git_push" [label="tempted to push from the shell"];
     "STOP: push only with git_push" -> "Open the off-script gate: push refused";
     "Open the off-script gate: push refused" -> "mr_create {repoName, sourceBranch, targetBranch, title, description}" [label="take: the human pushed"];
     "Open the off-script gate: push refused" -> "Off-script rounds = 2?" [label="iterate: the human fixed it"];
@@ -128,9 +130,10 @@ digraph hotfix_push {
 ### Open the off-script gate: push refused
 
 Quote the refusal and offer four answers: take (the human pushed), iterate
-(the human fixed the registration; retry `git_push`), hold (end the turn with
-nothing moved), hand back (report the refusal to the caller). Record the
-answer with the gate before anything else happens.
+(retry `git_push` without resetting the push attempt count, so a second
+refusal returns here), hold (end the turn with nothing moved), hand back
+(report the refusal to the caller). Record the answer with the gate before
+anything else happens.
 ````
 
 One graph, one section per judgment step, and the tool calls are the nodes.
@@ -151,34 +154,38 @@ One graph, one section per judgment step, and the tool calls are the nodes.
      missing success outcome. On a new or edited graph run it with --strict:
      it also fails two warnings the default run only prints (two calls in one
      plaintext node, a tempted edge that leaves a step instead of a decision).
-   Before publishing, walk `Before you publish the spec` below against the graph.
 5. Test behavior with superpowers:writing-skills: fresh agents, describe-only,
    5 runs per scenario, prose version against graph version, and a deviation
    table (shell calls a tool covers, skipped steps, runaway loops, stops that
    should have been gates).
+
+   Before publishing, walk `Before you publish the spec` below.
 
 Fences start at column 1; an indented ```` ```dot ```` inside a list is
 skipped by every tool.
 
 ## Before you publish the spec
 
-Check the spec against every line; each one caught a real graph in review.
+Check the spec (the graph, its step sections and its test plan) against every
+line; each one caught a real graph in review.
 
 1. **One off-script gate per origin**, never shared, each with take, iterate,
    hold and hand back exits.
 2. **A budget on every loop**, per-item repeats too: retries per job,
    reviewer rounds, the off-script iterate.
-3. **A preservation inventory**: every current rule and step mapped to its own
-   node or section. A rule with no home is a rule dropped; a step folded into
-   a later call ("tag, then push the tag" drawn as one push) is a step dropped.
+3. **A preservation inventory**: map every current rule and step to its own
+   node or section; a rule with no home, or a step folded into a later call
+   ("tag, then push the tag" drawn as one push), is dropped.
 4. **One exact call per `plaintext` node.** "X, or Y on GitHub" is two nodes
    behind a `Forge?` diamond.
-5. **Distinct text for every step**, specific to this skill. Identical text
-   is one node to dot, so two steps merge.
+5. **Distinct text for every step**, specific to this skill: identical text
+   merges two steps into one node.
 6. **Guard STOPs sit on `tempted to ...` edges out of a decision** and
-   redirect to the move they name or hand to the off-script gate.
-7. **RED scenarios reach the tempting move**.
-8. **Resume and run bookkeeping**.
+   leave by a rule 5 exit.
+7. **Give the spec's test plan a RED scenario that reaches each tempting move**: a
+   tool that refuses, a rule that asks for a shell fallback.
+8. **Where the skill has runs, draw the resume entry and every run write as
+   nodes.**
 
 ## Rationalizations
 
@@ -192,9 +199,7 @@ Check the spec against every line; each one caught a real graph in review.
 | "No merge tool was listed, so I end at the outcome." | Draw a box naming the step; the node is about the action, not the tool. |
 | "The guidance fits in the node label." | Labels are signposts; the how goes in the step's section. |
 | "I checked the syntax by eye." | Run render.sh and check-dot.py. |
-| "Gate retry doesn't re-arm the budget." | The off-script iterate is a loop too: it passes an `Off-script rounds = 2?` counter like any other. |
-| "Offer the human two options: fix it and say retry, or take over." | Every off-script gate has four exits: take, iterate, hold and hand back. |
-| "The shell fallback is neutralized by a guard STOP after the human takes over." | A guard STOP sits on a `tempted to ...` edge out of a decision. A human taking over is the gate's hand back exit to an outcome. |
+| "The human said retry, so that loop needs no counter." | The off-script iterate is a loop too: it passes an `Off-script rounds = 2?` counter like any other. |
 | "One shared test-run node is one place to update." | Each run of a step is its own node with its own text; the later section can point at the earlier one. |
 
 ## Not yet standard
