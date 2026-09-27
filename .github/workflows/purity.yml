@@ -37,11 +37,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          repository: m4ttstack/rt
+          repository: m4ttstack/mattstack
           # A sha, never a floating branch: rt main must not be able to turn
           # this repo red without a change here. Moved deliberately, together
           # with any hit fixes, when the pin needs to advance.
-          ref: c510a27ebc2f89502882316d5dd14de65e7f3b7f
+          ref: a2ea64e02a44ad4112aef719643feb5a6339640f
           path: rt
       - uses: oven-sh/setup-bun@v2
         with:
