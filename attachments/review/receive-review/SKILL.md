@@ -475,10 +475,10 @@ self-review as an afterthought at the end does not satisfy this: the fresh conte
 comments are adjudicated, not a final gut-check.
 </HARD-GATE>
 
-Hand the dispatch flow the numbered threads (`file:line` plus note chains), the
-requirements, and the diff range; it owns the template, the subagent, and the
-standard blocks. The dispatch flow is the Criteria and Reviewer sections
-below.
+Hand the dispatch flow the numbered threads (`file:line` plus note chains),
+the requirements, and the diff range; it owns the template, the subagent,
+and the standard blocks. The dispatch flow is below, after the Off-script
+gate section.
 
 ### Draft the verdict table and one reply per thread
 
