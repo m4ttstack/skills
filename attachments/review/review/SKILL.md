@@ -107,7 +107,7 @@ digraph review {
     "Both review scripts exit 0?" [shape=diamond];
     "Fixed a field a review script named once already?" [shape=diamond];
     "Fix the field the review script names" [shape=box];
-    "Open the review off-script gate: a review script refused twice" [shape=box];
+    "Open the review off-script gate: a review script refused" [shape=box];
     "Review script off-script answer?" [shape=diamond];
     "Caller owns the review gates?" [shape=diamond];
     "Hand back the severity line and the open's paths" [shape=box];
@@ -245,10 +245,11 @@ digraph review {
     "sh \"${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh\" fit < <dir>/review-post.source.json > <dir>/review-post.open.json" -> "Both review scripts exit 0?";
     "Both review scripts exit 0?" -> "Caller owns the review gates?" [label="yes"];
     "Both review scripts exit 0?" -> "Fixed a field a review script named once already?" [label="no: exit 1 names a field"];
+    "Both review scripts exit 0?" -> "Open the review off-script gate: a review script refused" [label="no: exit 2, no field to fix"];
     "Fixed a field a review script named once already?" -> "Fix the field the review script names" [label="no"];
-    "Fixed a field a review script named once already?" -> "Open the review off-script gate: a review script refused twice" [label="yes"];
+    "Fixed a field a review script named once already?" -> "Open the review off-script gate: a review script refused" [label="yes"];
     "Fix the field the review script names" -> "sh \"${CLAUDE_SKILL_DIR}/scripts/review-source.sh\" <report json> <dir>/review-post.extras.json > <dir>/review-post.source.json";
-    "Open the review off-script gate: a review script refused twice" -> "Review script off-script answer?";
+    "Open the review off-script gate: a review script refused" -> "Review script off-script answer?";
     "Review script off-script answer?" -> "Gate review-post, legacy: tiers, outcome and next" [label="take: open the legacy gate instead"];
     "Review script off-script answer?" -> "Write review-post.extras.json" [label="iterate here: rebuild with their note"];
     "Review script off-script answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for review" [label="hold"];
@@ -332,9 +333,11 @@ digraph review {
 No run of yours exists yet, so this gate is the structured-question tool
 in the pane. One sentence naming each candidate's `spawned_by`,
 `started_at` and `current_stage`, then one **Resume** option per candidate
-(recommended for a run this session started earlier; a run another live
-pane owns is not yours), **Start fresh**, **Hold**. A surface-launched pane
-never reaches this gate: another pane's live run is not yours to resume.
+this pane may take, a run this session started earlier (recommended) or
+one no live pane owns; a run another live pane owns gets no Resume
+option, named unavailable, then **Start fresh**, **Hold**. A
+surface-launched pane never reaches this gate: another pane's live run is
+not yours to resume.
 Resume: your `runDb` is `<home>/.mattstack/runs/<repo>/<its id>/state.db`
 (the candidate row's `id`, the home directory written out, never `~`).
 Re-enter with the snapshot's decisions: a question they already answered
@@ -502,8 +505,9 @@ as context. The output file IS the open: its `.context` and `.questions`
 go to the gate verbatim, fitted to the shared budget. A report json from
 before version 2 carries no bodies, so fit opens it as prose on its own;
 that is correct, not an error. Never hand-edit the open, and never shorten
-a body to make it fit. Any non-zero exit, 1 or 2, from either script is a
-refusal at "Both review scripts exit 0?".
+a body to make it fit. Exit 1 names a field to fix; exit 2 goes straight
+to the off-script gate. Either is a refusal at "Both review scripts exit
+0?".
 
 ### Fix the field the review script names
 
@@ -573,10 +577,12 @@ real web URL: the one a posting tool returned, else `mr_view`'s `webUrl`
 (or `gh pr view`'s url), else on a resume the snapshot's `mr` field (the
 review-posting close HARD-GATE below).
 
-### Open the review off-script gate: a review script refused twice
+### Open the review off-script gate: a review script refused
 
-The proposed move is the legacy gate in place of the structured open.
-The rest is the shape in Review off-script gates below.
+Exit 2 (a usage or unreadable-input error) opens this gate at once; exit
+1 opens it when the field fix has already been tried once. The proposed
+move is the legacy gate in place of the structured open. The rest is the
+shape in Review off-script gates below.
 
 ### Open the review off-script gate: gh pr review refused
 
