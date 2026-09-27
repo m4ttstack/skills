@@ -110,7 +110,7 @@ digraph ship {
     "Domain rebases, and no rebase finished this pass?" -> "git_rebase {tree: <root>, onto: origin/<default>}" [label="yes"];
     "Domain rebases, and no rebase finished this pass?" -> "git_push {tree: <root>, setUpstream: true}" [label="no"];
     "git_rebase {tree: <root>, onto: origin/<default>}" -> "Rebase status?";
-    "Rebase status?" -> "git_push {tree: <root>, setUpstream: true}" [label="clean"];
+    "Rebase status?" -> "Run the domain's fast checks (none when unbound)" [label="clean: the tree changed"];
     "Rebase status?" -> "Conflict rounds = 3?" [label="conflict"];
     "Rebase status?" -> "run_stage {action: fail, stage: ship, reason}" [label="any other error: quote it as the reason"];
     "Conflict rounds = 3?" -> "Resolve the files, then git rebase --continue on Bash" [label="no"];
@@ -193,9 +193,9 @@ counter is fix rounds within this pass through the stage.
 
 Resolve each conflicted file `git_rebase` returned, then continue the
 rebase on Bash (no tool continues one). A later commit that conflicts
-counts as another round. Once the rebase finishes, the fast checks run
-again because the tree changed under them, and then the push follows:
-this pass never starts a second rebase.
+counts as another round. Once a rebase finishes, clean or resolved, the
+fast checks run again because the tree changed under them, and then the
+push follows: this pass never starts a second rebase.
 
 ### Capture the AFTER when the domain names one
 

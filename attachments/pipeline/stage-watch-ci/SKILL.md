@@ -41,7 +41,7 @@ digraph watch_ci {
     "STOP: while the doctor holds the lease, every commit, push and retry is the doctor's" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Which flow?" [shape=diamond];
     "Follow the domain's watch flow" [shape=box];
-    "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" [shape=plaintext];
+    "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background); <scripts>/ci-attendant.sh heartbeat every 5 minutes until it exits" [shape=plaintext];
     "watcher exit?" [shape=diamond];
     "Read the triage report" [shape=box];
     "Only INFRA blocking failures, none retried yet?" [shape=diamond];
@@ -99,12 +99,12 @@ digraph watch_ci {
     "run_stage {action: fail, stage: watch-ci, reason}" -> "Stage failed";
     "STOP: while the doctor holds the lease, every commit, push and retry is the doctor's" -> "Stand down: report it, stop or watch read-only";
     "Which flow?" -> "Follow the domain's watch flow" [label="domain rules inlined"];
-    "Which flow?" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" [label="forge bound, no domain"];
+    "Which flow?" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background); <scripts>/ci-attendant.sh heartbeat every 5 minutes until it exits" [label="forge bound, no domain"];
     "Which flow?" -> "mr_pipeline {repoName, iid}" [label="neither, GitLab"];
     "Which flow?" -> "gh pr checks <mr> --watch" [label="neither, GitHub"];
     "Follow the domain's watch flow" -> "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" [label="green"];
     "Follow the domain's watch flow" -> "Gate ci (table below)" [label="red, timeout or no pipeline"];
-    "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" -> "watcher exit?";
+    "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background); <scripts>/ci-attendant.sh heartbeat every 5 minutes until it exits" -> "watcher exit?";
     "watcher exit?" -> "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" [label="0: green"];
     "watcher exit?" -> "Read the triage report" [label="1: red"];
     "watcher exit?" -> "Relaunched once already?" [label="2: timeout"];
@@ -112,8 +112,8 @@ digraph watch_ci {
     "Read the triage report" -> "Only INFRA blocking failures, none retried yet?";
     "Only INFRA blocking failures, none retried yet?" -> "Run the report's retry command once per job" [label="yes"];
     "Only INFRA blocking failures, none retried yet?" -> "Gate ci (table below)" [label="no: a REAL failure, or retried already"];
-    "Run the report's retry command once per job" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)";
-    "Relaunched once already?" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" [label="no"];
+    "Run the report's retry command once per job" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background); <scripts>/ci-attendant.sh heartbeat every 5 minutes until it exits";
+    "Relaunched once already?" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background); <scripts>/ci-attendant.sh heartbeat every 5 minutes until it exits" [label="no"];
     "Relaunched once already?" -> "Gate ci (table below)" [label="yes"];
     "Verify the branch was pushed" -> "Gate ci (table below)";
     "mr_pipeline {repoName, iid}" -> "Settled?";
@@ -192,9 +192,10 @@ known flake). One retry per INFRA job; a REAL failure goes to the gate.
 
 Exactly one actor attends an MR's CI at a time: this stage or the board's
 auto-doctor. Both honour the lease files under `~/.mattstack/ci-attendants/`.
-Refresh it each poll round with `<scripts>/ci-attendant.sh heartbeat
-<mr-url> <iid>`; a lease without heartbeats goes stale after 10 minutes
-and the doctor may take over. A crashed session needs no cleanup.
+Refresh it each poll round, and every 5 minutes while a background
+`ci-watch.sh` runs, with `<scripts>/ci-attendant.sh heartbeat <mr-url>
+<iid>`; a lease without heartbeats goes stale after 10 minutes and the
+doctor may take over. A crashed session needs no cleanup.
 Release it on every exit that leaves the MR unattended (a written `ci`,
 Hold, Go back, Abandon); with `mr` unset nothing was claimed, so skip the
 release. Fix and re-push keeps it, because the re-run claims it again, and

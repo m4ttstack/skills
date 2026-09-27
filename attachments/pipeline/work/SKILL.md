@@ -133,10 +133,10 @@ digraph work {
     "Last stage done?" -> "Take the next stage in the table" [label="no"];
     "Last stage done?" -> "Gate close" [label="yes"];
     "Gate <stage>-failed:<attempt>" -> "failure answer?";
-    "failure answer?" -> "run_stage {action: start, stage}" [label="retry: a new attempt"];
+    "failure answer?" -> "run_stage {action: start, stage}" [label="proceed + retry: a new attempt"];
     "failure answer?" -> "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [label="go back, or iterate here (to = this stage)"];
     "failure answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
-    "failure answer?" -> "run_status {status: abandoned}" [label="abandon"];
+    "failure answer?" -> "run_status {status: abandoned}" [label="proceed + abandon"];
     "Gate close" -> "close answer?";
     "close answer?" -> "run_status {status: done}" [label="done"];
     "close answer?" -> "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [label="iterate (to = implement) or go back"];
@@ -198,6 +198,8 @@ digraph work {
   and the Stop hook sends you back.
 - **Account back-fill** (a pick made before the DB existed):
   `selection` is the pick as an object, `decidedBy` the spawning surface.
+- **The failure gate's `action`.** Read `next` first; Proceed applies
+  `action` (Retry or Abandon).
 
 ## Gate questions
 

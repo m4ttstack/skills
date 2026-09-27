@@ -39,7 +39,9 @@ digraph provision {
     "Gate provision (table below)" [shape=box];
     "provision answer?" [shape=diamond];
     "Provisioned fresh once already?" [shape=diamond];
-    "git -C <repo> rev-parse --git-dir; git -C <repo> switch -c <branch>" [shape=plaintext];
+    "git -C <repo> rev-parse --git-dir; git -C <repo> status --porcelain" [shape=plaintext];
+    "Checkout clean?" [shape=diamond];
+    "git -C <repo> switch -c <branch> <default>" [shape=plaintext];
     "STOP: never hand-roll a worktree; worktree_provision or the plain branch fallback" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "run_field_set {key: branch}; run_field_set {key: worktree}" [shape=plaintext];
     "This stage found or created the ticket?" [shape=diamond];
@@ -67,11 +69,14 @@ digraph provision {
     "worktree_provision {repoName, ticket, ticketTitle?} or {repoName, branch: <slug>}" -> "worktree_provision result?";
     "worktree_provision result?" -> "EnterWorktree {path}" [label="ok: the result's path"];
     "worktree_provision result?" -> "Gate provision (table below)" [label="branch is already checked out in worktree"];
-    "worktree_provision result?" -> "git -C <repo> rev-parse --git-dir; git -C <repo> switch -c <branch>" [label="daemon unreachable, or repo not registered"];
+    "worktree_provision result?" -> "git -C <repo> rev-parse --git-dir; git -C <repo> status --porcelain" [label="daemon unreachable, or repo not registered"];
     "worktree_provision result?" -> "run_stage {action: fail, stage: provision, reason}" [label="any other error"];
     "worktree_provision result?" -> "STOP: never hand-roll a worktree; worktree_provision or the plain branch fallback" [label="tempted to hand-roll one"];
     "STOP: never hand-roll a worktree; worktree_provision or the plain branch fallback" -> "run_stage {action: fail, stage: provision, reason}";
-    "git -C <repo> rev-parse --git-dir; git -C <repo> switch -c <branch>" -> "run_field_set {key: branch}; run_field_set {key: worktree}" [label="worktree = the checkout"];
+    "git -C <repo> rev-parse --git-dir; git -C <repo> status --porcelain" -> "Checkout clean?";
+    "Checkout clean?" -> "git -C <repo> switch -c <branch> <default>" [label="yes"];
+    "Checkout clean?" -> "run_stage {action: fail, stage: provision, reason}" [label="no: quote the dirty paths as the reason"];
+    "git -C <repo> switch -c <branch> <default>" -> "run_field_set {key: branch}; run_field_set {key: worktree}" [label="worktree = the checkout"];
     "EnterWorktree {path}" -> "run_field_set {key: branch}; run_field_set {key: worktree}";
     "Gate provision (table below)" -> "provision answer?";
     "provision answer?" -> "EnterWorktree {path}" [label="resume in <tree>"];
@@ -111,8 +116,9 @@ that tree and branch directly.
   of the task description instead. A cold create can take minutes; say
   that it is provisioning.
 - The plain branch fallback derives the branch from the ticket id and a
-  kebab slug of its title (or of the task description), created from the
-  default branch. Never commit to the default branch.
+  kebab slug of its title (or of the task description). It refuses a dirty
+  checkout and passes the repo's default branch as the start point. Never
+  commit to the default branch.
 - `worktree` is always an absolute path: the checkout itself when no
   separate worktree is used.
 - `ticket` is not a declared produce: a ticketless run is a finished run.
