@@ -83,6 +83,7 @@ digraph work_next {
     subgraph cluster_redirect {
         label="Redirect to <to>";
         "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [shape=plaintext];
+        "Is the <from> row still running?" [shape=diamond];
         "run_stage {action: redirect, stage: <from>, to, reason}" [shape=plaintext];
         "run_field_set {key: <each produce from <to> on>, value: -}" [shape=plaintext];
     }
@@ -138,7 +139,9 @@ digraph work_next {
     "close answer?" -> "run_status {status: done}" [label="done"];
     "close answer?" -> "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [label="iterate (to = implement) or go back"];
     "close answer?" -> "Held: end the turn naming run and stage" [label="hold"];
-    "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" -> "run_stage {action: redirect, stage: <from>, to, reason}";
+    "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" -> "Is the <from> row still running?";
+    "Is the <from> row still running?" -> "run_stage {action: redirect, stage: <from>, to, reason}" [label="yes: a Go back or Fix handed back mid-stage"];
+    "Is the <from> row still running?" -> "run_field_set {key: <each produce from <to> on>, value: -}" [label="no: done (Close) or failed (failure gate): no redirect call"];
     "run_stage {action: redirect, stage: <from>, to, reason}" -> "run_field_set {key: <each produce from <to> on>, value: -}";
     "run_field_set {key: <each produce from <to> on>, value: -}" -> "run_stage {action: start, stage}" [label="stage = <to>, walk forward"];
     "run_status {status: done}" -> "Run done";
@@ -168,9 +171,12 @@ digraph work_next {
   completeness check re-runs honestly. Later stages re-run as new attempts;
   a ship re-run pushes new commits to the same MR.
 - **Redirect reasons** are the human's words, never a category. A redirect
-  typed in the pane with no open gate records `decidedBy: "pane"`. A
-  `redirect` refused because the row was not running: say so in one line
-  and continue.
+  typed in the pane with no open gate records `decidedBy: "pane"`. The
+  `redirect` call closes a row that is still running; after Close (the
+  last row is done) or a failure gate (the row is failed) there is nothing
+  to close, so the decision record alone carries the move. A `redirect`
+  refused anyway because the row was not running: say so in one line and
+  continue.
 - **A finished run stays finished.** Only Close's answer or Abandon ends
   it; a green `ci` does not. Never carry a finished run's `runDb` into new
   work: its next `run_stage start` would write into it.
