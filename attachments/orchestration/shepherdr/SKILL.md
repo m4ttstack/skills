@@ -37,7 +37,7 @@ jobs. If none of those apply, say so and dispatch subagents instead.
 
 1. Confirm `HERDR_ENV=1`. If not set, stop -- you need to be running inside herdr.
 2. Confirm the rt daemon answers: call `herd_list {}`. A daemon-unreachable error means stop and say so; the herd tools, gates, and chat all ride the daemon.
-3. **A fresh session that is picking a herd back up calls `herd_resume {herd}` first** (`herd_list` shows the ids). That one call re-points the gate subscription and the chat identity to this session and returns the open gates, the unread room messages, and every job's state. There is no other resume step.
+3. **A fresh session that is picking a herd back up calls `herd_resume {herd}` first** (`herd_list` shows the ids). That one call re-points the gate subscription to this session, continues the shepherd's chat identity here (its DMs and unread come with it; a plain sign-in would start an empty identity instead), and returns the open gates, the unread room messages, and every job's state. There is no other resume step.
 
 ## hidden mode: invisible panes
 
@@ -154,7 +154,8 @@ gate subscription, all created by `herd_start`. Workers ask through gates
 this session; workers report and the daemon posts lifecycle notices into
 the room, which is also pushed here. You answer gates with `rt gate answer` <!-- mcp-lint: allow -->
 in Bash, you talk to a worker with the `chat_dm` tool
-(`{to: <handle>, body}`), and the daemon records job state as a side effect
+(`{to: <the job's handleName from herd_status>, body}`), and the daemon
+records job state as a side effect
 of every call. There is no herd DB, no script, and no background wait.
 `herd_status {herd}` is the whole picture at any moment.
 
@@ -279,7 +280,11 @@ The error rules below still apply to the call it prescribes.
 with `brief` the absolute `out` path `herd_brief` wrote.
 
 `job` is the job's name (lowercase, `[a-z][a-z0-9_-]{0,31}`); it is also
-the worker's chat handle and its tab label. `model` comes from the
+the worker's tab label and chat display name. The spawn mints the worker a
+fresh chat identity under that name, so a job named like an earlier herd's
+never inherits that herd's DMs. `herd_status` shows the job's `handleName`
+(the name to DM; `<job>-2` while another live session holds the job name)
+beside `handle` (the identity id). `model` comes from the
 strategy and model question, `effort` from the session default when
 overridden, `account` from the bound accounts skill when the herd is
 account-distributed. The tool provisions the tree, launches claude with the
@@ -398,7 +403,8 @@ rt herd spawn --herd <id> --job review-<job> --brief <review-brief.md> --dir <th
 **The reviewer spawn is this Bash line, never `herd_spawn`:** the tool
 never takes a dir, so it would land the reviewer in a fresh tree instead of
 the job's. Give it a brief that reads the artifact, sends its findings with
-the `chat_dm` tool (`to` = the job's handle), and reports a verdict; the
+the `chat_dm` tool (`to` = the job's `handleName` from `herd_status`), and
+reports a verdict; the
 daemon closes the reviewer's pane on that report. The job revises and opens
 a fresh milestone gate when it is ready; every round is gate, DM, gate. You
 do not read the artifact.
@@ -469,8 +475,8 @@ ask. Either way the hands-on work stays with workers, never with you.
 ## mid-flight changes
 
 A ruling that invalidates in-flight work, a scope change, or a reviewer's
-findings go to the worker through the `chat_dm` tool, `to` = the handle
-`herd_status` shows for the job. It lands in the worker's context mid-turn
+findings go to the worker through the `chat_dm` tool, `to` = the
+`handleName` `herd_status` shows for the job. It lands in the worker's context mid-turn
 and is on the room record.
 
 If the user redirects scope: one sentence naming the running agents, then the structured-question tool with **Let them finish** (recommended) / **Kill and respawn with the new briefs**; **Hold**. A kill is `herd_close {job, herd}`, then the Bash respawn with the new brief (the tree stays attached after the close, so never `herd_spawn`):

@@ -115,10 +115,11 @@ then STOP.
 
 ## Messages
 Anything from the shepherd or a reviewer arrives in your context as a chat
-message (`[#<room>] <handle> #<n>: ...` or `[dm] <handle> #<n>: ...`).
-Reply with the `chat_dm` tool (`{to: <handle>, body}`), never with
-SendMessage. Only when `chat_sign_in` refuses because this session was
-replaced by `/clear`, reply with `rt chat dm <handle>` in Bash instead, the <!-- mcp-lint: allow -->
+message (`[#<room>] <name> #<n>: ...` or `[dm] <name> #<n>: ...`) with a
+reply hint that names the sender's identity id (`rt chat dm <id> "..."`). <!-- mcp-lint: allow -->
+Reply with the `chat_dm` tool, `to` = that id (`{to: <id>, body}`), never
+with SendMessage. Only when `chat_sign_in` refuses because this session was
+replaced by `/clear`, reply with `rt chat dm <id>` in Bash instead, the <!-- mcp-lint: allow -->
 body on stdin from a quoted heredoc. A message that changes your task is a
 new instruction; a message that only informs needs no reply.
 
