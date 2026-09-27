@@ -361,8 +361,9 @@ the Stop hook covers its pane. Pass `runDb` on every `run_*` call; nothing
 is exported.
 
 An inherited run (a caller handed a `runDb` that `run_snapshot` shows
-`running`) is not yours: its `run.current_stage` is your stage, and you
-close nothing at the end.
+`running`) is the caller's to close: its `run.current_stage` is your
+stage, and you close nothing at the end (no `run_stage` done, no
+`run_status`). A hand back still fails that stage (Off-script gate).
 
 When a surface launched this pane (the `spawnedBy` case), start fresh:
 another pane's live run is not yours to resume.
@@ -586,13 +587,17 @@ build of the open.
 ### Off-script gate: the respond-plan open will not fit
 
 Quote the third fit's problem lines as the `context`. Propose, spelled in
-full, the source change that would let the fit pass, never a shortened
-reply or a hand-edited open. Ask it per the Off-script gate section.
+full, one source change for the fields the fit named, never a shortened
+reply or a hand-edited open. The take move includes exactly one rerun of
+the fit, which must exit 0; any other exit hands back. Ask it per the
+Off-script gate section.
 
 ### Make the recorded move once at the respond-plan fit
 
-Make the move the answer recorded, exactly once, then go on to whether a
-caller owns the gates at respond-plan.
+Make the source change the answer recorded, exactly once, then rerun the
+fit once. Exit 0: go on to whether a caller owns the gates at
+respond-plan. Any other exit: hand back, as the Off-script gate section
+says, with the fit's output as the why.
 
 ### Hand back the verdict table and the respond-plan open's path
 
@@ -715,8 +720,8 @@ closely the redraft follows the lost one.
 `code-changes: revise` re-adjudicates: back to Dispatch one fresh-context
 adjudicator over all the review threads, a fresh dispatch with their note
 -- never revised in this session, the bias HARD-GATE still applies.
-`code-changes: skip` (the no-fix sentinel) implements nothing: straight to
-gate respond-post. A thread answered `fix:` under `skip` stays
+`code-changes: skip` (the no-fix sentinel) implements nothing: on to the
+row loop, which still redrafts overrides, then gate respond-post. A thread answered `fix:` under `skip` stays
 unimplemented and has no finalized reply, so gate respond-post neither
 offers nor posts it.
 
@@ -735,15 +740,16 @@ this skill never checks their box. The counter is attempts on this thread.
 
 ### Off-script gate: the thread's fix did not converge
 
-Quote the failing test or check output from the third attempt as the
-`context`. Propose, spelled in full, the move for this thread (a different
-approach to the fix, or leaving it unimplemented so no Fixed reply is
-offered for it). Ask it per the Off-script gate section.
+Quote the last failing test or check output as the `context`. Propose
+the move: revert this thread's uncommitted attempt and leave the row
+unimplemented, so no Fixed reply is offered and the row posts nothing.
+Ask it per the Off-script gate section.
 
 ### Make the recorded move once for the unconverged fix
 
-Make the move the answer recorded, exactly once, then go on to the next
-report row.
+Revert this thread's uncommitted attempt, exactly once, and leave its row
+unimplemented (no Fixed reply, nothing posts for it), then go on to the
+next report row.
 
 ### Commit the fix and finalize its Fixed reply
 
@@ -861,13 +867,17 @@ within this build of the open.
 ### Off-script gate: the respond-post open will not fit
 
 Quote the third fit's problem lines as the `context`. Propose, spelled in
-full, the source change that would let the fit pass, never a shortened
-reply or a hand-edited open. Ask it per the Off-script gate section.
+full, one source change for the fields the fit named, never a shortened
+reply or a hand-edited open. The take move includes exactly one rerun of
+the fit, which must exit 0; any other exit hands back. Ask it per the
+Off-script gate section.
 
 ### Make the recorded move once at the respond-post fit
 
-Make the move the answer recorded, exactly once, then go on to whether a
-caller owns the gates at respond-post.
+Make the source change the answer recorded, exactly once, then rerun the
+fit once. Exit 0: go on to whether a caller owns the gates at
+respond-post. Any other exit: hand back, as the Off-script gate section
+says, with the fit's output as the why.
 
 ### Hand back the offered replies and the respond-post open's path
 
@@ -931,14 +941,16 @@ respond-post decision at once, with the held thread ids under `"held"`.
 ### Off-script gate: the forge refused the reply
 
 Quote the `mr_reply_thread` error from the retry as the `context`.
-Propose, spelled in full, the move that gets this reply posted without the
-GitLab CLI (the human posts it, or fixes the cause and says retry). Ask it
-per the Off-script gate section.
+Propose the move: the human posts this reply by hand, and this run
+counts the reply posted once the forge shows it. A retry after they fix the cause is
+the iterate answer, never the take. Ask it per the Off-script gate
+section.
 
 ### Make the recorded move once for the refused reply
 
-Make the move the answer recorded, exactly once, then go on to this
-thread's resolve pick.
+Read the thread on the forge; once it carries the reply the human posted,
+count the reply posted, exactly once, then go on to this thread's resolve
+pick.
 
 ### Post the reply on GitHub with gh
 
@@ -949,14 +961,14 @@ mechanics belong to the forge CLI and the adapter.
 ### Off-script gate: the forge refused the resolve
 
 Quote the `mr_resolve_thread` error from the retry as the `context`.
-Propose, spelled in full, the move that gets this thread resolved without
-the GitLab CLI (the human resolves it, or fixes the cause and says retry).
-Ask it per the Off-script gate section.
+Propose the move: the human resolves this thread by hand, and this run
+counts it resolved once the forge shows it. A retry after they fix the cause is the
+iterate answer, never the take. Ask it per the Off-script gate section.
 
 ### Make the recorded move once for the refused resolve
 
-Make the move the answer recorded, exactly once, then go on to the next
-thread to act on.
+Read the thread on the forge; once it shows the thread resolved, count it
+resolved, exactly once, then go on to the next thread to act on.
 
 ### Resolve the thread on GitHub with gh
 
@@ -1059,9 +1071,9 @@ Selection: `{"move":"<the move>","why":"<the refusal or failure>","action":"take
 The answer diamond after each box reads it: `action: handback` is hand
 back; otherwise `next` picks, proceed taking the move, iterate redoing
 that site with their note, hold holding. Take makes exactly that move
-once. Hand back is `run_stage {action: fail}` with the why as its
-`reason` when the run is yours, and the why in the hand-back when a caller
-owns the gates.
+once. Hand back is the `run_stage` fail node, with the why as its
+`reason`; when a caller owns the gates, also carry the why in the
+hand-back.
 
 *If a rule below asks for a move this graph marks STOP, take the off-script edge instead.*
 
