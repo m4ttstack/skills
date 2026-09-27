@@ -188,8 +188,8 @@ digraph receive_review {
     "What does the receive-review snapshot record?" -> "Rewrite the receive-review report rows" [label="respond-plan recorded, no respond-post record"];
     "What does the receive-review snapshot record?" -> "Posted already: read each thread on the forge" [label="respond-post record carrying held"];
     "What does the receive-review snapshot record?" -> "Report the outcome (to the caller when it owns the gates)" [label="respond-post recorded, nothing held"];
-    "What did the caller hand receive-review?" -> "Resolve the change and record its identity" [label="nothing, or a {plan}"];
-    "What did the caller hand receive-review?" -> "Posted already: read each thread on the forge" [label="a {post} with its report rows"];
+    "What did the caller hand receive-review?" -> "Resolve the change and record its identity" [label="nothing, or a {plan} (alone or in {plan, post})"];
+    "What did the caller hand receive-review?" -> "Posted already: read each thread on the forge" [label="a {post} alone, with its report rows"];
 
     "Resolve the change and record its identity" -> "Forge of the change?";
     "Forge of the change?" -> "MR url or iid in hand?" [label="GitLab"];
@@ -537,7 +537,9 @@ per-question answers, keyed by question id with verbatim option strings,
 are the decision. Use the decider the caller names alongside it. Record
 that `plan` with the same `run_decision` a pane answer gets (its selection
 shape is under Gate respond-plan through gate-protocol), `decidedBy` that
-decider. Every other path builds the open first.
+decider. The `post` half of a combined object waits for gate
+respond-post, where it is the caller-handed `post`. Every other path
+builds the open first.
 
 The gate (`respond-plan`, gate 1; `respond-post` is gate 2) carries
 structured context (gate-protocol's Structured context), built from the
