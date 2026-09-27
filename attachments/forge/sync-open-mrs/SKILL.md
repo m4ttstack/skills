@@ -241,6 +241,9 @@ options sends the whole gate to the wait queue):
   reorders or excludes) / **Hold**
 
 Selection `{"branches":[...]}`. Nothing is touched before the answer.
+Read `next` first: **Hold** ends the turn with nothing rebased; **Iterate
+here** goes back to **Plan the sweep** and ignores `branches`; only
+**Proceed** applies the selection.
 **Proceed** with an empty `branches` union is "proceed with none selected".
 
 ### Say nothing was selected
@@ -298,8 +301,11 @@ question over 4 options sends the whole gate to the wait queue):
 - `watch_ci`: **Watch CI after pushing** (yes / no)
 - `next`: **Proceed** (recommended) / **Iterate here** / **Hold**
 
-Selection `{"branches":[...],"watch_ci":true|false}`. Each selected branch
-then goes to `git_push` with `tree` = its worktree path.
+Selection `{"branches":[...],"watch_ci":true|false}`. Read `next` first:
+**Hold** ends the turn with nothing pushed; **Iterate here** goes back to
+**Summarize the rebase pass** and ignores `branches` and `watch_ci`; only
+**Proceed** applies the selection. Each selected branch then goes to
+`git_push` with `tree` = its worktree path.
 
 ### Record pushed
 
