@@ -12,9 +12,10 @@ slots: {}
 # sync-open-mrs
 
 Bring every open MR or PR current with the default branch in one sweep:
-rebase each, then offer to push and watch CI. This verb owns the
-sequencing, the two batch gates and the report; discovery, rebasing and CI
-watching belong to the verbs it follows, never reimplemented here.
+rebase each, then offer to push and watch CI. The sweep covers the open
+MRs `map-open-mrs` returns. This verb owns the sequencing, the two batch
+gates and the report; discovery, rebasing and CI watching belong to the
+verbs it follows, never reimplemented here.
 
 ```dot
 digraph sync_open_mrs {
@@ -193,7 +194,11 @@ follows is a new attempt, which re-records this session.
 
 The decisions the resumed `run_snapshot` shows are answers already given.
 Each gate step that finds its scope's decision there takes it instead of
-asking again.
+asking again, but only a proceed decision for that gate counts: one whose
+`next` is iterate or hold is not an answer, and a gate reached again after
+an iterate edge always asks afresh (a re-ask after Hold or Iterate opens a
+new gate). **Resumed run already holds this gate's decision?** reads this
+rule.
 
 ### Follow map-open-mrs for the table
 
@@ -327,10 +332,12 @@ each its own question:
 - `next`: **Proceed** (recommended) / **Iterate here** / **Hold**
 
 Selection `{"move":"<one move per listed branch>","why":"<each refusal>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`.
-**Iterate here** means the human fixed the cause and wants those pushes
-retried; **Hand back** leaves them push failed. The proposed move is the
-same plain-git force-with-lease push, once per listed branch; retrying the
-refused tool is **Iterate here**, never **Take**.
+Read `next` first: **Hold** ends the turn with no move made; **Iterate
+here** means the human fixed the cause and wants those pushes retried, and
+it ignores `action`; only **Proceed** applies `action`, where **Hand back**
+leaves them push failed. The proposed move is the same plain-git
+force-with-lease push, once per listed branch; retrying the refused tool is
+**Iterate here**, never **Take**.
 
 ### Queue the mechanical failures again
 
@@ -355,7 +362,9 @@ pack-qualified skill name) per pushed branch. It inherits this run and its
 One table, every branch from the map-open-mrs table landing in exactly one
 bucket: rebased (old head -> new head), pushed, current (nothing to push),
 conflicted (needs-hands), push failed (with reason), or skipped (with
-reason -- dirty tree, no upstream, NONE row, another author's MR).
+reason -- dirty tree, no upstream, NONE row, another author's MR). The
+report carries any scope limit `map-open-mrs` named (its cache-bounded
+discovery).
 
 ### Starting the run
 
