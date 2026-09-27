@@ -89,15 +89,14 @@ digraph self_review {
     "run_stage {action: start, stage: self-review} on the resumed runDb" [shape=plaintext];
     "run_field_set {key: hold, value: -, stage: self-review}" [shape=plaintext];
     "run_snapshot {runDb: <resumed self-review>}" [shape=plaintext];
-    "Resumed self-review snapshot records?" [shape=diamond];
     "run_start {flags, skillDir, spawnedBy?} for self-review" [shape=plaintext];
     "self-review run_start ok: true with a runDb?" [shape=diamond];
     "STOP: rt predates the run tools; tell the user to update rt before a self-review" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "run_stage {action: start, stage: self-review}" [shape=plaintext];
 
-    "git merge-base origin/HEAD HEAD, else the default branch by name" [shape=plaintext];
+    "Find the self-review merge-base" [shape=box];
     "Own self-review run: record the branch?" [shape=diamond];
-    "run_field_set {key: branch | ticket, value, stage: self-review}" [shape=plaintext];
+    "Record the self-review branch and any ticket" [shape=box];
     "Requirements known: a ticket or the task text?" [shape=diamond];
     "Gate self-review clarify: which requirements source?" [shape=box];
     "Requirements source answer?" [shape=diamond];
@@ -140,7 +139,7 @@ digraph self_review {
     "runDb handed in by a caller of self-review?" -> "run_snapshot {runDb: <handed to self-review>}" [label="yes"];
     "runDb handed in by a caller of self-review?" -> "A surface launched this self-review pane?" [label="no"];
     "run_snapshot {runDb: <handed to self-review>}" -> "Handed self-review run is running?";
-    "Handed self-review run is running?" -> "git merge-base origin/HEAD HEAD, else the default branch by name" [label="yes: inherit it, stage is run.current_stage"];
+    "Handed self-review run is running?" -> "Find the self-review merge-base" [label="yes: inherit it, stage is run.current_stage"];
     "Handed self-review run is running?" -> "A surface launched this self-review pane?" [label="no"];
     "A surface launched this self-review pane?" -> "run_start {flags, skillDir, spawnedBy?} for self-review" [label="yes: start fresh"];
     "A surface launched this self-review pane?" -> "run_list {repo}, keep running self-review runs" [label="no: typed by hand"];
@@ -150,21 +149,19 @@ digraph self_review {
     "Gate self-review clarify: Resume / Start fresh / Hold" -> "Self-review resume answer?";
     "Self-review resume answer?" -> "run_stage {action: start, stage: self-review} on the resumed runDb" [label="resume"];
     "Self-review resume answer?" -> "run_start {flags, skillDir, spawnedBy?} for self-review" [label="start fresh"];
-    "Self-review resume answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for self-review" [label="hold"];
+    "Self-review resume answer?" -> "Self-review held: end the turn" [label="hold: no run yet, record nothing"];
     "run_stage {action: start, stage: self-review} on the resumed runDb" -> "run_field_set {key: hold, value: -, stage: self-review}";
     "run_field_set {key: hold, value: -, stage: self-review}" -> "run_snapshot {runDb: <resumed self-review>}";
-    "run_snapshot {runDb: <resumed self-review>}" -> "Resumed self-review snapshot records?";
-    "Resumed self-review snapshot records?" -> "git merge-base origin/HEAD HEAD, else the default branch by name" [label="no self-review decision: re-enter, reuse every recorded answer"];
-    "Resumed self-review snapshot records?" -> "Self-review fix answer?" [label="a self-review decision: continue from its fix answer"];
+    "run_snapshot {runDb: <resumed self-review>}" -> "Find the self-review merge-base" [label="re-enter, reuse every recorded answer"];
     "run_start {flags, skillDir, spawnedBy?} for self-review" -> "self-review run_start ok: true with a runDb?";
     "self-review run_start ok: true with a runDb?" -> "run_stage {action: start, stage: self-review}" [label="yes: keep runDb"];
     "self-review run_start ok: true with a runDb?" -> "STOP: rt predates the run tools; tell the user to update rt before a self-review" [label="no"];
-    "run_stage {action: start, stage: self-review}" -> "git merge-base origin/HEAD HEAD, else the default branch by name";
+    "run_stage {action: start, stage: self-review}" -> "Find the self-review merge-base";
 
-    "git merge-base origin/HEAD HEAD, else the default branch by name" -> "Own self-review run: record the branch?";
-    "Own self-review run: record the branch?" -> "run_field_set {key: branch | ticket, value, stage: self-review}" [label="yes"];
+    "Find the self-review merge-base" -> "Own self-review run: record the branch?";
+    "Own self-review run: record the branch?" -> "Record the self-review branch and any ticket" [label="yes"];
     "Own self-review run: record the branch?" -> "Requirements known: a ticket or the task text?" [label="no: inherited"];
-    "run_field_set {key: branch | ticket, value, stage: self-review}" -> "Requirements known: a ticket or the task text?";
+    "Record the self-review branch and any ticket" -> "Requirements known: a ticket or the task text?";
     "Requirements known: a ticket or the task text?" -> "Print the self-review depth block" [label="yes"];
     "Requirements known: a ticket or the task text?" -> "Gate self-review clarify: which requirements source?" [label="no"];
     "Gate self-review clarify: which requirements source?" -> "Requirements source answer?";
@@ -187,7 +184,7 @@ digraph self_review {
     "Gate self-review: fix and next, after the draft" -> "Self-review next answer?";
     "Gate self-review again: quote the failing output" -> "Self-review next answer?";
     "Self-review next answer?" -> "Self-review fix answer?" [label="proceed"];
-    "Self-review next answer?" -> "Assemble the self-review draft" [label="iterate here: redo with their note"];
+    "Self-review next answer?" -> "Print the self-review depth block" [label="iterate here: redo from the depth block with their note"];
     "Self-review next answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for self-review" [label="hold"];
     "Self-review next answer?" -> "Own self-review run: close it as abandoned?" [label="abandon"];
     "Self-review fix answer?" -> "Next selected finding to fix?" [label="fix the blocking findings, or the minors too"];
@@ -229,7 +226,21 @@ in the pane. One sentence naming each candidate's `spawned_by`,
 pane owns is not yours), **Start fresh**, **Hold**. A surface-launched pane
 never reaches this gate: another pane's live run is not yours to resume.
 Resume: your `runDb` is `<home>/.mattstack/runs/<repo>/<its id>/state.db`
-(the candidate row's `id`, the home directory written out, never `~`).
+(the candidate row's `id`, the home directory written out, never `~`). Hold
+here records nothing (no run has started or been resumed to record it
+against) and ends the turn.
+
+### Find the self-review merge-base
+
+Run `git merge-base origin/HEAD HEAD`; when `origin/HEAD` is unset, use the
+default branch by name instead. The diff runs from that base through the
+working tree, uncommitted changes included.
+
+### Record the self-review branch and any ticket
+
+`run_field_set {key: branch, value: <branch>, stage: self-review}`, and
+`run_field_set {key: ticket, value: <ticket>, stage: self-review}` only when
+the branch names one; never guess a ticket.
 
 ### Gate self-review clarify: which requirements source?
 
@@ -257,11 +268,10 @@ result; they travel to the reviewer as setup observations.
 
 ### Dispatch the fresh reviewer on your own diff
 
-The diff is the merge-base above through the working tree, uncommitted
-changes included: review the work as it stands now. Hand the review
-flow's "Dispatch the review" the diff, the requirements, and a label (the
-branch or task name). One dispatch, never skipped, however small the
-change.
+Review the work as it stands now, on the diff the merge-base step found.
+Hand the review flow's "Dispatch the review" the diff, the requirements,
+and a label (the branch or task name). One dispatch, never skipped,
+however small the change.
 
 ### Open the self-review off-script gate: a fill asks for a move this graph forbids
 
@@ -273,7 +283,9 @@ proposed move**, the value spelling the move in full / **Hand back**) and
 `next` (**Proceed** (recommended) / **Iterate here** / **Hold**).
 Selection: `{"move": "<the move>", "why": "<the rule>", "action":
 "take|handback", "next": "proceed|iterate|hold", "note": "<their words or
-null>"}`.
+null>"}`. `action: handback` is hand back whatever `next` says; otherwise
+`next: iterate` is iterate here, `next: hold` is hold, and `next: proceed`
+is take.
 
 ### Make the recorded self-review move once
 
@@ -303,6 +315,9 @@ Record `run_decision {contract: gate@1, scope: self-review, selection:
 {"fix": "blocking|all|none", "note": "<their words or null>"}, decidedBy:
 <the answer's by>}`. Blocking means Critical and Important; the minors
 answer fixes every finding.
+
+A resumed run whose snapshot records a `self-review` decision reuses that
+decision's `fix` answer, treats `next` as proceed, and asks nothing here.
 
 ### Gate self-review again: quote the failing output
 
@@ -338,7 +353,8 @@ The counter is attempts on this finding within this pass.
 
 Ship as is: hand back to the flow that called this verb with the Minor
 findings listed for the record, plus any finding left open or not
-reproduced.
+reproduced. Every unfixed Critical or Important finding counts as left
+open.
 
 ## What the graph cannot show
 
@@ -351,6 +367,10 @@ reproduced.
 - After fixes, the flow that called this verb continues (ship, or the
   next task); the close runs only after the fixes the gate selected are
   verified.
+- Before the close, the final message lists every selected finding as
+  fixed, not reproduced (with the test that showed it), or left open. On
+  ship as is that list includes every Critical and Important finding,
+  which stay open.
 
 ## The review flow
 
