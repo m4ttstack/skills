@@ -211,6 +211,11 @@ Selection: `{"ready":true|false,"next":"proceed|iterate|redirect|hold","to":"<st
 
 ## Domain rules
 
+The domain and forge rules below supply the watch flow and triage rules.
+Where a domain step names a move the graph above marks STOP (a GitLab CLI
+read or retry, a repair while the doctor holds the lease), the STOP node
+wins.
+
 {{slot:domain}}
 
 When nothing is inlined above, the graph's other flows apply.
@@ -218,10 +223,6 @@ When nothing is inlined above, the graph's other flows apply.
 ## Forge
 
 {{slot:forge}}
-
-The domain rules supply the watch flow and triage rules. Where a domain
-step names a move this graph marks STOP (a GitLab CLI read or retry, a
-repair while the doctor holds the lease), the STOP node wins.
 
 ## Gates
 

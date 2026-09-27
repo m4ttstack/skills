@@ -203,14 +203,15 @@ Selection: `{"dirty":"commit|stash|abort|null","open_as":"draft|ready","domain":
 
 ## Domain rules
 
+The domain rules below supply content, checks and extra gate questions.
+Where a domain step names a move the graph above marks STOP (a shell push
+fallback, a forge CLI write), the STOP node wins: open the off-script gate
+instead.
+
 {{slot:domain}}
 
 When nothing is inlined above, the graph alone is the flow: no steps
 before the gate, no fast checks, no rebase, no AFTER.
-
-The domain rules supply content, checks and extra gate questions. Where a
-domain step names a move this graph marks STOP (a shell push fallback, a
-forge CLI write), the STOP node wins: open the off-script gate instead.
 
 ## Gates
 

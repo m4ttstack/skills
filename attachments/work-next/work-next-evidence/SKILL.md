@@ -165,14 +165,15 @@ Selection: `{"annotations":[...],"attach":"now|handback"}`.
 
 ## Domain rules
 
+The domain rules below supply the capture method, the intake questions
+and the attach format. Where a domain step names a move the graph above
+marks STOP (an rt command on Bash, a different data source), the STOP node
+wins.
+
 {{slot:domain}}
 
 When nothing is inlined above, the graph and the Capture section are the
 whole flow.
-
-The domain rules supply the capture method, the intake questions and the
-attach format. Where a domain step names a move this graph marks STOP (an
-rt command on Bash, a different data source), the STOP node wins.
 
 Finish with `evidence` as an object of labelled paths or URLs, at minimum
 the before. Ship attaches the pair and captures any AFTER.
