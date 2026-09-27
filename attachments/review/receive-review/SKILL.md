@@ -95,6 +95,7 @@ digraph receive_review {
 
     "Resumed, or re-asking after respond-post Hold or Iterate?" [shape=diamond];
     "Posted already: read each thread on the forge" [shape=box];
+    "Resuming a respond-post record that carries held?" [shape=diamond];
     "Any thread offered (a finalized fix or an override)?" [shape=diamond];
     "Nothing offered: caller handed a respond-post decision?" [shape=diamond];
     "Threads offered: caller handed the respond-post answers?" [shape=diamond];
@@ -123,6 +124,7 @@ digraph receive_review {
     "git_push {tree: <the root the error prints>}" [shape=plaintext];
     "STOP: a failed git_push holds the fix rows; never push from the shell, never force" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Hold the picked fix rows and report the failure verbatim" [shape=box];
+    "Hold the thread the forge refused and report the refusal verbatim" [shape=box];
 
     "Next thread to act on: offered threads, then gate-1: reply rows?" [shape=diamond];
     "post: decided for this thread?" [shape=diamond];
@@ -149,7 +151,7 @@ digraph receive_review {
 
     "respond-post decided by a gate or a handed post?" [shape=diamond];
     "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" [shape=plaintext];
-    "Fix rows held?" [shape=diamond];
+    "Threads held at respond-post?" [shape=diamond];
     "Report the outcome (to the caller when it owns the gates)" [shape=box];
     "This verb started or resumed the run?" [shape=diamond];
     "run_stage {action: done, stage: receive-review}" [shape=plaintext];
@@ -158,7 +160,7 @@ digraph receive_review {
 
     "No open MR: nothing to answer" [shape=doublecircle];
     "Held: end the turn naming the run and stage" [shape=doublecircle];
-    "Fix rows held: run left open for a resume" [shape=doublecircle];
+    "Threads held: run left open for a resume" [shape=doublecircle];
     "receive-review stage failed" [shape=doublecircle];
     "Review feedback answered" [shape=doublecircle style=filled fillcolor=lightgreen];
 
@@ -184,7 +186,7 @@ digraph receive_review {
     "run_field_set {key: hold, value: -, stage: receive-review}" -> "What does the receive-review snapshot record?";
     "What does the receive-review snapshot record?" -> "Resolve the change and record its identity" [label="no respond-plan record"];
     "What does the receive-review snapshot record?" -> "Rewrite the receive-review report rows" [label="respond-plan recorded, no respond-post record"];
-    "What does the receive-review snapshot record?" -> "Picks post or resolve a gate-1: fix row?" [label="respond-post record carrying held: act on the held threads only"];
+    "What does the receive-review snapshot record?" -> "Posted already: read each thread on the forge" [label="respond-post record carrying held"];
     "What does the receive-review snapshot record?" -> "Report the outcome (to the caller when it owns the gates)" [label="respond-post recorded, nothing held"];
     "What did the caller hand receive-review?" -> "Resolve the change and record its identity" [label="nothing, or a {plan}"];
     "What did the caller hand receive-review?" -> "Posted already: read each thread on the forge" [label="a {post} with its report rows"];
@@ -255,7 +257,9 @@ digraph receive_review {
 
     "Resumed, or re-asking after respond-post Hold or Iterate?" -> "Posted already: read each thread on the forge" [label="yes"];
     "Resumed, or re-asking after respond-post Hold or Iterate?" -> "Any thread offered (a finalized fix or an override)?" [label="no"];
-    "Posted already: read each thread on the forge" -> "Any thread offered (a finalized fix or an override)?";
+    "Posted already: read each thread on the forge" -> "Resuming a respond-post record that carries held?";
+    "Resuming a respond-post record that carries held?" -> "Picks post or resolve a gate-1: fix row?" [label="yes: act on the held threads only"];
+    "Resuming a respond-post record that carries held?" -> "Any thread offered (a finalized fix or an override)?" [label="no"];
     "Any thread offered (a finalized fix or an override)?" -> "Nothing offered: caller handed a respond-post decision?" [label="no"];
     "Any thread offered (a finalized fix or an override)?" -> "Threads offered: caller handed the respond-post answers?" [label="yes"];
     "Nothing offered: caller handed a respond-post decision?" -> "Picks post or resolve a gate-1: fix row?" [label="yes: it decides first"];
@@ -301,8 +305,9 @@ digraph receive_review {
     "Retried git_push with the printed root?" -> "Hold the picked fix rows and report the failure verbatim" [label="yes"];
     "STOP: a failed git_push holds the fix rows; never push from the shell, never force" -> "Hold the picked fix rows and report the failure verbatim";
     "Hold the picked fix rows and report the failure verbatim" -> "Next thread to act on: offered threads, then gate-1: reply rows?" [label="every other reply still acts"];
+    "Hold the thread the forge refused and report the refusal verbatim" -> "Next thread to act on: offered threads, then gate-1: reply rows?" [label="every other thread still acts"];
 
-    "Next thread to act on: offered threads, then gate-1: reply rows?" -> "post: decided for this thread?" [label="next thread; a held row acts on nothing"];
+    "Next thread to act on: offered threads, then gate-1: reply rows?" -> "post: decided for this thread?" [label="next thread; a held resume walks only the held threads; a thread held this pass acts on nothing"];
     "Next thread to act on: offered threads, then gate-1: reply rows?" -> "respond-post decided by a gate or a handed post?" [label="threads done"];
     "post: decided for this thread?" -> "Thread already carries this receive-review run's reply?" [label="yes"];
     "Thread already carries this receive-review run's reply?" -> "resolve: decided for this thread?" [label="yes: count it posted, never post again"];
@@ -320,7 +325,7 @@ digraph receive_review {
     "Off-script gate: the forge refused the reply" -> "Answer at the refused-reply off-script gate?";
     "Answer at the refused-reply off-script gate?" -> "Make the recorded move once for the refused reply" [label="take"];
     "Answer at the refused-reply off-script gate?" -> "mr_reply_thread {mrUrl, discussionId, body}" [label="iterate: retry with their note"];
-    "Answer at the refused-reply off-script gate?" -> "Held: end the turn naming the run and stage" [label="hold"];
+    "Answer at the refused-reply off-script gate?" -> "Hold the thread the forge refused and report the refusal verbatim" [label="hold: this thread only"];
     "Answer at the refused-reply off-script gate?" -> "run_stage {action: fail, stage: <stage>, reason}" [label="hand back"];
     "Make the recorded move once for the refused reply" -> "resolve: decided for this thread?";
     "Post the reply on GitHub with gh" -> "resolve: decided for this thread?";
@@ -338,16 +343,16 @@ digraph receive_review {
     "Off-script gate: the forge refused the resolve" -> "Answer at the refused-resolve off-script gate?";
     "Answer at the refused-resolve off-script gate?" -> "Make the recorded move once for the refused resolve" [label="take"];
     "Answer at the refused-resolve off-script gate?" -> "mr_resolve_thread {mrUrl, discussionId}" [label="iterate: retry with their note"];
-    "Answer at the refused-resolve off-script gate?" -> "Held: end the turn naming the run and stage" [label="hold"];
+    "Answer at the refused-resolve off-script gate?" -> "Hold the thread the forge refused and report the refusal verbatim" [label="hold: this thread only"];
     "Answer at the refused-resolve off-script gate?" -> "run_stage {action: fail, stage: <stage>, reason}" [label="hand back"];
     "Make the recorded move once for the refused resolve" -> "Next thread to act on: offered threads, then gate-1: reply rows?";
     "Resolve the thread on GitHub with gh" -> "Next thread to act on: offered threads, then gate-1: reply rows?";
 
     "respond-post decided by a gate or a handed post?" -> "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" [label="yes"];
-    "respond-post decided by a gate or a handed post?" -> "Fix rows held?" [label="no: nothing was offered or handed"];
-    "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" -> "Fix rows held?";
-    "Fix rows held?" -> "Fix rows held: run left open for a resume" [label="yes"];
-    "Fix rows held?" -> "Report the outcome (to the caller when it owns the gates)" [label="no"];
+    "respond-post decided by a gate or a handed post?" -> "Threads held at respond-post?" [label="no: nothing was offered or handed"];
+    "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" -> "Threads held at respond-post?";
+    "Threads held at respond-post?" -> "Threads held: run left open for a resume" [label="yes"];
+    "Threads held at respond-post?" -> "Report the outcome (to the caller when it owns the gates)" [label="no"];
     "Report the outcome (to the caller when it owns the gates)" -> "This verb started or resumed the run?";
     "This verb started or resumed the run?" -> "run_stage {action: done, stage: receive-review}" [label="yes"];
     "This verb started or resumed the run?" -> "Review feedback answered" [label="no: inherited, the caller closes"];
@@ -427,10 +432,15 @@ What the snapshot records picks the re-entry:
 - **`respond-plan` recorded, no `respond-post` record:** rewrite the report
   rows from the record alone (the snapshot-only reading under Rewrite the
   receive-review report rows), then walk the rows.
-- **A `respond-post` record carrying `"held"`:** treat every other offered
-  thread as already acted on, act only on the held threads once the branch
-  check and the push succeed (Push before any Fixed reply), then record
-  again without `"held"`.
+- **A `respond-post` record carrying `"held"`:** read each thread on the
+  forge first (Posted already), then treat every other offered thread as
+  already acted on and act only on the held threads. Push only when a held
+  thread is a `gate-1: fix` row whose picks post or resolve it, and act on
+  those rows only once the branch check and the push succeed (Push before
+  any Fixed reply); a held override or `gate-1: reply` row acts with no
+  push. A held thread the forge already shows carrying this run's reply
+  goes straight to its resolve decision. Then record again, without
+  `"held"`, or with the threads still held.
 - **`respond-post` recorded, nothing held:** report the outcome and close.
 
 ### Resolve the change and record its identity
@@ -960,13 +970,25 @@ since the close waits for every reply. Never force, rebase or merge past
 it. Every other reply posts as decided either way. Then record the
 respond-post decision at once, with the held thread ids under `"held"`.
 
+### Hold the thread the forge refused and report the refusal verbatim
+
+A Hold answer at the refused-reply or refused-resolve off-script gate
+holds only that thread, as a failed push holds the fix rows: nothing more
+acts on it this pass. Report the refusal verbatim (in the hand-back when a
+caller owns the gates) and leave the run open, since the close waits for
+every reply. Every other thread still acts. The respond-post record lists
+the thread under `"held"` (The respond-post record). With nothing offered
+and no caller-handed `post` there is no respond-post record; a resume
+then finds the unposted thread through Posted already.
+
 ### Off-script gate: the forge refused the reply
 
 Quote the `mr_reply_thread` error from the retry as the `context`.
 Propose the move: the human posts this reply by hand, and this run
 counts the reply posted once the forge shows it. A retry after they fix the cause is
-the iterate answer, never the take. Ask it per the Off-script gate
-section.
+the iterate answer, never the take. A Hold holds this thread only (Hold
+the thread the forge refused and report the refusal verbatim). Ask it per
+the Off-script gate section.
 
 ### Make the recorded move once for the refused reply
 
@@ -985,7 +1007,9 @@ mechanics belong to the forge CLI and the adapter.
 Quote the `mr_resolve_thread` error from the retry as the `context`.
 Propose the move: the human resolves this thread by hand, and this run
 counts it resolved once the forge shows it. A retry after they fix the cause is the
-iterate answer, never the take. Ask it per the Off-script gate section.
+iterate answer, never the take. A Hold holds this thread only (Hold the
+thread the forge refused and report the refusal verbatim). Ask it per the
+Off-script gate section.
 
 ### Make the recorded move once for the refused resolve
 
@@ -1066,9 +1090,11 @@ answer's: `{"post":true,"resolve":true,"text":"<the answer's text>"}`
 when that answer also carries `resolve:`, `"resolve":false` when it does
 not. A reply posted from the `reply@1` context never adds `text`. An
 entry whose thread's answer carries a note adds it as `note`:
-`{"post":true,"resolve":false,"note":"<the note>"}`. After a failed push
-the selection adds `"held":["<threadId>"]` beside `threads`, each held
-thread's entry still its answer's picks. Every offered
+`{"post":true,"resolve":false,"note":"<the note>"}`. After a failed push,
+or a Hold at a forge-refusal off-script gate, the selection adds
+`"held":["<threadId>"]` beside `threads`, each held offered thread's entry
+still its answer's picks; a held `gate-1: reply` row is listed under
+`"held"` with no entry under `threads`. Every offered
 thread gets an entry, and only offered threads: a `gate-1: reply`
 row's reply rides the respond-plan record. An answer's values name its thread; an empty
 array names none, so take that thread from the question's options in the
@@ -1094,7 +1120,8 @@ Selection: `{"move":"<the move>","why":"<the refusal or failure>","action":"take
 
 The answer diamond after each box reads it: `action: handback` is hand
 back; otherwise `next` picks, proceed taking the move, iterate redoing
-that site with their note, hold holding. Take makes exactly that move
+that site with their note, hold holding (at the two forge-refusal
+sites, that thread only). Take makes exactly that move
 once. Hand back is the `run_stage` fail node, with the why as its
 `reason`; when a caller owns the gates, also carry the why in the
 hand-back.
