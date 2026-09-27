@@ -575,9 +575,13 @@ following later when gate respond-post offers a thread) or a combined `{plan, po
 caller that collected both up front -- use `plan` and ask nothing here: its
 per-question answers, keyed by question id with verbatim option strings,
 are the decision. Use the decider the caller names alongside it. Record
-that `plan` with the same `run_decision` a pane answer gets (its selection
-shape is under Gate respond-plan through gate-protocol), `decidedBy` that
-decider. A handed plan answers one adjudication: once recorded it is
+that `plan` with the same `run_decision` a pane answer gets, `decidedBy`
+that decider. Its answers are per-question, so normalize them first into
+exactly the selection under Gate respond-plan through gate-protocol, by
+the join a pane answer gets: unwrap each `{value, note, text}` object to
+its `value`, split the value at the first `:`, and key `threads` by the
+thread id read out of it (never by `thread-<n>`), with `texts`,
+`overrides`, `notes` and `code-changes` filled as that bullet says. A handed plan answers one adjudication: once recorded it is
 spent (a revise re-adjudicates and builds a new open). The `post` half
 of a combined object waits for gate respond-post, where it is the caller-handed `post`. Every other path
 builds the open first.
@@ -671,7 +675,8 @@ it delegates): open nothing. Hand back the verdict table plus the absolute
 path of `<dir>/respond-plan.open.json`; the caller opens its gate from
 that file's `.questions` and `.context`, then hands `{plan}` back.
 Record that `{plan}` with `run_decision` before rewriting the rows,
-`decidedBy` the decider the caller names: this verb writes the
+normalized into the respond-plan selection as the decision intake under
+Build the open says, `decidedBy` the decider the caller names: this verb writes the
 respond-plan record whoever asked the gate.
 
 ### Gate respond-plan through gate-protocol
