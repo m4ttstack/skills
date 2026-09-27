@@ -389,8 +389,13 @@ check in the path it returns; never change this pane's own directory for
 it. The tree keeps rt's default disposal, so rt disposes it once the MR
 merges; the review never disposes it by hand. A refusal is quoted in the
 setup observations, and the setup checks and the verify step's command
-check are noted as not run. A `branch-attached:<tree>` refusal names an
-existing tree, which counts as in hand when it sits at the fetched head.
+check are noted as not run.
+
+### Review head worktree_provision returned a path?
+
+A `branch-attached:<tree>` refusal names an existing tree; take the yes
+edge with that tree's path, so the head check decides whether it is
+usable.
 
 ### Provisioned review tree at the fetched head?
 
