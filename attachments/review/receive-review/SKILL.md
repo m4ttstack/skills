@@ -263,7 +263,7 @@ digraph receive_review {
     "Resumed, or re-asking after respond-post Hold or Iterate?" -> "Any thread offered (a finalized fix or an override)?" [label="no"];
     "Posted already: read each thread on the forge" -> "Resuming a respond-post record that carries held?";
     "Resuming a respond-post record that carries held?" -> "Picks post or resolve a gate-1: fix row?" [label="yes: act on the held threads only"];
-    "Resuming a respond-post record that carries held?" -> "Any thread offered (a finalized fix or an override)?" [label="no"];
+    "Resuming a respond-post record that carries held?" -> "Any thread offered (a finalized fix or an override)?" [label="no, or a held override has no recorded text: offer it again"];
     "Any thread offered (a finalized fix or an override)?" -> "Nothing offered: caller handed a respond-post decision?" [label="no"];
     "Any thread offered (a finalized fix or an override)?" -> "Threads offered: caller handed the respond-post answers?" [label="yes"];
     "Nothing offered: caller handed a respond-post decision?" -> "Picks post or resolve a gate-1: fix row?" [label="yes: it decides first"];
@@ -352,7 +352,7 @@ digraph receive_review {
     "Make the recorded move once for the refused resolve" -> "Next thread to act on: offered threads, then gate-1: reply rows?";
     "Resolve the thread on GitHub with gh" -> "Next thread to act on: offered threads, then gate-1: reply rows?";
 
-    "respond-post decided by a gate or a handed post?" -> "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" [label="yes"];
+    "respond-post decided by a gate or a handed post?" -> "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" [label="yes, or a held resume re-records"];
     "respond-post decided by a gate or a handed post?" -> "Any thread held this pass: a failed push or a forge refusal?" [label="no: nothing was offered or handed"];
     "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" -> "Any thread held this pass: a failed push or a forge refusal?";
     "Any thread held this pass: a failed push or a forge refusal?" -> "run_field_set {key: hold, value: held, stage: <stage>}" [label="yes"];
@@ -464,7 +464,11 @@ What the snapshot records picks the re-entry:
   pane without it, from the snapshot: the respond-post entry's `text` when
   it has one, else the respond-plan record read as the snapshot-only
   reading under Rewrite the receive-review report rows describes. A held
-  fix row with neither gets its Fixed reply text written again from the
+  override posts only the text recorded for it (the respond-post entry's
+  `text`, else the respond-plan record's `texts` entry). With neither, it
+  is never posted as a redraft the developer has not seen: redraft it
+  (Redraft the override's reply) and offer it, with every held thread not
+  yet posted, at a new respond-post gate. A held fix row with neither gets its Fixed reply text written again from the
   committed change, in the shape Commit the fix and finalize its Fixed
   reply gives it, before it posts; nothing is committed again.
 - **`respond-post` recorded, nothing held:** report the outcome and close.
@@ -1023,16 +1027,23 @@ Verbatim means the text itself: the error `git_push` returned, or for a
 mismatch the output of the two git reads, whole and unedited, in a fenced
 block. Never a summary, a paraphrase, or an excerpt with parts elided.
 
+The held path ends at the run left open, not at Report the outcome, so
+say it before the turn ends: a caller that owns the gates gets which
+replies posted and which threads are held, with each failure verbatim.
+
 ### Hold the thread the forge refused and report the refusal verbatim
 
 A Hold answer at the refused-reply or refused-resolve off-script gate
 holds only that thread, as a failed push holds the fix rows: nothing more
 acts on it this pass. Report the refusal verbatim, the forge's error whole
-in a fenced block (in the hand-back when a caller owns the gates) and leave the run open, since the close waits for
-every reply. Every other thread still acts. The respond-post record lists
+and unedited in a fenced block, never a summary, a paraphrase, or an
+excerpt with parts elided (in the hand-back when a caller owns the gates),
+and leave the run open, since the close waits for every reply. Every other thread still acts. The respond-post record lists
 the thread under `"held"` (The respond-post record). With nothing offered
 and no caller-handed `post` there is no respond-post record; a resume
-then finds the unposted thread through Posted already.
+then finds the unposted thread through Posted already. As with a failed
+push, a caller that owns the gates is told which replies posted and which
+threads are held before the turn ends.
 
 ### Off-script gate: the forge refused the reply
 
@@ -1082,7 +1093,8 @@ other forges resolving belongs to the forge CLI and the adapter.
 Zero unresolved human threads: say so. A caller that owns the gates gets
 which replies posted: with nothing offered, no open file back, only that
 nothing is offered and which replies posted; after acting on its
-`{post}`, which replies posted.
+`{post}`, which replies posted. When threads are held, the run ends held
+instead, and the two hold sections carry this report.
 
 ## What the graph cannot show
 
@@ -1181,7 +1193,9 @@ Selection: `{"move":"<the move>","why":"<the refusal or failure>","action":"take
 The answer diamond after each box reads it: `action: handback` is hand
 back; otherwise `next` picks, proceed taking the move, iterate redoing
 that site with their note, hold holding (at the two forge-refusal
-sites, that thread only). Take makes exactly that move
+sites, that thread only). After an iterate or take answer, the site's
+attempt counter stays spent: the next failure there returns to the same
+off-script gate, where the human answers again. Take makes exactly that move
 once. Hand back is the `run_stage` fail node, with the why as its
 `reason`; when a caller owns the gates, also carry the why in the
 hand-back.
