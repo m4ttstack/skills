@@ -228,7 +228,7 @@ digraph watch_ci {
     "STOP: push only with git_push (watch-ci)" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "watch-ci off-script gate: git_push refused" [shape=box];
     "watch-ci off-script answer (git_push)?" [shape=diamond];
-    "Make the recorded move once (watch-ci push)" [shape=box];
+    "Confirm the human's push landed (watch-ci)" [shape=box];
     "Own run (watch-ci new attempt)?" [shape=diamond];
     "run_stage {action: start, stage: watch-ci} (a new attempt)" [shape=plaintext];
 
@@ -250,7 +250,9 @@ digraph watch_ci {
     "run_status {status: abandoned}" [shape=plaintext];
     "run_stage {action: fail, stage: watch-ci, reason}" [shape=plaintext];
     "run_status {status: failed}" [shape=plaintext];
-    "Hand the verdict or refusal back to the caller (watch-ci)" [shape=doublecircle];
+    "Hand the verdict back to the caller (watch-ci)" [shape=doublecircle];
+    "Hand the off-script answer back to the caller (watch-ci)" [shape=doublecircle];
+    "Hand the failure back to the caller (watch-ci)" [shape=doublecircle];
     "Hand the Go back answer back (watch-ci)" [shape=doublecircle];
     "Held in watch-ci: the run stays open" [shape=doublecircle];
     "watch-ci run abandoned" [shape=doublecircle];
@@ -308,6 +310,7 @@ digraph watch_ci {
     "watcher exit (watch-ci)?" -> "Read the triage report" [label="1: red"];
     "watcher exit (watch-ci)?" -> "Relaunched after a timeout once already (watcher)?" [label="2: timeout"];
     "watcher exit (watch-ci)?" -> "Verify the branch was pushed" [label="4: no pipeline appeared"];
+    "watcher exit (watch-ci)?" -> "Was a lease claimed (watch-ci exit)?" [label="any other exit: the watcher failed; a failure, its output quoted"];
     "Read the triage report" -> "Only INFRA blocking failures, none retried yet (watcher)?";
     "Only INFRA blocking failures, none retried yet (watcher)?" -> "MR found (before the retry)?" [label="yes"];
     "Only INFRA blocking failures, none retried yet (watcher)?" -> "watch-ci gate ci" [label="no: a REAL failure, or retried already"];
@@ -410,11 +413,12 @@ digraph watch_ci {
     "Retried with the printed root (watch-ci)?" -> "STOP: push only with git_push (watch-ci)" [label="yes"];
     "STOP: push only with git_push (watch-ci)" -> "watch-ci off-script gate: git_push refused";
     "watch-ci off-script gate: git_push refused" -> "watch-ci off-script answer (git_push)?";
-    "watch-ci off-script answer (git_push)?" -> "Make the recorded move once (watch-ci push)" [label="take the proposed move"];
+    "watch-ci off-script answer (git_push)?" -> "Confirm the human's push landed (watch-ci)" [label="take: the human pushed"];
+    "watch-ci off-script answer (git_push)?" -> "Which MR (before git_push)?" [label="take: registration fixed, retry"];
     "watch-ci off-script answer (git_push)?" -> "Was a lease claimed (watch-ci exit)?" [label="hand back"];
     "watch-ci off-script answer (git_push)?" -> "Was a lease claimed (watch-ci exit)?" [label="hold"];
     "watch-ci off-script answer (git_push)?" -> "watch-ci off-script gate: git_push refused" [label="iterate: a new gate with their note"];
-    "Make the recorded move once (watch-ci push)" -> "Own run (watch-ci new attempt)?";
+    "Confirm the human's push landed (watch-ci)" -> "Own run (watch-ci new attempt)?";
     "Own run (watch-ci new attempt)?" -> "run_stage {action: start, stage: watch-ci} (a new attempt)" [label="yes"];
     "Own run (watch-ci new attempt)?" -> "MR found (watch-ci lease)?" [label="no: re-enter at the claim"];
     "run_stage {action: start, stage: watch-ci} (a new attempt)" -> "MR found (watch-ci lease)?";
@@ -427,9 +431,9 @@ digraph watch_ci {
     "Re-claim exit (before the retry)?" -> "Retry which way (watch-ci)?" [label="0"];
     "Re-claim exit (before the retry)?" -> "STOP: while the doctor holds the lease, every commit, push and retry is the doctor's" [label="3"];
     "Re-claim exit (before the retry)?" -> "Was a lease claimed (watch-ci exit)?" [label="any other exit: a failure"];
-    "Retry which way (watch-ci)?" -> "Run the report's retry command once per INFRA job" [label="forge bound"];
-    "Retry which way (watch-ci)?" -> "mr_retry {repoName, iid, jobId}" [label="neither bound, GitLab"];
-    "Retry which way (watch-ci)?" -> "gh run rerun <run-id> --failed" [label="neither bound, GitHub"];
+    "Retry which way (watch-ci)?" -> "Run the report's retry command once per INFRA job" [label="the watcher's report printed a retry command"];
+    "Retry which way (watch-ci)?" -> "mr_retry {repoName, iid, jobId}" [label="otherwise, GitLab"];
+    "Retry which way (watch-ci)?" -> "gh run rerun <run-id> --failed" [label="otherwise, GitHub"];
     "Run the report's retry command once per INFRA job" -> "Which flow (watch-ci)?";
     "mr_retry {repoName, iid, jobId}" -> "Which flow (watch-ci)?";
     "gh run rerun <run-id> --failed" -> "Which flow (watch-ci)?";
@@ -440,7 +444,9 @@ digraph watch_ci {
     "Which exit is this (watch-ci)?" -> "run_stage {action: done, stage: watch-ci}" [label="own run: green, ready or kept draft, or hand back"];
     "Which exit is this (watch-ci)?" -> "run_stage {action: done, stage: watch-ci} (abandon)" [label="own run: abandon"];
     "Which exit is this (watch-ci)?" -> "run_stage {action: fail, stage: watch-ci, reason}" [label="own run: a failure or an off-script hand back"];
-    "Which exit is this (watch-ci)?" -> "Hand the verdict or refusal back to the caller (watch-ci)" [label="inherited run: any exit but hold"];
+    "Which exit is this (watch-ci)?" -> "Hand the verdict back to the caller (watch-ci)" [label="inherited run: green, or red after a ci Hand back"];
+    "Which exit is this (watch-ci)?" -> "Hand the off-script answer back to the caller (watch-ci)" [label="inherited run: an off-script hand back"];
+    "Which exit is this (watch-ci)?" -> "Hand the failure back to the caller (watch-ci)" [label="inherited run: a failure"];
     "Which exit is this (watch-ci)?" -> "Hand the Go back answer back (watch-ci)" [label="own run: go back"];
     "Which exit is this (watch-ci)?" -> "Held in watch-ci: the run stays open" [label="hold"];
     "run_stage {action: done, stage: watch-ci}" -> "run_status {status: done}";
@@ -477,7 +483,9 @@ gate.
 
 The watcher prints its report on every exit: the pipeline id and `url`,
 then one verdict per blocking failure (REAL or INFRA) and the retry command
-for each INFRA one.
+for each INFRA one. Any exit other than 0, 1, 2 or 4 (a missing adapter or
+triage script, a failed adapter verb, a usage error) is a failure with the
+watcher's output as the reason, never a reason to read CI with a forge CLI.
 
 ### Verify the branch was pushed
 
@@ -541,11 +549,11 @@ attempt), `context` quoting the refusal.
 
 Selection: `{"move":"<the move>","why":"<the refusal>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`.
 
-### Make the recorded move once (watch-ci push)
+### Confirm the human's push landed (watch-ci)
 
-Exactly the move the gate recorded, once. When the human pushed, confirm
-the remote branch now carries `HEAD`; when they fixed the registration, the
-move is one more `git_push {tree: <root>}`.
+The human pushed outside this verb. Compare `git rev-parse HEAD` with the
+remote branch and say what it shows; never push from here. A push that did
+not land surfaces at the sha guard and the `ci` gate.
 
 ### Run the report's retry command once per INFRA job
 
