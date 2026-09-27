@@ -15,6 +15,7 @@ import sys
 FENCE_OPEN = re.compile(r"^```dot\s*$")
 INDENTED_FENCE = re.compile(r"^\s+```dot\s*$")
 FENCE_CLOSE = re.compile(r"^`{3,}\s*$")
+ANY_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 TERMINALS = {"doublecircle", "octagon"}
 
 
@@ -36,9 +37,13 @@ def blocks(path):
                 problems.append(f"{path}:{start}: dot fence never closed")
             found.append((start, "\n".join(body)))
         i += 1
-    seen = {}
+    seen, fence = {}, None
     for n, line in enumerate(lines, 1):
-        if line.startswith("### "):
+        m = ANY_FENCE.match(line)
+        if m and (fence is None or (m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) and not line.strip()[len(m.group(1)):].strip())):
+            fence = None if fence else m.group(1)
+            continue
+        if fence is None and line.startswith("### "):
             head = line[4:].strip()
             if head in seen:
                 problems.append(f"{path}:{n}: duplicate section \"### {head}\" (first at line {seen[head]}); give each node distinct text")

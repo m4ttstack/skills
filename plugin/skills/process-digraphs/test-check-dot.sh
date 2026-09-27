@@ -60,6 +60,10 @@ printf '# t\n\n```dot\ndigraph g { "S" [shape=ellipse]; "A" [shape=doublecircle 
 out="$(python3 "$here/check-dot.py" "$tmp/dupsec.md" 2>&1)"; rc=$?
 if [ $rc -ne 0 ] && printf '%s' "$out" | grep -q "duplicate section"; then echo "ok   duplicate-section"; else echo "FAIL duplicate-section"; echo "$out"; fails=$((fails+1)); fi
 
+printf '# t\n\n```dot\ndigraph g { "S" [shape=ellipse]; "A" [shape=doublecircle style=filled]; "S" -> "A"; }\n```\n\n````markdown\n### S\n````\n\n### S\n\none\n' > "$tmp/fencedsec.md"
+out="$(python3 "$here/check-dot.py" "$tmp/fencedsec.md" 2>&1)"; rc=$?
+if [ $rc -eq 0 ]; then echo "ok   fenced-heading-ignored"; else echo "FAIL fenced-heading-ignored"; echo "$out"; fails=$((fails+1)); fi
+
 printf '# nothing here\n' > "$tmp/empty.md"
 out="$(python3 "$here/check-dot.py" "$tmp/empty.md" 2>&1)"; rc=$?
 if [ $rc -ne 0 ] && printf '%s' "$out" | grep -q "no \`\`\`dot block"; then echo "ok   no-blocks"; else echo "FAIL no-blocks"; echo "$out"; fails=$((fails+1)); fi
