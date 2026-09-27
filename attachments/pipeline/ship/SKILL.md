@@ -157,12 +157,14 @@ digraph ship {
     "Continue result (ship)?" [shape=diamond];
     "Rebase in progress (ship abort)?" [shape=diamond];
     "git_rebase {tree: <root>, abort: true}" [shape=plaintext];
+    "git_rebase {tree: <root>, abort: true} (after a failed continue)" [shape=plaintext];
 
     "git remote get-url origin (ship)" [shape=plaintext];
     "Forge host (ship, before git_push)?" [shape=diamond];
     "ship gate clarify: which forge?" [shape=box];
     "mr_for_branch {repoName: <root>, branches: [<branch>]} (before git_push)" [shape=plaintext];
     "Open MR on the branch (before git_push)?" [shape=diamond];
+    "Push moves the MR's head (ship)?" [shape=diamond];
     "mr_pipeline {repoName, iid} (the prior pipeline id, ship)" [shape=plaintext];
     "git_push {tree: <root>, setUpstream: true}" [shape=plaintext];
     "git_push result (ship)?" [shape=diamond];
@@ -172,6 +174,7 @@ digraph ship {
     "ship off-script gate: git_push refused" [shape=box];
     "ship off-script answer (git_push)?" [shape=diamond];
     "Confirm the human's push landed (ship)" [shape=box];
+    "Push landed (ship)?" [shape=diamond];
 
     "Forge host (ship, open the MR)?" [shape=diamond];
     "mr_for_branch {repoName: <root>, branches: [<branch>]} (after git_push)" [shape=plaintext];
@@ -199,6 +202,8 @@ digraph ship {
     "Domain runs CI after the MR (ship)?" [shape=diamond];
     "Run watch-ci inheriting this run" [shape=box];
     "watch-ci handed back what (ship)?" [shape=diamond];
+    "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub (ship draft check)" [shape=plaintext];
+    "MR still a draft (ship)?" [shape=diamond];
     "ship gate mark-ready" [shape=box];
     "mark-ready answer (ship)?" [shape=diamond];
     "Forge host (ship, mark-ready)?" [shape=diamond];
@@ -261,6 +266,8 @@ digraph ship {
     "Resolve the files, then git rebase --continue on Bash (ship)" -> "Continue result (ship)?";
     "Continue result (ship)?" -> "Conflict rounds = 3 (ship)?" [label="another commit conflicted"];
     "Continue result (ship)?" -> "Run the domain's fast checks (none when unbound)" [label="rebase finished"];
+    "Continue result (ship)?" -> "git_rebase {tree: <root>, abort: true} (after a failed continue)" [label="any other error: a failure, quoted"];
+    "git_rebase {tree: <root>, abort: true} (after a failed continue)" -> "Which exit is this (ship)?";
 
     "git remote get-url origin (ship)" -> "Forge host (ship, before git_push)?";
     "Forge host (ship, before git_push)?" -> "mr_for_branch {repoName: <root>, branches: [<branch>]} (before git_push)" [label="GitLab"];
@@ -268,7 +275,9 @@ digraph ship {
     "Forge host (ship, before git_push)?" -> "ship gate clarify: which forge?" [label="anything else"];
     "ship gate clarify: which forge?" -> "Forge host (ship, before git_push)?" [label="answered: the named forge"];
     "mr_for_branch {repoName: <root>, branches: [<branch>]} (before git_push)" -> "Open MR on the branch (before git_push)?";
-    "Open MR on the branch (before git_push)?" -> "mr_pipeline {repoName, iid} (the prior pipeline id, ship)" [label="yes"];
+    "Open MR on the branch (before git_push)?" -> "Push moves the MR's head (ship)?" [label="yes"];
+    "Push moves the MR's head (ship)?" -> "mr_pipeline {repoName, iid} (the prior pipeline id, ship)" [label="yes: HEAD differs"];
+    "Push moves the MR's head (ship)?" -> "git_push {tree: <root>, setUpstream: true}" [label="no: already pushed"];
     "Open MR on the branch (before git_push)?" -> "git_push {tree: <root>, setUpstream: true}" [label="no"];
     "mr_pipeline {repoName, iid} (the prior pipeline id, ship)" -> "git_push {tree: <root>, setUpstream: true}";
     "git_push {tree: <root>, setUpstream: true}" -> "git_push result (ship)?";
@@ -285,7 +294,9 @@ digraph ship {
     "ship off-script answer (git_push)?" -> "Which exit is this (ship)?" [label="hand back: a failure, the refusal is the reason"];
     "ship off-script answer (git_push)?" -> "Which exit is this (ship)?" [label="hold"];
     "ship off-script answer (git_push)?" -> "ship off-script gate: git_push refused" [label="iterate: a new gate with their note"];
-    "Confirm the human's push landed (ship)" -> "Forge host (ship, open the MR)?";
+    "Confirm the human's push landed (ship)" -> "Push landed (ship)?";
+    "Push landed (ship)?" -> "Forge host (ship, open the MR)?" [label="yes: the remote branch carries HEAD"];
+    "Push landed (ship)?" -> "ship off-script gate: git_push refused" [label="no: reopen with what the comparison showed"];
 
     "Forge host (ship, open the MR)?" -> "mr_for_branch {repoName: <root>, branches: [<branch>]} (after git_push)" [label="GitLab"];
     "Forge host (ship, open the MR)?" -> "gh pr create --fill --base <default>, --draft unless the gate said ready" [label="GitHub"];
@@ -326,11 +337,14 @@ digraph ship {
     "Domain runs CI after the MR (ship)?" -> "Run watch-ci inheriting this run" [label="yes"];
     "Domain runs CI after the MR (ship)?" -> "Which exit is this (ship)?" [label="no: done, print the URL"];
     "Run watch-ci inheriting this run" -> "watch-ci handed back what (ship)?";
-    "watch-ci handed back what (ship)?" -> "ship gate mark-ready" [label="verdict: green and the MR a draft"];
-    "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="verdict: green and ready, or red after its ci gate: done"];
+    "watch-ci handed back what (ship)?" -> "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub (ship draft check)" [label="verdict: green"];
+    "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="verdict: red after its ci gate: done"];
     "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="off-script answer or failure"];
     "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="stood down: the doctor holds the lease"];
     "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="held"];
+    "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub (ship draft check)" -> "MR still a draft (ship)?";
+    "MR still a draft (ship)?" -> "ship gate mark-ready" [label="yes"];
+    "MR still a draft (ship)?" -> "Which exit is this (ship)?" [label="no: done"];
     "ship gate mark-ready" -> "mark-ready answer (ship)?";
     "mark-ready answer (ship)?" -> "Forge host (ship, mark-ready)?" [label="mark ready now"];
     "mark-ready answer (ship)?" -> "Which exit is this (ship)?" [label="keep it draft: done"];
@@ -433,7 +447,8 @@ Selection: `{"move":"<the move>","why":"<the refusal>","action":"take|handback",
 
 The human pushed outside this verb. Compare `git rev-parse HEAD` with the
 remote branch and say what it shows in the final report; never push from
-here.
+here. The push landed when the remote branch carries HEAD; otherwise the
+off-script gate reopens with the comparison as its context.
 
 ### Capture the AFTER when the domain names one (ship)
 
@@ -452,9 +467,12 @@ owns. The domain's title, template and voice rules win over this paragraph.
 ### Run watch-ci inheriting this run
 
 Invoke the `watch-ci` verb with this run's `runDb`, so it inherits the run
-and fires no gate beyond `ci`. Hand it the MR and, when one was read before
-the push, the prior pipeline id, so its sha guard can tell the new pipeline
-from the old one. It hands back its verdict (after its `ci` gate when red),
+and fires no gate beyond `ci`. Hand it the forge, the MR, the pushed sha
+(`git rev-parse HEAD` after the push) and, when one was kept, the prior
+pipeline id. The prior id is read only when the push moves the branch (the
+open MR's sha from `mr_for_branch` differs from `git rev-parse HEAD`), so
+the sha guard can tell the new pipeline from the old one; with no prior id
+handed over, the guard checks the sha alone. It hands back its verdict (after its `ci` gate when red),
 an off-script answer, a failure, a stand-down, or a hold. A stand-down means
 the doctor holds the MR's lease: an own run closes `done`, since the MR
 exists, and the report says the doctor has it; an inherited run hands the
@@ -476,9 +494,8 @@ Scope `mark-ready`. Selection: `{"ready":true|false,"next":"proceed|iterate|redi
 ## What the graph cannot show
 
 - After a rebase that rewrote already-pushed commits, push with
-  `git_push {tree: <root>, forceWithLease: true}` instead. Never force
-  otherwise, and never push a branch whose checks you have not seen pass in
-  this session.
+  `git_push {tree: <root>, forceWithLease: true}` instead, and only once
+  you have seen its checks pass in this session. Never force otherwise.
 - Keep the `url` `mr_create` returns as `mrUrl` for every later write, and
   print it. `mr_create` takes `draft: false` only when the gate said ready;
   write its title from the branch's commits.
