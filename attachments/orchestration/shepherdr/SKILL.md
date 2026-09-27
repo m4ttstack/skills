@@ -171,7 +171,7 @@ Decompose into independent jobs:
 
 - Disjoint file ownership per job -- the write fence.
 - Item-coded task lists (A1, A2...) where the strategy produces items, so those reports are checkable at a glance.
-- Each job has a clear deliverable and can run without another job's output. Sequential work (B needs A) spawns B after A's report event arrives.
+- Each job has a clear deliverable and can run without another job's output. Sequential work (B needs A) is a later fan-out: once A's report arrives, walk the start graph again from its trigger for B.
 
 Two kinds of job come out of this. An **execution job** is fully specified
 up front: brief in, report out, zero questions expected (a plan exists,
@@ -290,9 +290,10 @@ one chat room and one gate subscription, all created by `herd_start`.
 Workers ask through gates (`herd_ask`, `herd_milestone`) and report into
 the room, where the daemon also posts lifecycle notices (`<job> blocked`,
 `<job> exited`); the daemon pushes all of it into this session and records
-job state as a side effect of every call. You talk to a worker with the `chat_dm` tool
-(`{to: <handle>, body}`). There is no herd DB, no script, and no background
-wait; `herd_status {herd}` is the whole picture at any moment.
+job state as a side effect of every call. You talk to a worker with the
+`chat_dm` tool (`{to: <handle>, body}`). There is no herd DB, no script,
+and no background wait; `herd_status {herd}` is the whole picture at any
+moment.
 
 **Resuming.** `herd_list` shows the herd ids. `herd_resume {herd}`
 re-points the gate subscription and the chat identity to this session and
@@ -587,7 +588,7 @@ briefs** / **Hold**. No restated heading, no per-option descriptions.
 
 ## What the watch loop cannot show
 
-- **The push is transport.** A gate push is one line, `[gate] <id> is now open; re-read the gate registry.`, carrying only an id. Its arrival already proves the daemon, the subscription and the herd; the `herd_gates` read is the verification, made first, before any command of your own choosing. `herd_gates` defaults to `HERD_ID` or the single active herd (name the herd only when more than one is active), and also returns pipeline-run gates whose worktree belongs to one of your jobs. A stale id or an unrelated room line is a normal outcome of that read, never a reason to reach for another command first or to distrust the push.
+- **The push is transport.** A gate push is one line, `[gate] <id> is now open; re-read the gate registry.`, carrying only an id. Its arrival already proves the daemon, the subscription and the herd; the `herd_gates` read is the verification, made first, before any command of your own choosing. `herd_gates` defaults to `HERD_ID` or the single active herd (name the herd only when more than one is active), and also returns pipeline-run gates whose worktree belongs to one of your jobs. Room lines are pushed the same way: a report is `<job> #<n>: <body>` and a milestone is `<job> #<n>: milestone: <artifact>`. A stale id or an unrelated room line is a normal outcome of that read, never a reason to reach for another command first or to distrust the push.
 - **Blocked diagnosis.** `<job> blocked` means the pane sat on a prompt for 30s. `herd_gates` comes first; its rows carry `presentation` and `owner`. Only "blocked, no open question, no open gate" makes the pane peek legitimate, never a hunch. `bg:` refs work for hidden herds.
 - **Typing versus keys.** Typing a text nudge into a lane's prompt with `rt pane send <pane> --text <nudge>` is allowed when the prompt is idle and no form is on screen. Pressing keys into a modal or form (Escape, Enter, an option number) is forbidden: the daemon injects Escape itself when a form-presentation gate is answered elsewhere, and a keystroke into a pane on a background `rt gate wait` interrupts a worker that was never stuck. A gate row's `presentation` says which you face: `"form"` means answering the gate clears the form; `"wait"` means leave the pane alone.
 - **Unconsumed answers.** The daemon already re-nudges the worker itself; what reaches you is `gate <id> UNCONSUMED` on a job in `herd_status`, or the watchdog's "answered Nm ago and unconsumed" line. Read the lane's pane first: a dead lane (a login expired, no claude on it) is a respawn, not a nudge. Nudge 0 is the DM. Nudge 1 types the same nudge. Typing a text nudge into a lane's prompt with `rt pane send <pane> --text <nudge>` is allowed when the prompt is idle and no form is on screen. Pressing keys into a modal or form (Escape, Enter, an option number) is forbidden: the daemon injects Escape itself when a form-presentation gate is answered elsewhere, and a keystroke into a pane on a background `rt gate wait` interrupts a worker that was never stuck. After that, the off-script gate.
@@ -602,10 +603,10 @@ the graph's node (`--brief` only for a kill and respawn):
 rt herd spawn --herd <id> --job <job> --dir <its tree> --model <model> [--brief <new brief>] [--effort <e>] [--account <A>]  # <!-- mcp-lint: allow -->
 ```
 
-It is never `herd_spawn`: the tool takes no dir, and a closed job's tree
-stays attached, so a dir-less respawn fails `branch-attached`. The daemon
-closes the old pane, reuses the stored brief unless `--brief` names a new
-one, and relaunches in the same tree.
+It is never `herd_spawn`: the tool takes no dir, and the job's tree stays
+attached, closed or not, so a dir-less respawn fails `branch-attached`. The
+daemon closes the old pane, reuses the stored brief unless `--brief` names
+a new one, and relaunches in the same tree.
 
 ## Lanes and wrap-up
 
@@ -765,8 +766,9 @@ authority, and `herd_wrap_up` executes exactly it.
 ### Measure what still runs
 
 The stop calls before this step cover every job in the dispose list plus
-every job whose pane is closing. Their `tree` is the job's `tree` field
-from `herd_status`, a registry name, never a path. A null tree (a job
+every job whose pane is closing. Their `repoName` is the herd's repo, and
+their `tree` is the job's `tree` field from `herd_status`, a registry name,
+never a path. A null tree (a job
 spawned in a given dir) is skipped unless that dir is an rt tree; then pass
 the name `rt_verb {args: ["worktree", "list", "--repo", "<the herd's repo>"]}`
 prints for it. They run before `herd_wrap_up` because a disposed tree
@@ -794,7 +796,6 @@ the Bash command `rt herd stop --hidden` (no tool runs it); never run it unpromp
 - **Job state is the daemon's.** It marked the job `done` when the report was published; `herd_status` is the status table's source. Nothing to record by hand.
 - **A report is a claim, not a merge.** Answer "Merged on the repo?" from the repo itself (`gh pr view --json state,mergeCommit`, or the sha on `origin/main`), never from the report alone.
 - **The integration job.** Its brief merges or cherry-picks the job branches, runs full verification, and reports; it carries the repo's shipping conventions. Never merge, fix or push on the agents' behalf.
-- **Sequential jobs.** A dependent job is spawned after its prerequisite's report by walking the start graph again from `herd_brief` for that job.
 - **Domain hook: after the report.** Unbound: the integration job merges. A bound domain part may define what follows an approved report (the worker ships through its own skill chain, or the shepherd merges after a gate; how several jobs feeding one deliverable integrate) and whether that step waits for the user to ask. Fixing and pushing stay with workers either way.
 - **Domain hook: wrap-up.** Unbound: as drawn. A bound domain part may state its own tree lifecycle (trees that dispose themselves when their work merges, what a disposal refusal means); follow it over the disposal defaults here.
 
