@@ -73,6 +73,7 @@ digraph rebase_worktree {
     "Conflict attempts = 3?" [shape=diamond];
     "STOP: leave the rebase for the human" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "git -C <tree> log -1 --oneline HEAD" [shape=plaintext];
+    "git -C <tree> log -1 --oneline --no-decorate" [shape=plaintext];
     "Head still the old head?" [shape=diamond];
     "Report the move" [shape=box];
     "Old head = new head?" [shape=diamond];
@@ -133,7 +134,7 @@ digraph rebase_worktree {
     "Discover the default from the forge" -> "Default branch read?";
     "git -C <tree> log -1 --oneline" -> "branch_sync {tree}";
     "branch_sync {tree}" -> "branch_sync result?";
-    "branch_sync result?" -> "Report the move" [label="synced"];
+    "branch_sync result?" -> "git -C <tree> log -1 --oneline --no-decorate" [label="synced"];
     "branch_sync result?" -> "Conflict: caller composing per branch?" [label="conflict"];
     "branch_sync result?" -> "git -C <tree> remote get-url origin" [label="stack check could not run, or the sync itself failed"];
     "branch_sync result?" -> "Refused: stack member, tool named" [label="stack refusal ending Run: <tool>"];
@@ -163,7 +164,8 @@ digraph rebase_worktree {
     "git -C <tree> fetch origin" -> "git -C <tree> log --oneline origin/<default>..HEAD";
     "git -C <tree> log --oneline origin/<default>..HEAD" -> "git_rebase {tree, onto: origin/<default>}";
     "git_rebase {tree, onto: origin/<default>}" -> "git_rebase result?";
-    "git_rebase result?" -> "Report the move" [label="clean"];
+    "git_rebase result?" -> "git -C <tree> log -1 --oneline --no-decorate" [label="clean"];
+    "git -C <tree> log -1 --oneline --no-decorate" -> "Report the move";
     "git_rebase result?" -> "Conflict: caller composing per branch?" [label="conflict"];
     "git_rebase result?" -> "Rebase error: reported" [label="any other error"];
     "git_rebase result?" -> "STOP: never resolve a conflict; hand it back" [label="tempted to resolve or continue it yourself"];
@@ -190,8 +192,8 @@ digraph rebase_worktree {
     "Report the move" -> "Old head = new head?";
     "Old head = new head?" -> "Done: move reported" [label="yes: already current, nothing pushed"];
     "Old head = new head?" -> "branch_sync pushed it?" [label="no"];
-    "branch_sync pushed it?" -> "Done: move reported" [label="yes: pushed by branch_sync"];
-    "branch_sync pushed it?" -> "Push: caller composing per branch?" [label="no"];
+    "branch_sync pushed it?" -> "Done: move reported" [label="yes: branch_sync returned synced (pushed by branch_sync)"];
+    "branch_sync pushed it?" -> "Push: caller composing per branch?" [label="no: the manual path rebased it"];
     "Push: caller composing per branch?" -> "Handed back: push to decide" [label="yes"];
     "Push: caller composing per branch?" -> "Gate push" [label="no"];
     "Gate push" -> "push answer?";
@@ -319,9 +321,10 @@ or continue or skip the rebase.
 
 ### Report the move
 
-Old head -> new head, from the two `git -C <tree> log -1 --oneline`
-reads: the one before `branch_sync`, and the same read once the rebase
-finished (the `HEAD` read already made it after an iterate). The line ends
+Old head -> new head. The old head is the `git -C <tree> log -1 --oneline`
+read before `branch_sync`. The new head is the `git -C <tree> log -1
+--oneline --no-decorate` read on the synced and clean paths, and the
+`git -C <tree> log -1 --oneline HEAD` read after an iterate. The line ends
 "already current; nothing pushed" when the heads match, or "pushed by
 branch_sync" when `branch_sync` moved it. Carry any "stack check covered
 <scope> only" caveat on the line. On the manual path, also show the
