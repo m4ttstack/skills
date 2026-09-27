@@ -313,9 +313,11 @@ to the wait queue):
 - `next`: **Proceed** (recommended) / **Iterate here** / **Hold**
 
 Selection `{"next":"leave|abort|iterate|hold","note":"<their words or null>"}`.
-**Iterate here** means the human worked in their own pane; the graph
-re-reads the tree. Never resolve the conflict yourself, stage the files,
-or continue or skip the rebase.
+Read `next` first: **Hold** ends the turn with nothing aborted; **Iterate
+here** re-reads the tree (the human worked in their own pane) and ignores
+`conflict`; only **Proceed** applies `conflict` (leave or abort). Never
+resolve the conflict yourself, stage the files, or continue or skip the
+rebase.
 
 {{include:spawned-no-run-guard}}
 
@@ -343,6 +345,9 @@ queue):
 - `next`: **Proceed** / **Iterate here** / **Hold**
 
 Selection `{"push":true|false,"next":"proceed|iterate|hold","note":"<their words or null>"}`.
+Read `next` first: **Hold** ends the turn with nothing pushed; **Iterate
+here** goes back to **Report the move** and ignores `push`; only
+**Proceed** applies `push`.
 Any other `git_push` error is reported with its text; the rebase stands
 unpushed.
 
@@ -367,8 +372,10 @@ own question:
 - `next`: **Proceed** (recommended) / **Iterate here** / **Hold**
 
 Selection `{"move":"<the move>","why":"<the refusal>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`.
-**Iterate here** means the human fixed the cause and wants the push
-retried. The proposed move is one plain-git force-with-lease push of the
+Read `next` first: **Hold** ends the turn with no move made; **Iterate
+here** means the human fixed the cause and wants the push retried, and it
+ignores `action`; only **Proceed** applies `action` (take or hand back).
+The proposed move is one plain-git force-with-lease push of the
 branch; retrying the refused tool is **Iterate here**, never **Take**.
 
 ### Make the recorded move once
