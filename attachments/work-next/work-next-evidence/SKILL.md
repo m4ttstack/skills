@@ -31,14 +31,15 @@ digraph evidence {
     "run_field_get {key: evidence-plan}; run_field_get {key: worktree}" [shape=plaintext];
     "evidence-plan starts with none?" [shape=diamond];
     "run_field_set {key: evidence, value: {plan: none}, stage: evidence}" [shape=plaintext];
+    "Run the domain steps before the gate (none when unbound)" [shape=box];
+    "Domain needs an rt read (ports, endpoints)?" [shape=diamond];
+    "rt_verb {args: [<verb>, ...]}" [shape=plaintext];
+    "STOP: rt reads go through rt_verb, never rt on Bash" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Intake questions declared, or source not local?" [shape=diamond];
     "Gate evidence (table below)" [shape=box];
     "evidence answer?" [shape=diamond];
     "Ticket already shows the broken state?" [shape=diamond];
     "Record the ticket's location as the BEFORE" [shape=box];
-    "Domain needs an rt read (ports, endpoints)?" [shape=diamond];
-    "rt_verb {args: [<verb>, ...]}" [shape=plaintext];
-    "STOP: rt reads go through rt_verb, never rt on Bash" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Capture the BEFORE" [shape=box];
     "Captured?" [shape=diamond];
     "Attempts = 3?" [shape=diamond];
@@ -47,8 +48,9 @@ digraph evidence {
     "STOP: a new data source is an off-script move" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Off-script gate (gate part)" [shape=box];
     "off-script answer?" [shape=diamond];
-    "MR exists and the domain attaches here?" [shape=diamond];
+    "Domain attaches evidence to an MR here?" [shape=diamond];
     "mr_for_branch {repoName: <worktree>, branches: [<branch>]}" [shape=plaintext];
+    "Open MR on the branch?" [shape=diamond];
     "Gate evidence-attach (table below)" [shape=box];
     "attach answer?" [shape=diamond];
     "mr_upload {mrUrl, path} per file; keep each markdown" [shape=plaintext];
@@ -62,8 +64,14 @@ digraph evidence {
     "Evidence stage entered" -> "run_field_get {key: evidence-plan}; run_field_get {key: worktree}";
     "run_field_get {key: evidence-plan}; run_field_get {key: worktree}" -> "evidence-plan starts with none?";
     "evidence-plan starts with none?" -> "run_field_set {key: evidence, value: {plan: none}, stage: evidence}" [label="yes"];
-    "evidence-plan starts with none?" -> "Intake questions declared, or source not local?" [label="no"];
+    "evidence-plan starts with none?" -> "Run the domain steps before the gate (none when unbound)" [label="no"];
     "run_field_set {key: evidence, value: {plan: none}, stage: evidence}" -> "Evidence done: return to the orchestrator";
+    "Run the domain steps before the gate (none when unbound)" -> "Domain needs an rt read (ports, endpoints)?";
+    "Domain needs an rt read (ports, endpoints)?" -> "rt_verb {args: [<verb>, ...]}" [label="yes"];
+    "Domain needs an rt read (ports, endpoints)?" -> "STOP: rt reads go through rt_verb, never rt on Bash" [label="tempted to run it on Bash"];
+    "Domain needs an rt read (ports, endpoints)?" -> "Intake questions declared, or source not local?" [label="no"];
+    "STOP: rt reads go through rt_verb, never rt on Bash" -> "rt_verb {args: [<verb>, ...]}";
+    "rt_verb {args: [<verb>, ...]}" -> "Intake questions declared, or source not local?";
     "Intake questions declared, or source not local?" -> "Gate evidence (table below)" [label="yes"];
     "Intake questions declared, or source not local?" -> "Ticket already shows the broken state?" [label="no"];
     "Gate evidence (table below)" -> "evidence answer?";
@@ -71,15 +79,10 @@ digraph evidence {
     "evidence answer?" -> "Gate evidence (table below)" [label="iterate: re-ask with their note"];
     "evidence answer?" -> "Held per the gate part" [label="hold"];
     "Ticket already shows the broken state?" -> "Record the ticket's location as the BEFORE" [label="yes"];
-    "Ticket already shows the broken state?" -> "Domain needs an rt read (ports, endpoints)?" [label="no"];
-    "Record the ticket's location as the BEFORE" -> "MR exists and the domain attaches here?";
-    "Domain needs an rt read (ports, endpoints)?" -> "rt_verb {args: [<verb>, ...]}" [label="yes"];
-    "Domain needs an rt read (ports, endpoints)?" -> "STOP: rt reads go through rt_verb, never rt on Bash" [label="tempted to run it on Bash"];
-    "Domain needs an rt read (ports, endpoints)?" -> "Capture the BEFORE" [label="no"];
-    "STOP: rt reads go through rt_verb, never rt on Bash" -> "rt_verb {args: [<verb>, ...]}";
-    "rt_verb {args: [<verb>, ...]}" -> "Capture the BEFORE";
+    "Ticket already shows the broken state?" -> "Capture the BEFORE" [label="no"];
+    "Record the ticket's location as the BEFORE" -> "Domain attaches evidence to an MR here?";
     "Capture the BEFORE" -> "Captured?";
-    "Captured?" -> "MR exists and the domain attaches here?" [label="yes"];
+    "Captured?" -> "Domain attaches evidence to an MR here?" [label="yes"];
     "Captured?" -> "Attempts = 3?" [label="no"];
     "Attempts = 3?" -> "Pick the next source or view" [label="no"];
     "Attempts = 3?" -> "Gate evidence (table below)" [label="yes: reopen with what was tried"];
@@ -90,9 +93,11 @@ digraph evidence {
     "Off-script gate (gate part)" -> "off-script answer?";
     "off-script answer?" -> "Capture the BEFORE" [label="take: the recorded source"];
     "off-script answer?" -> "run_stage {action: fail, stage: evidence, reason, detailPath}" [label="hand back"];
-    "MR exists and the domain attaches here?" -> "mr_for_branch {repoName: <worktree>, branches: [<branch>]}" [label="the domain attaches here"];
-    "MR exists and the domain attaches here?" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [label="no: ship attaches"];
-    "mr_for_branch {repoName: <worktree>, branches: [<branch>]}" -> "Gate evidence-attach (table below)" [label="an open MR"];
+    "Domain attaches evidence to an MR here?" -> "mr_for_branch {repoName: <worktree>, branches: [<branch>]}" [label="yes"];
+    "Domain attaches evidence to an MR here?" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [label="no: ship attaches"];
+    "mr_for_branch {repoName: <worktree>, branches: [<branch>]}" -> "Open MR on the branch?";
+    "Open MR on the branch?" -> "Gate evidence-attach (table below)" [label="yes: keep its url"];
+    "Open MR on the branch?" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [label="no: ship attaches later"];
     "Gate evidence-attach (table below)" -> "attach answer?";
     "attach answer?" -> "mr_upload {mrUrl, path} per file; keep each markdown" [label="attach now"];
     "attach answer?" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [label="hand back the markdown"];
@@ -103,6 +108,13 @@ digraph evidence {
     "run_stage {action: fail, stage: evidence, reason, detailPath}" -> "Stage failed";
 }
 ```
+
+### Run the domain steps before the gate (none when unbound)
+
+The domain's gathering steps: resolving the running app's ports and its
+data source, and any other fact the gate's own sentence or the `source`
+question needs. Their result decides whether `source` fires below. Any rt
+read among them goes through `rt_verb`, never Bash.
 
 ### Record the ticket's location as the BEFORE
 
@@ -135,7 +147,7 @@ One sentence above the form: what the plan asks for and what is unknown.
 
 Selection: `{"intake":{<answers>},"source":"<as confirmed>"}`.
 
-## Gate `evidence-attach` (an MR already exists and the domain attaches here)
+## Gate `evidence-attach` (the domain attaches here and the lookup found an open MR)
 
 One sentence above the form: what was captured and where it sits.
 
