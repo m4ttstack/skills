@@ -121,6 +121,9 @@ digraph self_review {
     "Fix the finding and run the tests" [shape=box];
     "Tests green after the fix?" [shape=diamond];
     "Fix attempts on this finding = 3?" [shape=diamond];
+    "Reopened gates on this finding = 1?" [shape=diamond];
+    "Self-review stuck finding answer?" [shape=diamond];
+    "Record the finding as left open" [shape=box];
     "Hand back with the Minor findings listed" [shape=box];
     "Own self-review run: close it?" [shape=diamond];
     "run_stage {action: done, stage: self-review}" [shape=plaintext];
@@ -182,7 +185,11 @@ digraph self_review {
     "Dispatch the fresh reviewer on your own diff" -> "Assemble the self-review draft";
     "Assemble the self-review draft" -> "Gate self-review: fix and next, after the draft";
     "Gate self-review: fix and next, after the draft" -> "Self-review next answer?";
-    "Gate self-review again: quote the failing output" -> "Self-review next answer?";
+    "Gate self-review again: quote the failing output" -> "Self-review stuck finding answer?";
+    "Self-review stuck finding answer?" -> "Fix the finding and run the tests" [label="try again: its attempt count resets"];
+    "Self-review stuck finding answer?" -> "Record the finding as left open" [label="leave it open"];
+    "Self-review stuck finding answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for self-review" [label="hold"];
+    "Self-review stuck finding answer?" -> "Own self-review run: close it as abandoned?" [label="abandon"];
     "Self-review next answer?" -> "Self-review fix answer?" [label="proceed"];
     "Self-review next answer?" -> "Print the self-review depth block" [label="iterate here: redo from the depth block with their note"];
     "Self-review next answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for self-review" [label="hold"];
@@ -201,7 +208,10 @@ digraph self_review {
     "Tests green after the fix?" -> "Next selected finding to fix?" [label="yes"];
     "Tests green after the fix?" -> "Fix attempts on this finding = 3?" [label="no"];
     "Fix attempts on this finding = 3?" -> "Fix the finding and run the tests" [label="no"];
-    "Fix attempts on this finding = 3?" -> "Gate self-review again: quote the failing output" [label="yes: reopen as a new gate; a fix answer resets the count"];
+    "Fix attempts on this finding = 3?" -> "Reopened gates on this finding = 1?" [label="yes"];
+    "Reopened gates on this finding = 1?" -> "Gate self-review again: quote the failing output" [label="no: reopen as a new gate"];
+    "Reopened gates on this finding = 1?" -> "Record the finding as left open" [label="yes: budget spent"];
+    "Record the finding as left open" -> "Next selected finding to fix?";
     "Hand back with the Minor findings listed" -> "Own self-review run: close it?";
     "Own self-review run: close it?" -> "run_stage {action: done, stage: self-review}" [label="yes: own run, started or resumed"];
     "Own self-review run: close it?" -> "Self-review done: the calling flow continues" [label="no: inherited"];
@@ -321,11 +331,22 @@ decision's `fix` answer, treats `next` as proceed, and asks nothing here.
 
 ### Gate self-review again: quote the failing output
 
-A new gate, never the old one reopened: the same bracket, kind and
-questions, with `context` quoting the failing test output and naming the
-finding. A fix answer resets that finding's attempt count to 0; each
-further pass is the human's call. Ship as is leaves the finding open and
-listed in the hand-back.
+A new gate, never the old one reopened: the same bracket and kind
+`self-review`, with `context` quoting the failing test output and naming
+the finding. Questions, each its own: `finding`: **Try this finding
+again** / **Leave it open and move on**; `next`: **Proceed** (recommended)
+/ **Hold** / **Abandon**. `next: hold` is hold and `next: abandon` is
+abandon whatever `finding` says; otherwise the `finding` answer decides.
+Record `run_decision {contract: gate@1, scope: self-review, selection:
+{"finding": "<its id or file:line>", "retry": true|false, "note": "<their
+words or null>"}, decidedBy: <the answer's by>}`. Try again resets that
+finding's attempt count to 0; each finding gets one reopened gate, after
+which it is left open.
+
+### Next selected finding to fix?
+
+One finding at a time, in draft order: the next finding the fix answer
+selected that is not yet fixed, recorded not reproduced, or left open.
 
 ### Is the finding testable?
 
@@ -335,8 +356,8 @@ and the suite plus a re-read of the finding is their check.
 
 ### Write a failing test for the finding
 
-One finding at a time, in draft order. The test states the finding's
-claim against the current code, before any fix.
+The test states the finding's claim against the current code, before any
+fix.
 
 ### Record the finding as not reproduced; no fix
 
@@ -348,6 +369,13 @@ showed it, in what you hand back.
 
 The smallest fix, then the finding's test and the checks the depth ran.
 The counter is attempts on this finding within this pass.
+
+### Record the finding as left open
+
+No more attempts on it in this run; keep its last failing output. It is
+listed as left open, with that output, in the final message and any
+hand-back. Revert the fix attempts that broke tests if they are still in
+the working tree, so the suite is back to green before the next finding.
 
 ### Hand back with the Minor findings listed
 
