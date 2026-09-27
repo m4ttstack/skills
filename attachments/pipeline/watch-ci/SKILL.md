@@ -153,7 +153,7 @@ digraph watch_ci {
     "Fixed the claim call once already (watch-ci)?" [shape=diamond];
     "Fix what the claim usage line names" [shape=box];
     "STOP: while the doctor holds the lease, every commit, push and retry is the doctor's" [shape=octagon style=filled fillcolor=red fontcolor=white];
-    "Stand down: report it, stop or watch read-only" [shape=doublecircle];
+    "Stand down: report it and stop" [shape=doublecircle];
     "Which flow (watch-ci)?" [shape=diamond];
 
     "Follow the domain's watch flow" [shape=box];
@@ -163,6 +163,7 @@ digraph watch_ci {
     "git rev-parse HEAD; mr_view and mr_pipeline, or gh pr view <mr> --json headRefOid (sha guard, domain)" [shape=plaintext];
     "Domain's pipeline is for the pushed HEAD (watch-ci)?" [shape=diamond];
     "Sha waits = 5 (domain)?" [shape=diamond];
+    "Domain verdict was (watch-ci)?" [shape=diamond];
     "sleep 60 as a background Bash task (sha wait, domain)" [shape=plaintext];
 
     "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" [shape=plaintext];
@@ -174,6 +175,7 @@ digraph watch_ci {
     "git rev-parse HEAD; mr_view and mr_pipeline, or gh pr view <mr> --json headRefOid (sha guard, watcher)" [shape=plaintext];
     "Watched pipeline is for the pushed HEAD (watch-ci)?" [shape=diamond];
     "Sha waits = 5 (watcher)?" [shape=diamond];
+    "Watcher exit was (watch-ci)?" [shape=diamond];
     "sleep 60 as a background Bash task (sha wait, watcher)" [shape=plaintext];
 
     "mr_pipeline {repoName, iid} (poll)" [shape=plaintext];
@@ -187,6 +189,7 @@ digraph watch_ci {
     "git rev-parse HEAD; mr_view {repoName, iid, maxAgeMs: 5000} (sha guard, GitLab poll)" [shape=plaintext];
     "Head pipeline is for the pushed HEAD (GitLab poll)?" [shape=diamond];
     "Sha waits = 5 (GitLab poll)?" [shape=diamond];
+    "Settled green or red (GitLab poll)?" [shape=diamond];
     "sleep 60 as a background Bash task (sha wait, GitLab poll)" [shape=plaintext];
 
     "gh pr checks <mr> (poll)" [shape=plaintext];
@@ -198,6 +201,7 @@ digraph watch_ci {
     "git rev-parse HEAD; gh pr view <mr> --json headRefOid (sha guard, GitHub poll)" [shape=plaintext];
     "Checks are for the pushed HEAD (GitHub poll)?" [shape=diamond];
     "Sha waits = 5 (GitHub poll)?" [shape=diamond];
+    "Checks passed or failed (GitHub poll)?" [shape=diamond];
     "sleep 60 as a background Bash task (sha wait, GitHub poll)" [shape=plaintext];
 
     "Own run (watch-ci green)?" [shape=diamond];
@@ -229,6 +233,7 @@ digraph watch_ci {
     "watch-ci off-script gate: git_push refused" [shape=box];
     "watch-ci off-script answer (git_push)?" [shape=diamond];
     "Confirm the human's push landed (watch-ci)" [shape=box];
+    "Push landed (watch-ci)?" [shape=diamond];
     "Own run (watch-ci new attempt)?" [shape=diamond];
     "run_stage {action: start, stage: watch-ci} (a new attempt)" [shape=plaintext];
 
@@ -265,7 +270,8 @@ digraph watch_ci {
     "Forge host (watch-ci target)?" -> "mr_for_branch {repoName: <root>, branches: [<branch>]}" [label="GitLab, MR not named"];
     "Forge host (watch-ci target)?" -> "gh pr list --head <branch>" [label="GitHub, PR not named"];
     "Forge host (watch-ci target)?" -> "Own run (watch-ci identity)?" [label="GitLab or GitHub, the user named the MR"];
-    "Forge host (watch-ci target)?" -> "watch-ci gate clarify: which forge?" [label="anything else"];
+    "Forge host (watch-ci target)?" -> "Own run (watch-ci identity)?" [label="inherited: the forge and MR the caller handed"];
+    "Forge host (watch-ci target)?" -> "watch-ci gate clarify: which forge?" [label="anything else, nothing handed"];
     "watch-ci gate clarify: which forge?" -> "Forge host (watch-ci target)?" [label="answered: the named forge"];
     "mr_for_branch {repoName: <root>, branches: [<branch>]}" -> "Own run (watch-ci identity)?";
     "gh pr list --head <branch>" -> "Own run (watch-ci identity)?";
@@ -281,7 +287,7 @@ digraph watch_ci {
     "Fixed the claim call once already (watch-ci)?" -> "Fix what the claim usage line names" [label="no"];
     "Fixed the claim call once already (watch-ci)?" -> "Was a lease claimed (watch-ci exit)?" [label="yes: a failure, the usage line is the reason"];
     "Fix what the claim usage line names" -> "<scripts>/ci-attendant.sh claim <mr-url> <iid> --branch <branch>";
-    "STOP: while the doctor holds the lease, every commit, push and retry is the doctor's" -> "Stand down: report it, stop or watch read-only";
+    "STOP: while the doctor holds the lease, every commit, push and retry is the doctor's" -> "Stand down: report it and stop";
 
     "Which flow (watch-ci)?" -> "Follow the domain's watch flow" [label="domain rules inlined"];
     "Which flow (watch-ci)?" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" [label="forge bound, no domain"];
@@ -290,24 +296,25 @@ digraph watch_ci {
     "Which flow (watch-ci)?" -> "watch-ci gate ci" [label="neither, no MR: no MR to watch, ship first"];
 
     "Follow the domain's watch flow" -> "Domain verdict (watch-ci)?";
-    "Domain verdict (watch-ci)?" -> "git rev-parse HEAD; mr_view and mr_pipeline, or gh pr view <mr> --json headRefOid (sha guard, domain)" [label="green"];
-    "Domain verdict (watch-ci)?" -> "watch-ci gate ci" [label="red, timeout or no pipeline"];
+    "Domain verdict (watch-ci)?" -> "git rev-parse HEAD; mr_view and mr_pipeline, or gh pr view <mr> --json headRefOid (sha guard, domain)" [label="green or red"];
+    "Domain verdict (watch-ci)?" -> "watch-ci gate ci" [label="timeout or no pipeline"];
     "Domain verdict (watch-ci)?" -> "Domain repairs = 3 (watch-ci)?" [label="the domain asks for a retry or a push"];
     "Domain repairs = 3 (watch-ci)?" -> "Domain repair kind (watch-ci)?" [label="no"];
     "Domain repairs = 3 (watch-ci)?" -> "watch-ci gate ci" [label="yes: budget spent"];
     "Domain repair kind (watch-ci)?" -> "MR found (before the retry)?" [label="retry a job"];
     "Domain repair kind (watch-ci)?" -> "MR found (before the fix)?" [label="fix and push"];
     "git rev-parse HEAD; mr_view and mr_pipeline, or gh pr view <mr> --json headRefOid (sha guard, domain)" -> "Domain's pipeline is for the pushed HEAD (watch-ci)?";
-    "Domain's pipeline is for the pushed HEAD (watch-ci)?" -> "Own run (watch-ci green)?" [label="yes"];
-    "Domain's pipeline is for the pushed HEAD (watch-ci)?" -> "Own run (watch-ci green)?" [label="no MR: say the commit is not verified"];
+    "Domain's pipeline is for the pushed HEAD (watch-ci)?" -> "Domain verdict was (watch-ci)?" [label="yes"];
+    "Domain's pipeline is for the pushed HEAD (watch-ci)?" -> "Domain verdict was (watch-ci)?" [label="no MR: say the commit is not verified"];
     "Domain's pipeline is for the pushed HEAD (watch-ci)?" -> "Sha waits = 5 (domain)?" [label="no"];
     "Sha waits = 5 (domain)?" -> "sleep 60 as a background Bash task (sha wait, domain)" [label="no"];
     "Sha waits = 5 (domain)?" -> "watch-ci gate ci" [label="yes: no pipeline for the pushed HEAD"];
     "sleep 60 as a background Bash task (sha wait, domain)" -> "Follow the domain's watch flow";
+    "Domain verdict was (watch-ci)?" -> "Own run (watch-ci green)?" [label="green"];
+    "Domain verdict was (watch-ci)?" -> "watch-ci gate ci" [label="red"];
 
     "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" -> "watcher exit (watch-ci)?";
-    "watcher exit (watch-ci)?" -> "git rev-parse HEAD; mr_view and mr_pipeline, or gh pr view <mr> --json headRefOid (sha guard, watcher)" [label="0: green"];
-    "watcher exit (watch-ci)?" -> "Read the triage report" [label="1: red"];
+    "watcher exit (watch-ci)?" -> "git rev-parse HEAD; mr_view and mr_pipeline, or gh pr view <mr> --json headRefOid (sha guard, watcher)" [label="0 or 1: green or red"];
     "watcher exit (watch-ci)?" -> "Relaunched after a timeout once already (watcher)?" [label="2: timeout"];
     "watcher exit (watch-ci)?" -> "Verify the branch was pushed" [label="4: no pipeline appeared"];
     "watcher exit (watch-ci)?" -> "Was a lease claimed (watch-ci exit)?" [label="any other exit: the watcher failed; a failure, its output quoted"];
@@ -318,17 +325,18 @@ digraph watch_ci {
     "Relaunched after a timeout once already (watcher)?" -> "watch-ci gate ci" [label="yes"];
     "Verify the branch was pushed" -> "watch-ci gate ci";
     "git rev-parse HEAD; mr_view and mr_pipeline, or gh pr view <mr> --json headRefOid (sha guard, watcher)" -> "Watched pipeline is for the pushed HEAD (watch-ci)?";
-    "Watched pipeline is for the pushed HEAD (watch-ci)?" -> "Own run (watch-ci green)?" [label="yes"];
-    "Watched pipeline is for the pushed HEAD (watch-ci)?" -> "Own run (watch-ci green)?" [label="no MR: say the commit is not verified"];
+    "Watched pipeline is for the pushed HEAD (watch-ci)?" -> "Watcher exit was (watch-ci)?" [label="yes"];
+    "Watched pipeline is for the pushed HEAD (watch-ci)?" -> "Watcher exit was (watch-ci)?" [label="no MR: say the commit is not verified"];
     "Watched pipeline is for the pushed HEAD (watch-ci)?" -> "Sha waits = 5 (watcher)?" [label="no"];
     "Sha waits = 5 (watcher)?" -> "sleep 60 as a background Bash task (sha wait, watcher)" [label="no"];
     "Sha waits = 5 (watcher)?" -> "watch-ci gate ci" [label="yes: no pipeline for the pushed HEAD"];
     "sleep 60 as a background Bash task (sha wait, watcher)" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)";
+    "Watcher exit was (watch-ci)?" -> "Own run (watch-ci green)?" [label="0: green"];
+    "Watcher exit was (watch-ci)?" -> "Read the triage report" [label="1: red"];
 
     "mr_pipeline {repoName, iid} (poll)" -> "Settled (GitLab poll)?";
     "Settled (GitLab poll)?" -> "Polled 45 minutes (GitLab poll)?" [label="no"];
-    "Settled (GitLab poll)?" -> "git rev-parse HEAD; mr_view {repoName, iid, maxAgeMs: 5000} (sha guard, GitLab poll)" [label="green"];
-    "Settled (GitLab poll)?" -> "mr_job_trace {repoName, iid, jobId} per failed job" [label="red"];
+    "Settled (GitLab poll)?" -> "git rev-parse HEAD; mr_view {repoName, iid, maxAgeMs: 5000} (sha guard, GitLab poll)" [label="settled: green or red"];
     "Settled (GitLab poll)?" -> "STOP: GitLab CI reads and retries go through mr_pipeline, mr_job_trace and mr_retry" [label="tempted to read it with the GitLab CLI"];
     "STOP: GitLab CI reads and retries go through mr_pipeline, mr_job_trace and mr_retry" -> "mr_pipeline {repoName, iid} (poll)";
     "Polled 45 minutes (GitLab poll)?" -> "sleep 60 as a background Bash task; ci-attendant.sh heartbeat (GitLab poll)" [label="no"];
@@ -339,16 +347,17 @@ digraph watch_ci {
     "INFRA only, each retried under once (GitLab)?" -> "MR found (before the retry)?" [label="yes"];
     "INFRA only, each retried under once (GitLab)?" -> "watch-ci gate ci" [label="no"];
     "git rev-parse HEAD; mr_view {repoName, iid, maxAgeMs: 5000} (sha guard, GitLab poll)" -> "Head pipeline is for the pushed HEAD (GitLab poll)?";
-    "Head pipeline is for the pushed HEAD (GitLab poll)?" -> "Own run (watch-ci green)?" [label="yes: mr.sha matches, and the id is new after a push"];
+    "Head pipeline is for the pushed HEAD (GitLab poll)?" -> "Settled green or red (GitLab poll)?" [label="yes: mr.sha matches, and the id is new when a prior id is held"];
     "Head pipeline is for the pushed HEAD (GitLab poll)?" -> "Sha waits = 5 (GitLab poll)?" [label="no: an old sha, or the prior pipeline id"];
     "Sha waits = 5 (GitLab poll)?" -> "sleep 60 as a background Bash task (sha wait, GitLab poll)" [label="no"];
     "Sha waits = 5 (GitLab poll)?" -> "watch-ci gate ci" [label="yes: no pipeline for the pushed HEAD"];
     "sleep 60 as a background Bash task (sha wait, GitLab poll)" -> "mr_pipeline {repoName, iid} (poll)";
+    "Settled green or red (GitLab poll)?" -> "Own run (watch-ci green)?" [label="green"];
+    "Settled green or red (GitLab poll)?" -> "mr_job_trace {repoName, iid, jobId} per failed job" [label="red"];
 
     "gh pr checks <mr> (poll)" -> "gh pr checks exit (GitHub poll)?";
-    "gh pr checks exit (GitHub poll)?" -> "git rev-parse HEAD; gh pr view <mr> --json headRefOid (sha guard, GitHub poll)" [label="0: all passed"];
-    "gh pr checks exit (GitHub poll)?" -> "Polled 45 minutes (GitHub poll)?" [label="8: pending"];
-    "gh pr checks exit (GitHub poll)?" -> "Classify each failing check REAL or INFRA (GitHub)" [label="any other exit: red"];
+    "gh pr checks exit (GitHub poll)?" -> "git rev-parse HEAD; gh pr view <mr> --json headRefOid (sha guard, GitHub poll)" [label="0, or any other exit with checks reported: passed or failed"];
+    "gh pr checks exit (GitHub poll)?" -> "Polled 45 minutes (GitHub poll)?" [label="8, or no checks reported: pending"];
     "Polled 45 minutes (GitHub poll)?" -> "sleep 60 as a background Bash task; ci-attendant.sh heartbeat (GitHub poll)" [label="no"];
     "Polled 45 minutes (GitHub poll)?" -> "watch-ci gate ci" [label="yes: timeout"];
     "sleep 60 as a background Bash task; ci-attendant.sh heartbeat (GitHub poll)" -> "gh pr checks <mr> (poll)";
@@ -356,11 +365,13 @@ digraph watch_ci {
     "INFRA only, each retried under once (GitHub)?" -> "MR found (before the retry)?" [label="yes"];
     "INFRA only, each retried under once (GitHub)?" -> "watch-ci gate ci" [label="no"];
     "git rev-parse HEAD; gh pr view <mr> --json headRefOid (sha guard, GitHub poll)" -> "Checks are for the pushed HEAD (GitHub poll)?";
-    "Checks are for the pushed HEAD (GitHub poll)?" -> "Own run (watch-ci green)?" [label="yes"];
+    "Checks are for the pushed HEAD (GitHub poll)?" -> "Checks passed or failed (GitHub poll)?" [label="yes"];
     "Checks are for the pushed HEAD (GitHub poll)?" -> "Sha waits = 5 (GitHub poll)?" [label="no"];
     "Sha waits = 5 (GitHub poll)?" -> "sleep 60 as a background Bash task (sha wait, GitHub poll)" [label="no"];
     "Sha waits = 5 (GitHub poll)?" -> "watch-ci gate ci" [label="yes: no checks for the pushed HEAD"];
     "sleep 60 as a background Bash task (sha wait, GitHub poll)" -> "gh pr checks <mr> (poll)";
+    "Checks passed or failed (GitHub poll)?" -> "Own run (watch-ci green)?" [label="passed"];
+    "Checks passed or failed (GitHub poll)?" -> "Classify each failing check REAL or INFRA (GitHub)" [label="failed"];
 
     "Own run (watch-ci green)?" -> "MR found (watch-ci green)?" [label="yes"];
     "Own run (watch-ci green)?" -> "Was a lease claimed (watch-ci exit)?" [label="no: the verdict goes back to the caller"];
@@ -418,7 +429,9 @@ digraph watch_ci {
     "watch-ci off-script answer (git_push)?" -> "Was a lease claimed (watch-ci exit)?" [label="hand back"];
     "watch-ci off-script answer (git_push)?" -> "Was a lease claimed (watch-ci exit)?" [label="hold"];
     "watch-ci off-script answer (git_push)?" -> "watch-ci off-script gate: git_push refused" [label="iterate: a new gate with their note"];
-    "Confirm the human's push landed (watch-ci)" -> "Own run (watch-ci new attempt)?";
+    "Confirm the human's push landed (watch-ci)" -> "Push landed (watch-ci)?";
+    "Push landed (watch-ci)?" -> "Own run (watch-ci new attempt)?" [label="yes: the remote branch carries HEAD"];
+    "Push landed (watch-ci)?" -> "watch-ci off-script gate: git_push refused" [label="no: reopen with what the comparison showed"];
     "Own run (watch-ci new attempt)?" -> "run_stage {action: start, stage: watch-ci} (a new attempt)" [label="yes"];
     "Own run (watch-ci new attempt)?" -> "MR found (watch-ci lease)?" [label="no: re-enter at the claim"];
     "run_stage {action: start, stage: watch-ci} (a new attempt)" -> "MR found (watch-ci lease)?";
@@ -471,8 +484,9 @@ iid, `--branch`) and claim again, once.
 ### Follow the domain's watch flow
 
 The domain rules below say how to read and triage this MR's CI; the graph
-says what happens with the result. A green goes to the sha guard, a red,
-timeout or missing pipeline to the `ci` gate. A retry or push the domain
+says what happens with the result. A green or red verdict goes to the sha
+guard first; a timeout or missing pipeline goes to the `ci` gate. A retry
+or push the domain
 asks for leaves this box through "Domain verdict?": a retry goes to the
 graph's retry nodes, a fix and push to its fix and push nodes, each behind
 the lease re-claim, never run inside the box. The domain's own polling
@@ -552,8 +566,9 @@ Selection: `{"move":"<the move>","why":"<the refusal>","action":"take|handback",
 ### Confirm the human's push landed (watch-ci)
 
 The human pushed outside this verb. Compare `git rev-parse HEAD` with the
-remote branch and say what it shows; never push from here. A push that did
-not land surfaces at the sha guard and the `ci` gate.
+remote branch and say what it shows; never push from here. The push landed
+when the remote branch carries HEAD; otherwise the off-script gate reopens
+with the comparison as its context.
 
 ### Run the report's retry command once per INFRA job
 
@@ -562,18 +577,23 @@ each once, then the watcher relaunches.
 
 ## What the graph cannot show
 
-- **The sha guard.** The pushed HEAD is `git rev-parse HEAD`, or its
-  upstream when HEAD is ahead of it (unpushed commits have no pipeline).
-  GitLab: `mr.sha` from `mr_view` must equal it, and `mr_pipeline` returns
-  that sha's head pipeline in the same snapshot. After a push in this run,
-  GitLab can move `mr.sha` before it creates the new pipeline, so the head
-  pipeline's `pipeline.id` must also differ from the prior id: the one read
-  just before `git_push`, or the one ship handed over when it invoked this
-  verb. The forge-bound watcher reports its pipeline's `url`, which must
+- **The sha guard.** It runs before every settled verdict, green or red:
+  a red read for an older sha is as stale as a green one. After a push in
+  this run the pushed HEAD is `git rev-parse HEAD` at the push (the push
+  that landed, this verb's or the human's), or the pushed sha ship handed
+  over when it invoked this verb. Only a run that pushed nothing compares
+  against the upstream, the remote branch's sha (unpushed commits have no
+  pipeline). GitLab: `mr.sha` from `mr_view` must equal it, and
+  `mr_pipeline` returns that sha's head pipeline in the same snapshot.
+  GitLab can move `mr.sha` before it creates the new pipeline, so after a
+  push that moved the branch the head pipeline's `pipeline.id` must also
+  differ from the prior id: the one read just before `git_push`, or the one
+  ship handed over. With no prior id handed over, the guard checks the sha
+  alone. The forge-bound watcher reports its pipeline's `url`, which must
   equal `mr_pipeline`'s `pipeline.webUrl`. GitHub: `headRefOid` must equal
-  it. A forge-bound watch with no MR has no sha source: the verdict says
-  "green on the newest pipeline for `<branch>`; commit not verified (no
-  MR)".
+  it, and "no checks reported" is pending, not red. A forge-bound watch
+  with no MR has no sha source: the verdict says "green (or red) on the
+  newest pipeline for `<branch>`; commit not verified (no MR)".
 - **Heartbeats.** Each poll round's `sleep 60` runs as a background Bash
   task (never a foreground sleep) beside
   `<scripts>/ci-attendant.sh heartbeat <mr-url> <iid>` when a lease is
@@ -594,10 +614,10 @@ stand-down never touches it, because that lease is the doctor's.
 
 | Thought | Reality |
 |---|---|
-| "The doctor's on it, but I can fix it faster" | Two actors pushing to one branch race each other's work. Stand down or watch read-only. |
+| "The doctor's on it, but I can fix it faster" | Two actors pushing to one branch race each other's work. Stand down and stop. |
 | "I'll just retry the flaky job while the doctor works" | A retry is a repair action. The lease holder does it, not you. |
 | "I claimed it at the start, so the push is mine" | The watcher does not heartbeat; the lease may be stale. Re-claim before the push. |
-| "The pipeline says success, that's green" | Only for the pushed HEAD. Check the sha, and after a push, the pipeline id. |
+| "The pipeline says success, that's green" | Only for the pushed HEAD, and a red read likewise. Check the sha, and after a push that moved the branch, the pipeline id. |
 
 ## Domain rules
 
