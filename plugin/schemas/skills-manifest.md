@@ -2,8 +2,8 @@
 
 The consumer-side authority for parameterized skills. Plugins have no
 consumer-parameter surface, so this file is where a repo (or a machine)
-says which stack skills it uses, which pipelines its work types run, and
-which inner skill fulfills each wrapper slot. Machine schema:
+says which stack skills it uses, which stage engines it rosters for
+compile, and which inner skill fulfills each wrapper slot. Machine schema:
 `skills-manifest.schema.json` (draft-07) in this directory.
 
 ## Discovery order (what resolve-args.sh does)
