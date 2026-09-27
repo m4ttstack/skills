@@ -36,6 +36,14 @@ def blocks(path):
                 problems.append(f"{path}:{start}: dot fence never closed")
             found.append((start, "\n".join(body)))
         i += 1
+    seen = {}
+    for n, line in enumerate(lines, 1):
+        if line.startswith("### "):
+            head = line[4:].strip()
+            if head in seen:
+                problems.append(f"{path}:{n}: duplicate section \"### {head}\" (first at line {seen[head]}); give each node distinct text")
+            else:
+                seen[head] = n
     return found, problems
 
 
@@ -84,6 +92,9 @@ def check(graph):
             problems.append(f'"{name}": dead end; only a doublecircle outcome or a STOP octagon may have no way out')
         if out[i] and shape[i] == "doublecircle":
             problems.append(f'"{name}": an outcome ends the path; it has {len(out[i])} outgoing edge(s)')
+        unlabelled = [h for h, lab in out[i] if not lab.strip()]
+        if shape[i] not in ("diamond", "octagon") and len(unlabelled) > 1:
+            problems.append(f'"{name}": {len(unlabelled)} unlabelled out-edges; two steps share this text and dot merged them, or a decision is hidden in a step')
         if shape[i] == "octagon" and len(out[i]) > 1:
             problems.append(f'"{name}": a STOP has at most one way out (found {len(out[i])}); a choice after it is a gate step')
         if shape[i] == "octagon" and len(out[i]) == 1:
