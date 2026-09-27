@@ -208,8 +208,8 @@ digraph receive_review {
 
     "Dispatch one fresh-context adjudicator over all the review threads" -> "Draft the verdict table and one reply per thread";
     "Draft the verdict table and one reply per thread" -> "Caller handed the respond-plan answers?";
-    "Caller handed the respond-plan answers?" -> "run_decision {contract: gate@1, scope: respond-plan, selection, decidedBy}" [label="yes: ask nothing, record it"];
-    "Caller handed the respond-plan answers?" -> "Build the open" [label="no"];
+    "Caller handed the respond-plan answers?" -> "run_decision {contract: gate@1, scope: respond-plan, selection, decidedBy}" [label="yes, not yet spent: ask nothing, record it"];
+    "Caller handed the respond-plan answers?" -> "Build the open" [label="no, or the handed plan is spent"];
     "Build the open" -> "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-plan.source.json > <dir>/respond-plan.open.json";
     "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-plan.source.json > <dir>/respond-plan.open.json" -> "respond-plan fit exit code?";
     "respond-plan fit exit code?" -> "Caller owns the receive-review gates at respond-plan?" [label="0"];
@@ -234,7 +234,7 @@ digraph receive_review {
     "run_decision {contract: gate@1, scope: respond-plan, selection, decidedBy}" -> "Rewrite the receive-review report rows";
     "Rewrite the receive-review report rows" -> "code-changes answer?";
     "code-changes answer?" -> "Next report row, in verdict-table order?" [label="approve, or skip"];
-    "code-changes answer?" -> "Dispatch one fresh-context adjudicator over all the review threads" [label="revise: a fresh dispatch with their note"];
+    "code-changes answer?" -> "Dispatch one fresh-context adjudicator over all the review threads" [label="revise: a fresh dispatch with their note; a handed plan is spent"];
 
     "Next report row, in verdict-table order?" -> "Implement the thread's fix" [label="fix, code-changes approve"];
     "Next report row, in verdict-table order?" -> "Redraft the override's reply" [label="override"];
@@ -537,8 +537,9 @@ per-question answers, keyed by question id with verbatim option strings,
 are the decision. Use the decider the caller names alongside it. Record
 that `plan` with the same `run_decision` a pane answer gets (its selection
 shape is under Gate respond-plan through gate-protocol), `decidedBy` that
-decider. The `post` half of a combined object waits for gate
-respond-post, where it is the caller-handed `post`. Every other path
+decider. A handed plan answers one adjudication: once recorded it is
+spent (a revise re-adjudicates and builds a new open). The `post` half
+of a combined object waits for gate respond-post, where it is the caller-handed `post`. Every other path
 builds the open first.
 
 The gate (`respond-plan`, gate 1; `respond-post` is gate 2) carries
@@ -748,7 +749,11 @@ closely the redraft follows the lost one.
 
 `code-changes: revise` re-adjudicates: back to Dispatch one fresh-context
 adjudicator over all the review threads, a fresh dispatch with their note
--- never revised in this session, the bias HARD-GATE still applies.
+-- never revised in this session, the bias HARD-GATE still applies. A
+handed plan is single-use: once recorded it is spent, and the revised
+verdicts get a new respond-plan open (handed back to a caller that owns
+the gates, asked in the pane on a direct run), never the same plan
+again.
 `code-changes: skip` (the no-fix sentinel) implements nothing: on to the
 row loop, which still redrafts overrides, then gate respond-post. A thread answered `fix:` under `skip` stays
 unimplemented and has no finalized reply, so gate respond-post neither
