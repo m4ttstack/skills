@@ -132,11 +132,13 @@ Selection `{"branch":"<picked>"}`. Their text goes back to "What was
 given?" and resolves again; the second text answer ends at **Unresolved:
 reported**, naming what was tried.
 
-Hold: record `hold:<run.current_stage>:<attempt>` (`run_decision` with
+Hold: when this conversation holds a run's `runDb`, record
+`hold:<run.current_stage>:<attempt>` (`run_decision` with
 `contract` `gate@1`, `scope` `hold:<run.current_stage>:<attempt>`,
 `selection` `{"reason":"<their words>"}`, `decidedBy` `<the answer's
 by>`), then `run_field_set` with `key` `hold`, `value` `<their words>`,
-`stage` `<run.current_stage>`, and end the turn.
+`stage` `<run.current_stage>`, and end the turn. With no run, Hold ends the
+turn and makes no `run_*` call.
 
 {{include:spawned-no-run-guard}}
 
@@ -166,8 +168,10 @@ questions, each its own question:
 - `next`: **Proceed** (recommended) / **Iterate here** / **Hold**
 
 Selection `{"move":"<the move>","why":"<the refusal>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`.
-**Iterate here** means the human fixed the cause (started the daemon,
-registered the repo) and wants `worktree_provision` retried. The proposed
+Read `next` first: **Hold** ends the turn with no move made; **Iterate
+here** means the human fixed the cause (started the daemon, registered the
+repo) and wants `worktree_provision` retried, and it ignores `action`; only
+**Proceed** applies `action` (take or hand back). The proposed
 move is one plain-git worktree for the branch at a path the value names;
 retrying the refused tool is **Iterate here**, never **Take**. A plain-git
 worktree is a move only the human's **Take** can authorize; never make one
