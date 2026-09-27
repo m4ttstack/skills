@@ -29,7 +29,7 @@ digraph gate_protocol {
     "Fix what the gate_ask refusal names" [shape=box];
     "Daemon down: is the gated pane unattended?" [shape=diamond];
     "Under a run: fail the stage at the gate?" [shape=diamond];
-    "run_stage {action: fail, stage, reason}" [shape=plaintext];
+    "run_stage {action: fail, stage, reason: <the gate_ask refusal, verbatim>}" [shape=plaintext];
     "Present the gate form with no registry" [shape=box];
     "gate_ask presentation?" [shape=diamond];
     "Wait: is the gated pane an attended non-herdr session?" [shape=diamond];
@@ -81,9 +81,9 @@ digraph gate_protocol {
     "Fix what the gate_ask refusal names" -> "gate_ask {questions, kind: <scope>, context?, subject?}";
     "Daemon down: is the gated pane unattended?" -> "Present the gate form with no registry" [label="no: attended"];
     "Daemon down: is the gated pane unattended?" -> "Under a run: fail the stage at the gate?" [label="yes"];
-    "Under a run: fail the stage at the gate?" -> "run_stage {action: fail, stage, reason}" [label="yes"];
+    "Under a run: fail the stage at the gate?" -> "run_stage {action: fail, stage, reason: <the gate_ask refusal, verbatim>}" [label="yes"];
     "Under a run: fail the stage at the gate?" -> "Verb ends at the gate, quoting the refusal" [label="no"];
-    "run_stage {action: fail, stage, reason}" -> "Gate stage failed";
+    "run_stage {action: fail, stage, reason: <the gate_ask refusal, verbatim>}" -> "Gate stage failed";
     "Present the gate form with no registry" -> "Under a run: record the gate decision?" [label="answered: decidedBy is pane"];
     "gate_ask presentation?" -> "Present the in-pane gate form" [label="form"];
     "gate_ask presentation?" -> "Wait: is the gated pane an attended non-herdr session?" [label="wait"];
@@ -119,8 +119,8 @@ digraph gate_protocol {
     "Doorbell for an already reconciled gate?" -> "Late gate signal discarded" [label="yes"];
     "Doorbell for an already reconciled gate?" -> "rt gate wait <id> --timeout 2s" [label="no"];
     "rt gate wait <id> --timeout 2s" -> "waiting-gate set on this run?";
-    "waiting-gate set on this run?" -> "run_field_set {key: waiting-gate, value: -, stage}" [label="yes"];
-    "waiting-gate set on this run?" -> "Gate answer already in hand?" [label="no"];
+    "waiting-gate set on this run?" -> "run_field_set {key: waiting-gate, value: -, stage}" [label="yes: this pane armed it at a hold"];
+    "waiting-gate set on this run?" -> "Gate answer already in hand?" [label="no: never armed for this gate (a form pane, or no run)"];
     "run_field_set {key: waiting-gate, value: -, stage}" -> "Gate answer already in hand?";
     "Gate answer already in hand?" -> "Map the gate answer to exact option values" [label="yes: the human answered in words"];
     "Gate answer already in hand?" -> "Gate wait status?" [label="no: a wait printed the row"];
@@ -194,10 +194,13 @@ open` remains the raw primitive underneath; a gated verb never needs it.
 
 A refusal that names a subject or question problem (a blank context, an
 oversized label, several running runs) is not daemon-down: fix exactly what
-it names and call `gate_ask` again, once. A second refusal fails the stage
-under a run, or ends the verb quoting the refusal with no run. It does not
-go off-script: `gate_ask` is the refused tool, and the off-script gate opens
-through `gate_ask` too.
+it names and call `gate_ask` again, once. An oversized label is fixed by
+middle-truncating that label (keep its start and its end, `...` between)
+while the option's `value` stays byte for byte; never move text into the
+value or drop a whole end. A second refusal fails the stage under a run
+with a `reason` that quotes the refusal text verbatim, or ends the verb
+quoting it with no run. It does not go off-script: `gate_ask` is the
+refused tool, and the off-script gate opens through `gate_ask` too.
 
 ### Present the gate form with no registry
 
