@@ -196,8 +196,9 @@ A refusal that names a subject or question problem (a blank context, an
 oversized label, several running runs) is not daemon-down: fix exactly what
 it names and call `gate_ask` again, once. An oversized label is fixed by
 middle-truncating that label (keep its start and its end, `...` between)
-while the option's `value` stays byte for byte; never move text into the
-value or drop a whole end. A second refusal fails the stage under a run
+and nothing else: the option's `value` is sent exactly as it was in the
+refused call, never rewritten to carry the label's text, and no whole end
+of the label is dropped. A second refusal fails the stage under a run
 with a `reason` that quotes the refusal text verbatim, or ends the verb
 quoting it with no run. It does not go off-script: `gate_ask` is the
 refused tool, and the off-script gate opens through `gate_ask` too.
