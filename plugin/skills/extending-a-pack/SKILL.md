@@ -27,6 +27,7 @@ digraph extend_pack {
     "rt_verb {args: [\"skills\", \"bind\", \"shepherdr\", \"strategy\", \"mattstack:execution-strategy\", \"--pack\", \"<pack>\"]}" [shape=plaintext];
     "Reword the description in pack/stubs.jsonc" [shape=box];
     "rt_verb {args: [\"skills\", \"compile\", \"--pack\", \"<pack>\"]}" [shape=plaintext];
+    "Compiled after a revision?" [shape=diamond];
     "RED: run the stage or verb without the rule" [shape=box];
     "The miss reproduced?" [shape=diamond];
     "Where does the edit land?" [shape=diamond];
@@ -72,7 +73,9 @@ digraph extend_pack {
     "rt_verb {args: [\"skills\", \"bind\", \"shepherdr\", \"tiering\", \"mattstack:model-tiering\", \"--pack\", \"<pack>\"]}" -> "rt_verb {args: [\"skills\", \"bind\", \"shepherdr\", \"strategy\", \"mattstack:execution-strategy\", \"--pack\", \"<pack>\"]}";
     "rt_verb {args: [\"skills\", \"bind\", \"shepherdr\", \"strategy\", \"mattstack:execution-strategy\", \"--pack\", \"<pack>\"]}" -> "rt_verb {args: [\"skills\", \"compile\", \"--pack\", \"<pack>\"]}";
     "Reword the description in pack/stubs.jsonc" -> "rt_verb {args: [\"skills\", \"compile\", \"--pack\", \"<pack>\"]}";
-    "rt_verb {args: [\"skills\", \"compile\", \"--pack\", \"<pack>\"]}" -> "Round done: hand to editing-skills to publish";
+    "rt_verb {args: [\"skills\", \"compile\", \"--pack\", \"<pack>\"]}" -> "Compiled after a revision?";
+    "Compiled after a revision?" -> "Round done: hand to editing-skills to publish" [label="no"];
+    "Compiled after a revision?" -> "sh <mattstack-skills>/tests/certify.sh <dir> --domain" [label="yes: certify and check it"];
     "RED: run the stage or verb without the rule" -> "The miss reproduced?";
     "The miss reproduced?" -> "Where does the edit land?" [label="yes: quote it"];
     "The miss reproduced?" -> "No miss: nothing to write" [label="no"];
@@ -115,7 +118,7 @@ digraph extend_pack {
     "The miss is gone?" -> "GREEN rounds = 3?" [label="no"];
     "GREEN rounds = 3?" -> "Revise the rule" [label="no"];
     "GREEN rounds = 3?" -> "Gate: GREEN rounds spent" [label="yes"];
-    "Revise the rule" -> "sh <mattstack-skills>/tests/certify.sh <dir> --domain";
+    "Revise the rule" -> "rt_verb {args: [\"skills\", \"compile\", \"--pack\", \"<pack>\"]}";
     "Gate: GREEN rounds spent" -> "Revise the rule" [label="retry with their note"];
     "Gate: GREEN rounds spent" -> "Handed to the author" [label="author takes over"];
 }
@@ -232,8 +235,7 @@ stale line:
 
 Fix the source the output names: a certify `FAIL` in the skill or fill you
 wrote, a stale line by compiling again with
-`rt_verb {args: ["skills", "compile", "--pack", "<pack>"]}`. A fill edited
-after its bind reads as stale until that compile.
+`rt_verb {args: ["skills", "compile", "--pack", "<pack>"]}`.
 
 ### Re-run the same stage on the same task
 
@@ -245,10 +247,10 @@ the same stop point, and record that the miss is gone.
 
 ### Revise the rule
 
-Revise the same source file against the miss the last run showed. The
-revision is not tested in the session that ran the last GREEN: that
-session still holds the old text, so exit it and start a fresh
-`claude --plugin-dir <pack dir>` once the fill is compiled again.
+Revise the same source file against the miss the last run showed, then
+compile, certify and check again before the fresh
+`claude --plugin-dir <pack dir>` session. The session that ran the last
+GREEN still holds the old text; exit it.
 
 ### Gate: bind refused twice
 
