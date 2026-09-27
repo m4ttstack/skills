@@ -309,7 +309,10 @@ moment.
 re-points the gate subscription to this session, continues the shepherd's
 chat identity here (its DMs and unread come with it; a plain sign-in would
 start an empty identity instead), and returns the open gates, the unread
-room messages, and every job's state.
+room messages, and every job's state. One exception: a herd started before
+chat identities stores a legacy shepherd handle, and when another identity
+now holds that name, resume starts a fresh identity instead, so the old
+handle's DMs and unread stay behind.
 There is no other resume step. After `herd_resume`, handle each unread room
 line as if it had just arrived (a report goes to the lanes graph).
 
