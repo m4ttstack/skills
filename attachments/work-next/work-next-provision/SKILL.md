@@ -61,6 +61,7 @@ digraph provision {
     "Follow the domain's provision flow" -> "Domain flow result?";
     "Domain flow result?" -> "worktree_provision {repoName, ticket, ticketTitle?} or {repoName, branch: <slug>}" [label="it provisions a tree"];
     "Domain flow result?" -> "Gate provision (table below)" [label="it raises a question"];
+    "Domain flow result?" -> "run_field_set {key: branch}; run_field_set {key: worktree}" [label="already provisioned: this tree and its branch"];
     "worktree_provision {repoName, ticket, ticketTitle?} or {repoName, branch: <slug>}" -> "worktree_provision result?";
     "worktree_provision result?" -> "EnterWorktree {path}" [label="ok: the result's path"];
     "worktree_provision result?" -> "Gate provision (table below)" [label="branch is already checked out in worktree"];
@@ -92,7 +93,10 @@ digraph provision {
 
 The domain's own acquisition: finding or creating the ticket, choosing the
 branch name, provisioning its way. Each question it raises goes to the
-`provision` gate rather than being asked on its own.
+`provision` gate rather than being asked on its own; when the pane is
+already sitting on the ticket's branch in a worktree, the domain confirms
+that instead of calling `worktree_provision` again and the graph records
+that tree and branch directly.
 
 ## What the graph cannot show
 
