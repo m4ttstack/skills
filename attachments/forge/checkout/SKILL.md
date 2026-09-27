@@ -89,6 +89,7 @@ digraph checkout {
     "worktree_provision result?" -> "Argument fixed once already?" [label="an argument error"];
     "worktree_provision result?" -> "STOP: worktrees only through worktree_provision" [label="daemon unreachable, or repo unknown to rt"];
     "worktree_provision result?" -> "STOP: stay put; report the path" [label="tempted to enter the worktree"];
+    "worktree_provision result?" -> "Provision refused: reported" [label="any other error"];
     "STOP: stay put; report the path" -> "Report the path and whose branch it is";
     "Argument fixed once already?" -> "Fix the named argument" [label="no"];
     "Argument fixed once already?" -> "STOP: worktrees only through worktree_provision" [label="yes"];
@@ -110,9 +111,9 @@ digraph checkout {
 
 ### Pick the branch from the result
 
-Read the source branch from the result. The GitLab tools and
-`worktree_provision` take `repoName` = the current checkout's absolute
-path; `worktree_provision` takes `branch` = the picked branch (a given
+The origin URL decides the forge host. Read the source branch from the
+result. The GitLab tools and `worktree_provision` take `repoName` = the
+current checkout's absolute path; `worktree_provision` takes `branch` = the picked branch (a given
 branch name verbatim); `mr_view` takes `mrUrl` = the link, or `iid` = the
 number. For a ticket id, keep the rows whose `sourceBranch`
 (GitHub: head branch) or `title` carries the id. The GitLab tools read the
@@ -128,8 +129,8 @@ each its own question:
 - `next`: **Proceed** (recommended) / **Hold**
 
 Selection `{"branch":"<picked>"}`. Their text goes back to "What was
-given?" and resolves again; a second round of text that still names no
-single branch ends at **Unresolved: reported**, naming what was tried.
+given?" and resolves again; the second text answer ends at **Unresolved:
+reported**, naming what was tried.
 
 Hold: record `hold:<run.current_stage>:<attempt>` (`run_decision` with
 `contract` `gate@1`, `scope` `hold:<run.current_stage>:<attempt>`,
@@ -148,14 +149,16 @@ Fix only the form of the argument the error names (for example a
 absolute path; or a malformed branch string), then call
 `worktree_provision` once more. Never pick a different branch or repo, and
 never start, restart or replace the daemon. A branch the error says does
-not exist is not an argument error, and a daemon that is down or a repo rt
-does not know goes to the off-script gate, not here.
+not exist is not an argument error: like any other error the graph does not
+name, it ends at **Provision refused: reported**, quoting the error. A
+daemon that is down or a repo rt does not know goes to the off-script gate,
+not here.
 
 ### Off-script gate
 
 Scope `off-script:<run.current_stage>:<n>`, `n` counting from 1 per
-off-script round in this run; with no run, the in-pane form per the gate
-steps. The context sentence quotes the `worktree_provision` error. The
+off-script round in this run; with no run, per the gate steps. The
+context sentence quotes the `worktree_provision` error. The
 questions, each its own question:
 
 - `action`: **Take the proposed move** (the value spells the move in full)
@@ -171,7 +174,9 @@ on any other answer. **Provision refused: reported** quotes the
 
 ### Make the recorded move once
 
-Exactly the move the selection recorded, once. Its result decides the next
+Exactly the move the selection recorded, once. The move must produce the
+worktree path; an answer that only fixes the cause ("I started the daemon,
+go ahead") is **Iterate here**, not **Take**. Its result decides the next
 node: success goes to the report with the path it made; a failure is
 reported, never a second off-script gate.
 
