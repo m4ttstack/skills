@@ -54,21 +54,33 @@ entries.
    | late wait, doorbell or words for a reconciled gate | no edge | discarded, one line |
    | human answers in words at a held gate | no edge | maps the words and answers |
 
-4. **The one real gap moves into gate-protocol.** The work-next gate
-   recorded a Hold under a run centrally (the `hold:<stage>:<attempt>`
-   decision and the `hold` field) and ended the turn; gate-protocol leaves
-   Hold to each verb, and the digraph stages' "Held per the gate part"
-   terminals relied on the central record. gate-protocol's Runs
-   integration gains a short "Hold under a run" rule stating that record
-   and the turn end; the stage terminals read "Held per gate-protocol's
-   Hold under a run". Every other work-next gate rule is already in
-   gate-protocol (question and option limits, verbatim context, answers
-   as option values, decidedBy as the CAS winner, attendance from
-   `spawnedBy`, a re-ask after Iterate is a new gate, the off-script
-   gate) or in wrap-up-form (the form is the reply). The off-script scope
-   becomes gate-protocol's `off-script:<site>:<n>`, the site being the
-   stage.
-5. **The orchestrator's own gates** (`<stage>-failed`, `close`) walk
+4. **Hold is recorded by the hosts; gate-protocol is untouched.** The
+   work-next gate recorded a Hold under a run centrally (the
+   `hold:<stage>:<attempt>` decision and the `hold` field). gate-protocol
+   leaves Hold to each verb ("Closed gates, Hold / Iterate"), and hosts
+   such as checkout, review and self-review record it themselves, so a
+   central rule would double-record there and start new writes in ship,
+   watch-ci and the forge verbs. gate-protocol stays exactly as merged.
+   Instead every hold edge in the pipeline gets its own record nodes, as
+   the prose stages recorded it in prose: `run_decision {contract: gate@1,
+   scope: hold:<stage>:<attempt>, selection: {reason}}` then
+   `run_field_set {key: hold, value: <their words, or held>, stage}`, then
+   the held terminal. That covers the provision, plan, evidence (both
+   gates), ship and watch-ci hold edges and the orchestrator's failure
+   and close hold edges. Every other work-next gate rule is already in
+   gate-protocol (question and option limits, verbatim context, answers as
+   option values, decidedBy as the CAS winner, attendance from
+   `spawnedBy`, a re-ask after Iterate is a new gate, the off-script gate)
+   or in wrap-up-form (the form is the reply).
+5. **Off-script answers route every `next`.** gate-protocol's off-script
+   gate asks `action` (take or hand back) and `next` (proceed, iterate,
+   hold). The ship and evidence off-script diamonds today route only take
+   and hand back; each gains an iterate edge (the human fixed the cause:
+   retry the refused move, budgeted at 2 off-script rounds, then hand
+   back) and a hold edge into the hold record nodes, modelled on
+   checkout's. The scope is gate-protocol's `off-script:<site>:<n>`, the
+   site being the stage.
+6. **The orchestrator's own gates** (`<stage>-failed`, `close`) walk
    gate-protocol with its "Under a run: fail the stage at the gate?"
    answered no: a gate the daemon cannot open there ends the turn quoting
    the refusal, and the run stays `running`.
@@ -85,12 +97,12 @@ Inside the moved files, and nothing beyond this list:
 - `{{run-start.flags:work-next}}` becomes `{{run-start.flags:work}}`.
 - `{{include:work-next-gate}}` becomes the gate-protocol and wrap-up-form
   pair, under the same `## Gates` heading.
-- Gate-part wording per decisions 4 and 5; the orchestrator heading
+- Hold record nodes and off-script edges per decisions 4 and 5, and the
+  orchestrator's own-gate wording per decision 6; the orchestrator heading
   becomes `# work -- the pipeline orchestrator` and its graph
   `digraph work`.
 
-gate-protocol gains only the "Hold under a run" rule (decision 4); that
-paragraph reaches every verb that includes gate-protocol.
+gate-protocol and wrap-up-form do not change.
 
 Unchanged, by contract: every slot name and contract (`tiering`
 model-tiering@1; `domain` with each stage's `*-domain@1`; `forge`
@@ -134,8 +146,7 @@ slots under the same engine names they bind today.
 - `plugin/schemas/skills-manifest.md` and the schema's `pipelines`
   description: the same roster meaning.
 - `CERTIFICATION.md`: the 2026-09-26 work-next rows stay as history; new
-  2026-09-27 rows for `work`, the eight `stage-*`, `gate-protocol` and
-  `watch-ci`. These and the history rows are the only intentional
+  2026-09-27 rows for `work`, the eight `stage-*` and `watch-ci`. These and the history rows are the only intentional
   `work-next` mentions left, beside this job's dated docs.
 - `.claude-plugin/plugin.json`: 0.25.2 to 0.26.0 in the cutover commit.
 
@@ -181,11 +192,12 @@ base commit (before):
    `work-next-<stage>` to `stage-<stage>`, `work-next` to `work`;
    compiled-version and pack-sha metadata; part-seam source paths and line
    ranges) of new `work` and `stage-*` against old `work-next` and
-   `work-next-*` shows only the description lines and the gate include
-   swap (the work-next gate body out, gate-protocol and wrap-up-form in).
+   `work-next-*` shows only the description lines, the gate include swap
+   (the work-next gate body out, gate-protocol and wrap-up-form in), the
+   hold record nodes and off-script edges, and the orchestrator's
+   own-gate line.
 4. **Every other verb.** A plain diff of every other compiled verb, before
-   against after, shows only `watch-ci`'s `ci-triage.sh` and the
-   gate-protocol "Hold under a run" paragraph in verbs that include it.
+   against after, shows only `watch-ci`'s `ci-triage.sh`.
 5. **check-dot on compiled hosts.** Every compiled `work` and `stage-*`
    `SKILL.md` renders and passes `check-dot.py`, which catches node text
    collisions and duplicate step sections between a stage graph and the
@@ -214,8 +226,7 @@ base commit (before):
 
 ## Verification
 
-`sh tests/certify.sh` on every changed engine dir (including
-`attachments/gate-protocol/`); `bash
+`sh tests/certify.sh` on every changed engine dir; `bash
 plugin/skills/process-digraphs/test-check-dot.sh`; the strict pack check as
 `.github/workflows/purity.yml` mcp-lint runs it; `sh tests/repo-purity.sh`;
 `bash plugin/tests/test-resolve-args.sh`; `git grep work-next` shows only
