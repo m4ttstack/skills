@@ -110,13 +110,15 @@ digraph herd_job {
     "Trigger: [gate] <id> answered" -> "herd_answer {gate: <id>}";
     "herd_answer {gate: <id>}" -> "Which gate was it?";
     "Which gate was it?" -> "Work the Method" [label="a question, or a milestone Approve: act on it"];
-    "Which gate was it?" -> "Revision rounds on this milestone = 3?" [label="a milestone Revise, or a reviewer's findings"];
+    "Which gate was it?" -> "Revision rounds on this milestone = 3?" [label="a milestone Revise"];
+    "Which gate was it?" -> "End the turn until the gate answer arrives" [label="Spawn a reviewer: the findings come by DM"];
     "Revision rounds on this milestone = 3?" -> "Revise the artifact" [label="no"];
     "Revision rounds on this milestone = 3?" -> "herd_ask {questions, context}: keep revising?" [label="yes: budget spent"];
     "Revise the artifact" -> "herd_milestone {artifact, summary}: the revised artifact";
     "Trigger: a chat message arrives" -> "Does it need a reply?";
     "Does it need a reply?" -> "chat_dm {to: <handle>, body}" [label="yes"];
     "Does it need a reply?" -> "Work the Method" [label="no: it informs, or is a new instruction"];
+    "Does it need a reply?" -> "Revision rounds on this milestone = 3?" [label="findings from review-<your job>"];
     "Does it need a reply?" -> "STOP: reply with chat_dm, never SendMessage" [label="tempted to reply with SendMessage"];
     "STOP: reply with chat_dm, never SendMessage" -> "chat_dm {to: <handle>, body}";
     "chat_dm {to: <handle>, body}" -> "Work the Method";
@@ -135,13 +137,15 @@ Method needs something the graph names.
 
 Nothing arms: no background wait, no polling, no reading the registry
 yourself. The answer arrives in your context as a message; only then call
-`herd_answer`.
+`herd_answer`. After **Spawn a reviewer**, what arrives next is the
+reviewer's findings as a chat message from `review-<your job>`.
 
 ### Revise the artifact
 
-Apply the note from `herd_answer`, or the reviewer's DM findings, to the
-artifact; then publish it again as a fresh milestone. The third Revise on
-one milestone means asking whether to keep revising instead.
+Apply the note from a Revise answer, or the findings DM from
+`review-<your job>`, to the artifact; then publish it again as a fresh
+milestone. Each counts as a revision round; once three rounds on one
+milestone have run, ask whether to keep revising instead.
 
 ### Write the report draft
 

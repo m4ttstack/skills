@@ -44,8 +44,8 @@ For herdr CLI mechanics, load the `herdr` skill.
 default only at these hooks: intake (`Specify the jobs`), the model floor
 and strategy pin (`Ask the strategy and model per job`), provisioning (the
 `Domain provisions the tree?` branch), the brief's Method copy (brief
-assembly), conventions (`Collect the repo conventions`), what follows an
-approved report, and wrap-up (both in `What the lanes graph cannot show`,
+assembly), conventions (`Collect the repo conventions`), what follows a
+job's report, and wrap-up (both in `What the lanes graph cannot show`,
 after the `Lanes and wrap-up` graph). A domain part never changes the
 herd contract itself -- questions and reports still flow through the herd
 tools and the gate registry, and what arrives is still yours to present.
@@ -88,7 +88,7 @@ digraph shepherdr_start {
     "Does the work need a herd?" [shape=diamond];
     "Dispatched as Agent-tool subagents" [shape=doublecircle];
     "Specify the jobs" [shape=box];
-    "Exactly one job, and no domain single-worker exception?" [shape=diamond];
+    "Exactly one job, no live herd, and no domain single-worker exception?" [shape=diamond];
     "worktree_provision {repoName, branch: <job>, disposal: job}" [shape=plaintext];
     "EnterWorktree {path}" [shape=plaintext];
     "Worked here in a tree, no herd" [shape=doublecircle];
@@ -96,6 +96,7 @@ digraph shepherdr_start {
     "Accounts section non-empty?" [shape=diamond];
     "Ask the account pool question" [shape=box];
     "Collect the repo conventions" [shape=box];
+    "A herd is already live for this work?" [shape=diamond];
     "herd_start {name, repo, hidden?}" [shape=plaintext];
     "herd_brief {job, template, strategy, strategies, fill, out}" [shape=plaintext];
     "herd_brief result?" [shape=diamond];
@@ -121,19 +122,22 @@ digraph shepherdr_start {
     "Daemon answered?" -> "Picking up an existing herd?" [label="yes"];
     "Picking up an existing herd?" -> "herd_resume {herd}: pick the herd up" [label="yes: a fresh session"];
     "Picking up an existing herd?" -> "Does the work need a herd?" [label="no: new work"];
+    "Picking up an existing herd?" -> "Specify the jobs" [label="yes: a later job for this session's live herd"];
     "herd_resume {herd}: pick the herd up" -> "Go to the watch loop";
     "Does the work need a herd?" -> "Dispatched as Agent-tool subagents" [label="no: no accounts, questions, live view or crash survival needed"];
     "Does the work need a herd?" -> "Specify the jobs" [label="yes"];
-    "Specify the jobs" -> "Exactly one job, and no domain single-worker exception?";
-    "Exactly one job, and no domain single-worker exception?" -> "worktree_provision {repoName, branch: <job>, disposal: job}" [label="yes: push back, do it here"];
-    "Exactly one job, and no domain single-worker exception?" -> "Ask the strategy and model per job" [label="no"];
+    "Specify the jobs" -> "Exactly one job, no live herd, and no domain single-worker exception?";
+    "Exactly one job, no live herd, and no domain single-worker exception?" -> "worktree_provision {repoName, branch: <job>, disposal: job}" [label="yes: push back, do it here"];
+    "Exactly one job, no live herd, and no domain single-worker exception?" -> "Ask the strategy and model per job" [label="no"];
     "worktree_provision {repoName, branch: <job>, disposal: job}" -> "EnterWorktree {path}";
     "EnterWorktree {path}" -> "Worked here in a tree, no herd";
     "Ask the strategy and model per job" -> "Accounts section non-empty?";
     "Accounts section non-empty?" -> "Ask the account pool question" [label="yes"];
     "Accounts section non-empty?" -> "Collect the repo conventions" [label="no: single account"];
     "Ask the account pool question" -> "Collect the repo conventions";
-    "Collect the repo conventions" -> "herd_start {name, repo, hidden?}";
+    "Collect the repo conventions" -> "A herd is already live for this work?";
+    "A herd is already live for this work?" -> "herd_start {name, repo, hidden?}" [label="no"];
+    "A herd is already live for this work?" -> "herd_brief {job, template, strategy, strategies, fill, out}" [label="yes: brief it into this herd"];
     "herd_start {name, repo, hidden?}" -> "herd_brief {job, template, strategy, strategies, fill, out}";
     "herd_brief {job, template, strategy, strategies, fill, out}" -> "herd_brief result?";
     "herd_brief result?" -> "Domain provisions the tree?" [label="ok: the out path is the brief"];
@@ -171,7 +175,7 @@ Decompose into independent jobs:
 
 - Disjoint file ownership per job -- the write fence.
 - Item-coded task lists (A1, A2...) where the strategy produces items, so those reports are checkable at a glance.
-- Each job has a clear deliverable and can run without another job's output. Sequential work (B needs A) is a later fan-out: once A's report arrives, walk the start graph again from its trigger for B.
+- Each job has a clear deliverable and can run without another job's output. Sequential work (B needs A) joins the live herd later: once A's report arrives, walk the start graph from its trigger, take `Picking up an existing herd?` as a later job for this session's live herd, and brief B into that herd; never start a second herd for it.
 
 Two kinds of job come out of this. An **execution job** is fully specified
 up front: brief in, report out, zero questions expected (a plan exists,
@@ -188,13 +192,14 @@ live visibility, and crash-survivable jobs. A small, fully specified
 execution fan-out with none of those belongs on the Agent tool: say so and
 dispatch subagents instead.
 
-**Exactly one job?** Push back: tell the user "this is probably not the
-right skill for this" and do the work yourself, here in the main pane. One
-agent behind a relay is pure overhead. The graph's `worktree_provision` and
-`EnterWorktree` moves keep that work isolated from the user's checkout;
-after them, the delegator rules above do not apply and you work hands-on as
-normal. A bound domain part may name the one legitimate single-worker
-exception; apply it.
+**Exactly one job, no live herd?** Push back: tell the user "this is
+probably not the right skill for this" and do the work yourself, here in
+the main pane. One agent behind a relay is pure overhead. The graph's
+`worktree_provision` and `EnterWorktree` moves keep that work isolated from
+the user's checkout; after them, the delegator rules above do not apply and
+you work hands-on as normal. A bound domain part may name the one
+legitimate single-worker exception; apply it. A later job for a live herd
+is never this case: it joins the herd.
 
 ### Ask the strategy and model per job
 
@@ -224,7 +229,8 @@ below the floor is wrong.
 Ask it once per herd, as the Accounts section above says. It comes after
 the models are chosen: some providers budget per-model pools separately,
 so account headroom cannot be presented honestly until the herd's model mix
-is known.
+is known. A later job for a live herd keeps the pool answer the herd already
+has; do not ask again.
 
 ### Collect the repo conventions
 
@@ -278,6 +284,9 @@ from: in this graph the job is skipped and the batch goes on; in the watch
 loop and the lanes graph you end the turn until something arrives. One
 job's spent budget never ends the herd.
 
+A counter names what has already happened: `Brief retries = 2?` answers
+yes once two retries have run, so two are allowed before this gate.
+
 ### Make the recorded move once
 
 Make exactly the move the user took, once, as its value spells it. If that
@@ -298,7 +307,8 @@ moment.
 **Resuming.** `herd_list` shows the herd ids. `herd_resume {herd}`
 re-points the gate subscription and the chat identity to this session and
 returns the open gates, the unread room messages, and every job's state.
-There is no other resume step.
+There is no other resume step. After `herd_resume`, handle each unread room
+line as if it had just arrived (a report goes to the lanes graph).
 
 **Brief assembly.** Every brief is assembled by `herd_brief`, never
 composed. Its inputs:
@@ -449,6 +459,7 @@ digraph shepherdr_watch {
     "What arrived?" -> "Report the crash with its job and pane" [label="<job> exited"];
     "What arrived?" -> "chat_dm {to: <job>, body: the ruling or findings}" [label="a ruling or findings for one worker"];
     "What arrived?" -> "Ask: let them finish, kill and respawn, or hold" [label="the user redirects scope"];
+    "What arrived?" -> "Respawns of this job = 2?" [label="the user asks for a respawn"];
     "What arrived?" -> "Go to lanes and wrap-up" [label="a report line, or a nag about a done job's open pane"];
     "herd_gates {herd}: the gate push" -> "Open gates returned?";
     "herd_resume {herd}: after a relaunch" -> "Open gates returned?";
@@ -496,7 +507,8 @@ digraph shepherdr_watch {
     "STOP: never press keys into a modal or form; answer its gate" -> "herd_gates {herd}: the blocked job";
     "Accounts section non-empty?" -> "Pick the account per the accounts rules" [label="yes"];
     "Accounts section non-empty?" -> "Report the stall to the user" [label="no: nowhere else to launch"];
-    "Pick the account per the accounts rules" -> "Respawns of this job = 2?";
+    "Pick the account per the accounts rules" -> "Respawns of this job = 2?" [label="an account picked"];
+    "Pick the account per the accounts rules" -> "End the turn until something arrives" [label="wait or abandon"];
     "Report the stall to the user" -> "End the turn until something arrives";
     "Ask: attend or close and respawn" -> "herd_attend {job, herd}: the parked dialog" [label="attend"];
     "Ask: attend or close and respawn" -> "herd_close {job, herd}: parked, respawning" [label="close and respawn"];
@@ -560,7 +572,8 @@ string exactly as the gate row gives it.
 
 The Accounts section decides whether to respawn now or ask the user first.
 Its pick is the `--account` on the shared respawn. Announce the respawn to
-the user afterward.
+the user afterward. When the user chooses to wait or to abandon the job,
+end the turn.
 
 ### Report the stall to the user
 
@@ -591,7 +604,7 @@ briefs** / **Hold**. No restated heading, no per-option descriptions.
 - **The push is transport.** A gate push is one line, `[gate] <id> is now open; re-read the gate registry.`, carrying only an id. Its arrival already proves the daemon, the subscription and the herd; the `herd_gates` read is the verification, made first, before any command of your own choosing. `herd_gates` defaults to `HERD_ID` or the single active herd (name the herd only when more than one is active), and also returns pipeline-run gates whose worktree belongs to one of your jobs. Room lines are pushed the same way: a report is `<job> #<n>: <body>` and a milestone is `<job> #<n>: milestone: <artifact>`. A stale id or an unrelated room line is a normal outcome of that read, never a reason to reach for another command first or to distrust the push.
 - **Blocked diagnosis.** `<job> blocked` means the pane sat on a prompt for 30s. `herd_gates` comes first; its rows carry `presentation` and `owner`. Only "blocked, no open question, no open gate" makes the pane peek legitimate, never a hunch. `bg:` refs work for hidden herds.
 - **Typing versus keys.** Typing a text nudge into a lane's prompt with `rt pane send <pane> --text <nudge>` is allowed when the prompt is idle and no form is on screen. Pressing keys into a modal or form (Escape, Enter, an option number) is forbidden: the daemon injects Escape itself when a form-presentation gate is answered elsewhere, and a keystroke into a pane on a background `rt gate wait` interrupts a worker that was never stuck. A gate row's `presentation` says which you face: `"form"` means answering the gate clears the form; `"wait"` means leave the pane alone.
-- **Unconsumed answers.** The daemon already re-nudges the worker itself; what reaches you is `gate <id> UNCONSUMED` on a job in `herd_status`, or the watchdog's "answered Nm ago and unconsumed" line. Read the lane's pane first: a dead lane (a login expired, no claude on it) is a respawn, not a nudge. Nudge 0 is the DM. Nudge 1 types the same nudge. Typing a text nudge into a lane's prompt with `rt pane send <pane> --text <nudge>` is allowed when the prompt is idle and no form is on screen. Pressing keys into a modal or form (Escape, Enter, an option number) is forbidden: the daemon injects Escape itself when a form-presentation gate is answered elsewhere, and a keystroke into a pane on a background `rt gate wait` interrupts a worker that was never stuck. After that, the off-script gate.
+- **Unconsumed answers.** The daemon already re-nudges the worker itself; what reaches you is `gate <id> UNCONSUMED` on a job in `herd_status`, or the watchdog's "answered Nm ago and unconsumed" line. Read the lane's pane first: a dead lane (a login expired, no claude on it) is a respawn, not a nudge. Nudge 0 is the DM. Nudge 1 types the same nudge, under the Typing versus keys rule above. After that, the off-script gate.
 - **The disposable reviewer.** Its spawn line is the graph's node, in the job's own tree (`herd_spawn` would land it in a fresh one). Its brief reads the artifact, DMs the findings to the job's handle with `chat_dm`, and reports a verdict; the daemon closes its pane on that report. The job revises and opens a fresh milestone gate: every round is gate, DM, gate. You never read the artifact.
 - **A bare pane form.** A worker pane showing a structured question with no gate behind it (`herd_gates` returns nothing for it) is the banned bare pane-local form, unreachable from every channel. Flag it to the user; never answer it yourself. Covered panes deny it at source through the launch-injected gate-fork hook, so seeing one means the pane is uncovered or its daemon was unreachable.
 
@@ -636,10 +649,12 @@ digraph shepherdr_lanes {
     "mr_merge {mrUrl}" [shape=plaintext];
     "gh pr merge <pr>" [shape=plaintext];
     "Merged on the repo?" [shape=diamond];
+    "Did this lane claim the merge itself?" [shape=diamond];
     "Unmerged reports for this lane = 2?" [shape=diamond];
     "chat_dm {to: <job>, body: the measured merge state}" [shape=plaintext];
     "Flip the lane's ticket, when it has one" [shape=box];
     "herd_close {job, herd}: the merged lane" [shape=plaintext];
+    "More merged lanes to close?" [shape=diamond];
     "Every job done and closed?" [shape=diamond];
     "Show the status table" [shape=box];
     "Gate wrap-up: the form contract" [shape=box];
@@ -690,12 +705,17 @@ digraph shepherdr_lanes {
     "mr_merge {mrUrl}" -> "Merged on the repo?";
     "gh pr merge <pr>" -> "Merged on the repo?";
     "Merged on the repo?" -> "Flip the lane's ticket, when it has one" [label="yes"];
-    "Merged on the repo?" -> "Unmerged reports for this lane = 2?" [label="no"];
+    "Merged on the repo?" -> "Did this lane claim the merge itself?" [label="no"];
+    "Did this lane claim the merge itself?" -> "Unmerged reports for this lane = 2?" [label="yes"];
+    "Did this lane claim the merge itself?" -> "Back to the watch loop: end the turn" [label="no: it waits on the integration job or the gate"];
+    "Did this lane claim the merge itself?" -> "Shepherd off-script gate: ask the user" [label="no: your own merge call did not land"];
     "Unmerged reports for this lane = 2?" -> "chat_dm {to: <job>, body: the measured merge state}" [label="no"];
     "Unmerged reports for this lane = 2?" -> "Shepherd off-script gate: ask the user" [label="yes: budget spent"];
     "chat_dm {to: <job>, body: the measured merge state}" -> "Back to the watch loop: end the turn";
     "Flip the lane's ticket, when it has one" -> "herd_close {job, herd}: the merged lane";
-    "herd_close {job, herd}: the merged lane" -> "Every job done and closed?";
+    "herd_close {job, herd}: the merged lane" -> "More merged lanes to close?";
+    "More merged lanes to close?" -> "Flip the lane's ticket, when it has one" [label="yes"];
+    "More merged lanes to close?" -> "Every job done and closed?" [label="no"];
     "Every job done and closed?" -> "Back to the watch loop: end the turn" [label="no"];
     "Every job done and closed?" -> "Show the status table" [label="yes"];
     "Show the status table" -> "Gate wrap-up: the form contract";
@@ -737,13 +757,17 @@ it: "the worker reports X".
 
 Only when a bound domain part gives the shepherd the merge. One sentence
 with the PR or MR link, its state and its CI, then **Merge** / **Not yet** /
-**Hold**.
+**Hold**. A merge call that does not land goes to the off-script gate.
 
 ### Flip the lane's ticket, when it has one
 
-Flip it before `herd_close`, in the same breath as the close. Nothing but
-you closes a done job's pane; the watchdog's nag about a done job's open
-pane past `herd.watchdog.nagMins` (default 30) means this step was skipped.
+Flip it before `herd_close`, in the same breath as the close. An
+integration report that merges several lanes closes each of them here.
+
+Nothing but you closes a done job's pane. The watchdog nags about a done
+job's open pane past `herd.watchdog.nagMins` (default 30). For a merged
+lane the nag means this step was skipped; for a lane still waiting on the
+integration job or a merge gate it is normal, and you end the turn.
 
 ### Show the status table
 
@@ -801,7 +825,7 @@ the Bash command `rt herd stop --hidden` (no tool runs it); never run it unpromp
 - **Job state is the daemon's.** It marked the job `done` when the report was published; `herd_status` is the status table's source. Nothing to record by hand.
 - **A report is a claim, not a merge.** Answer "Merged on the repo?" from the repo itself (`gh pr view --json state,mergeCommit`, or the sha on `origin/main`), never from the report alone.
 - **The integration job.** Its brief merges or cherry-picks the job branches, runs full verification, and reports; it carries the repo's shipping conventions. Never merge, fix or push on the agents' behalf.
-- **Domain hook: after the report.** Unbound: the integration job merges. A bound domain part may define what follows an approved report (the worker ships through its own skill chain, or the shepherd merges after a gate; how several jobs feeding one deliverable integrate) and whether that step waits for the user to ask. Fixing and pushing stay with workers either way.
+- **Domain hook: after the report.** Unbound: the integration job merges. A bound domain part may define what follows a job's report (the worker ships through its own skill chain, or the shepherd merges after a gate; how several jobs feeding one deliverable integrate) and whether that step waits for the user to ask. Fixing and pushing stay with workers either way.
 - **Domain hook: wrap-up.** Unbound: as drawn. A bound domain part may state its own tree lifecycle (trees that dispose themselves when their work merges, what a disposal refusal means); follow it over the disposal defaults here.
 
 ## wrap-up form contract
