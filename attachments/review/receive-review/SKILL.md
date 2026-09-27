@@ -151,7 +151,7 @@ digraph receive_review {
 
     "respond-post decided by a gate or a handed post?" [shape=diamond];
     "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" [shape=plaintext];
-    "Threads held at respond-post?" [shape=diamond];
+    "Any thread held this pass: a failed push or a forge refusal?" [shape=diamond];
     "Report the outcome (to the caller when it owns the gates)" [shape=box];
     "This verb started or resumed the run?" [shape=diamond];
     "run_stage {action: done, stage: receive-review}" [shape=plaintext];
@@ -319,12 +319,12 @@ digraph receive_review {
     "mr_reply_thread result?" -> "resolve: decided for this thread?" [label="posted"];
     "mr_reply_thread result?" -> "Retried this mr_reply_thread once?" [label="error"];
     "mr_reply_thread result?" -> "STOP: a refused mr_reply_thread goes to its off-script gate, never the GitLab CLI" [label="tempted by the GitLab CLI"];
-    "Retried this mr_reply_thread once?" -> "mr_reply_thread {mrUrl, discussionId, body}" [label="no"];
+    "Retried this mr_reply_thread once?" -> "Thread already carries this receive-review run's reply?" [label="no: re-test, then retry"];
     "Retried this mr_reply_thread once?" -> "Off-script gate: the forge refused the reply" [label="yes"];
     "STOP: a refused mr_reply_thread goes to its off-script gate, never the GitLab CLI" -> "Off-script gate: the forge refused the reply";
     "Off-script gate: the forge refused the reply" -> "Answer at the refused-reply off-script gate?";
     "Answer at the refused-reply off-script gate?" -> "Make the recorded move once for the refused reply" [label="take"];
-    "Answer at the refused-reply off-script gate?" -> "mr_reply_thread {mrUrl, discussionId, body}" [label="iterate: retry with their note"];
+    "Answer at the refused-reply off-script gate?" -> "Thread already carries this receive-review run's reply?" [label="iterate: re-test, then retry with their note"];
     "Answer at the refused-reply off-script gate?" -> "Hold the thread the forge refused and report the refusal verbatim" [label="hold: this thread only"];
     "Answer at the refused-reply off-script gate?" -> "run_stage {action: fail, stage: <stage>, reason}" [label="hand back"];
     "Make the recorded move once for the refused reply" -> "resolve: decided for this thread?";
@@ -349,10 +349,10 @@ digraph receive_review {
     "Resolve the thread on GitHub with gh" -> "Next thread to act on: offered threads, then gate-1: reply rows?";
 
     "respond-post decided by a gate or a handed post?" -> "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" [label="yes"];
-    "respond-post decided by a gate or a handed post?" -> "Threads held at respond-post?" [label="no: nothing was offered or handed"];
-    "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" -> "Threads held at respond-post?";
-    "Threads held at respond-post?" -> "Threads held: run left open for a resume" [label="yes"];
-    "Threads held at respond-post?" -> "Report the outcome (to the caller when it owns the gates)" [label="no"];
+    "respond-post decided by a gate or a handed post?" -> "Any thread held this pass: a failed push or a forge refusal?" [label="no: nothing was offered or handed"];
+    "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" -> "Any thread held this pass: a failed push or a forge refusal?";
+    "Any thread held this pass: a failed push or a forge refusal?" -> "Threads held: run left open for a resume" [label="yes"];
+    "Any thread held this pass: a failed push or a forge refusal?" -> "Report the outcome (to the caller when it owns the gates)" [label="no"];
     "Report the outcome (to the caller when it owns the gates)" -> "This verb started or resumed the run?";
     "This verb started or resumed the run?" -> "run_stage {action: done, stage: receive-review}" [label="yes"];
     "This verb started or resumed the run?" -> "Review feedback answered" [label="no: inherited, the caller closes"];
@@ -440,7 +440,13 @@ What the snapshot records picks the re-entry:
   any Fixed reply); a held override or `gate-1: reply` row acts with no
   push. A held thread the forge already shows carrying this run's reply
   goes straight to its resolve decision. Then record again, without
-  `"held"`, or with the threads still held.
+  `"held"`, or with the threads still held. The reply due for a held
+  thread comes from the report rows when the report exists; in a fresh
+  pane without it, from the snapshot: the respond-post entry's `text` when
+  it has one, else the respond-plan record read as the snapshot-only
+  reading under Rewrite the receive-review report rows describes. A held
+  fix row with neither is finalized again from its commit (Commit the fix
+  and finalize its Fixed reply) before it posts.
 - **`respond-post` recorded, nothing held:** report the outcome and close.
 
 ### Resolve the change and record its identity
@@ -829,7 +835,9 @@ row, and a `fix` row whose Fixed reply was never finalized, post nothing.
   not already carrying this run's reply (Posted already). There is no
   respond-post gate and no respond-post record: open nothing, record
   nothing for this scope (the respond-plan record covers those replies),
-  and close. A caller that owns the gates gets no open file back, only
+  and close only when no thread was held this pass: a forge refusal held
+  here leaves the run open for a resume, which finds the thread through
+  Posted already. A caller that owns the gates gets no open file back, only
   that nothing is offered and which replies posted.
 - **No thread offered, but the caller handed a `post`** (in a
   `{plan, post}` object, or on its own): that `post` decides first. Post
@@ -983,7 +991,10 @@ then finds the unposted thread through Posted already.
 
 ### Off-script gate: the forge refused the reply
 
-Quote the `mr_reply_thread` error from the retry as the `context`.
+Quote the `mr_reply_thread` error from the retry as the `context`. A
+retry, the budgeted one or an iterate answer's, first re-tests the thread
+(Thread already carries this receive-review run's reply?), so a reply
+that landed despite an error never posts twice.
 Propose the move: the human posts this reply by hand, and this run
 counts the reply posted once the forge shows it. A retry after they fix the cause is
 the iterate answer, never the take. A Hold holds this thread only (Hold
