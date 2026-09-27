@@ -24,102 +24,40 @@ You are the shepherd: a thin delegator, not a reviewer. You break work into jobs
 
 For herdr CLI mechanics, load the `herdr` skill.
 
-## when not to herd
-
-A small, fully specified execution fan-out with no expected questions, no
-need for account spreading, and no need to watch or steer live belongs on
-the Agent tool, not panes. The herd
-earns its keep through account distribution, mid-flight interaction
-(question relay, milestone gates), live visibility, and crash-survivable
-jobs. If none of those apply, say so and dispatch subagents instead.
-
-## prerequisites
-
-1. Confirm `HERDR_ENV=1`. If not set, stop -- you need to be running inside herdr.
-2. Confirm the rt daemon answers: call `herd_list {}`. A daemon-unreachable error means stop and say so; the herd tools, gates, and chat all ride the daemon.
-3. **A fresh session that is picking a herd back up calls `herd_resume {herd}` first** (`herd_list` shows the ids). That one call re-points the gate subscription and the chat identity to this session and returns the open gates, the unread room messages, and every job's state. There is no other resume step.
-
-## hidden mode: invisible panes
-
-When the user asks for the herd to stay out of sight ("invisible",
-"background", "headless", "don't clutter my UI"), pass `hidden: true` to
-`herd_start`. Every worker pane then lives on the daemon's shared
-background herdr server (session `bg`); the generic pane verbs address its
-panes as `bg:<pane>` refs, exactly as herd surfaces print them. Nothing
-else in this skill changes. To
-put one worker in front of the user, `herd_attend {job, herd}`
-opens a focused tab in the visible session attached to that pane (the user
-detaches with `ctrl+b q`; close the tab it returned afterwards). At wrap-up,
-offer the Bash command `rt herd stop --hidden` (no tool runs it); never run it unprompted. The background <!-- mcp-lint: allow -->
-server is shared: the stop refuses while ANY background claim is live
-(another herd, a runner board, an `agent --bg` pane), naming the owners --
-report the refusal, never work around it.
-
-## job types
-
-**Execution job** -- fully specified up front. Brief in, report out, zero questions expected. Use when the work is known: a plan exists, findings are verified, the refactor is scoped.
-
-**Design job** -- questions are expected during the run: method choices, milestone gates, and mid-run touchpoints all flow through what arrives, and what you do and milestone gates (design jobs) below. N design jobs = N parallel brainstorms; the user answers one agent's question while the others think.
-
-If work arrives unscoped and the user wants it scoped before fan-out, brainstorm with them directly yourself (no pane, no relay), then spawn execution jobs from the result.
-
 ## Tiering
+
+*If a rule below asks for a move this graph marks STOP, take the off-script edge instead.*
 
 {{slot:tiering}}
 
 ## Strategy
 
+*If a rule below asks for a move this graph marks STOP, take the off-script edge instead.*
+
 {{slot:strategy}}
 
 `accounts` may be unbound -- that is single-account mode, handled below.
 
-### the domain slot
-
-`domain` is optional. The hooks below name where a bound domain part's
-rules win over this engine's default: intake (step 1), the model floor
-and strategy pin (the strategy and model question), provisioning (step
-2), the brief's Method and conventions (job.md), what follows an
-approved report (completion), and wrap-up. A domain part never changes
-the herd contract itself -- questions and reports still flow through the
-herd tools and the gate registry, and what arrives is still yours to present.
-
 ## Domain rules
+
+`domain` is optional. A bound domain part's rules win over this engine's
+default only at these hooks: intake (`Specify the jobs`), the model floor
+and strategy pin (`Ask the strategy and model per job`), provisioning (the
+`Domain provisions the tree?` branch), the brief's Method copy (brief
+assembly), conventions (`Collect the repo conventions`), what follows an
+approved report (completion), and wrap-up. A domain part never changes the
+herd contract itself -- questions and reports still flow through the herd
+tools and the gate registry, and what arrives is still yours to present.
+
+*If a rule below asks for a move this graph marks STOP, take the off-script edge instead.*
 
 {{slot:domain}}
 
-When nothing is inlined above, every default in this engine stands as
-written.
-
-### the strategy and model question (per job)
-
-Strategy predicts the work shape, and the work shape predicts the tier,
-so they are one choice. Derive a per-job recommendation -- strategy from
-the bound strategy table, model from the bound tier table -- then ASK: one
-structured question per job (AskUserQuestion, single choice, batched up
-to 4 jobs per call), the recommendation first and marked "(Recommended)"
-with both halves in the label ("superpowers, opus" / "direct-tdd,
-sonnet"), then 2-3 curated alternates spanning the tiers. One keystroke
-accepts; "Other" free-text is automatic.
-
-**Effort is a session default, not a question.** Per the bound tiering
-skill, use the model's default effort and deviate only when the user
-names a reason.
-Pass `model` on every spawn (`--model <model>` on a Bash spawn) and
-`effort` only when an override was chosen. A spawn without a model
-launches on the default model, which silently defeats tiering.
-
-This question comes BEFORE the account question: some providers budget
-per-model pools separately, so account headroom cannot be presented
-honestly until the herd's model mix is known.
-
-**Domain hook -- model floor and strategy pin.** Unbound: both halves are
-open and the tier table's recommendation stands. A bound domain part may
-set a model floor for a class of work and pin the strategy half (its own
-method skill is the brief's Method); then the recommendation starts at
-that floor, the question carries only the half still open, and a spawn
-below the floor is wrong.
+When nothing is inlined above, every default in this engine stands as written.
 
 ## Accounts
+
+*If a rule below asks for a move this graph marks STOP, take the off-script edge instead.*
 
 {{slot:accounts}}
 
@@ -129,6 +67,305 @@ pick, and the exhaustion decision tree. Pass the account it picks as
 `account` on `herd_spawn` (`--account <A>` on a Bash spawn). Empty:
 single-account mode -- no account question, spawns omit the account, and
 workers launch as plain `claude`.
+
+## Start and spawn
+
+Walk this graph from the trigger; a move it does not show goes to the shepherd off-script gate.
+
+```dot
+digraph shepherdr_start {
+    rankdir=TB;
+
+    "Trigger: fan this work out across agents" [shape=ellipse];
+    "HERDR_ENV=1 in this session?" [shape=diamond];
+    "STOP: a herd needs herdr; say so" [shape=octagon style=filled fillcolor=red fontcolor=white];
+    "herd_list {}" [shape=plaintext];
+    "Daemon answered?" [shape=diamond];
+    "STOP: the herd rides the daemon; report its error" [shape=octagon style=filled fillcolor=red fontcolor=white];
+    "Picking up an existing herd?" [shape=diamond];
+    "herd_resume {herd}: pick the herd up" [shape=plaintext];
+    "Does the work need a herd?" [shape=diamond];
+    "Dispatched as Agent-tool subagents" [shape=doublecircle];
+    "Specify the jobs" [shape=box];
+    "Exactly one job, and no domain single-worker exception?" [shape=diamond];
+    "worktree_provision {repoName, branch: <job>, disposal: job}" [shape=plaintext];
+    "EnterWorktree {path}" [shape=plaintext];
+    "Worked here in a tree, no herd" [shape=doublecircle];
+    "Ask the strategy and model per job" [shape=box];
+    "Accounts section non-empty?" [shape=diamond];
+    "Ask the account pool question" [shape=box];
+    "Collect the repo conventions" [shape=box];
+    "herd_start {name, repo, hidden?}" [shape=plaintext];
+    "herd_brief {job, template, strategy, strategies, fill, out}" [shape=plaintext];
+    "herd_brief result?" [shape=diamond];
+    "Brief retries = 2?" [shape=diamond];
+    "Fix what the refusal names" [shape=box];
+    "STOP: fix the refusal; never copy the template or strategies file elsewhere" [shape=octagon style=filled fillcolor=red fontcolor=white];
+    "Domain provisions the tree?" [shape=diamond];
+    "herd_spawn {herd, job, brief, model, effort?, account?}" [shape=plaintext];
+    "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree>" [shape=plaintext]; // <!-- mcp-lint: allow -->
+    "Spawn result?" [shape=diamond];
+    "STOP: never hand-roll a tree, a pane or a launch" [shape=octagon style=filled fillcolor=red fontcolor=white];
+    "Shepherd off-script gate: ask the user" [shape=box];
+    "Off-script answer?" [shape=diamond];
+    "Make the recorded move once" [shape=box];
+    "More jobs in this batch (cap 6)?" [shape=diamond];
+    "Go to the watch loop" [shape=doublecircle style=filled fillcolor=lightgreen];
+
+    "Trigger: fan this work out across agents" -> "HERDR_ENV=1 in this session?";
+    "HERDR_ENV=1 in this session?" -> "STOP: a herd needs herdr; say so" [label="no"];
+    "HERDR_ENV=1 in this session?" -> "herd_list {}" [label="yes"];
+    "herd_list {}" -> "Daemon answered?";
+    "Daemon answered?" -> "STOP: the herd rides the daemon; report its error" [label="no"];
+    "Daemon answered?" -> "Picking up an existing herd?" [label="yes"];
+    "Picking up an existing herd?" -> "herd_resume {herd}: pick the herd up" [label="yes: a fresh session"];
+    "Picking up an existing herd?" -> "Does the work need a herd?" [label="no: new work"];
+    "herd_resume {herd}: pick the herd up" -> "Go to the watch loop";
+    "Does the work need a herd?" -> "Dispatched as Agent-tool subagents" [label="no: no accounts, questions, live view or crash survival needed"];
+    "Does the work need a herd?" -> "Specify the jobs" [label="yes"];
+    "Specify the jobs" -> "Exactly one job, and no domain single-worker exception?";
+    "Exactly one job, and no domain single-worker exception?" -> "worktree_provision {repoName, branch: <job>, disposal: job}" [label="yes: push back, do it here"];
+    "Exactly one job, and no domain single-worker exception?" -> "Ask the strategy and model per job" [label="no"];
+    "worktree_provision {repoName, branch: <job>, disposal: job}" -> "EnterWorktree {path}";
+    "EnterWorktree {path}" -> "Worked here in a tree, no herd";
+    "Ask the strategy and model per job" -> "Accounts section non-empty?";
+    "Accounts section non-empty?" -> "Ask the account pool question" [label="yes"];
+    "Accounts section non-empty?" -> "Collect the repo conventions" [label="no: single account"];
+    "Ask the account pool question" -> "Collect the repo conventions";
+    "Collect the repo conventions" -> "herd_start {name, repo, hidden?}";
+    "herd_start {name, repo, hidden?}" -> "herd_brief {job, template, strategy, strategies, fill, out}";
+    "herd_brief {job, template, strategy, strategies, fill, out}" -> "herd_brief result?";
+    "herd_brief result?" -> "Domain provisions the tree?" [label="ok: the out path is the brief"];
+    "herd_brief result?" -> "Brief retries = 2?" [label="refused"];
+    "herd_brief result?" -> "STOP: fix the refusal; never copy the template or strategies file elsewhere" [label="tempted to copy the template past a root refusal"];
+    "STOP: fix the refusal; never copy the template or strategies file elsewhere" -> "Fix what the refusal names";
+    "Brief retries = 2?" -> "Fix what the refusal names" [label="no"];
+    "Brief retries = 2?" -> "Shepherd off-script gate: ask the user" [label="yes: budget spent"];
+    "Fix what the refusal names" -> "herd_brief {job, template, strategy, strategies, fill, out}";
+    "Domain provisions the tree?" -> "herd_spawn {herd, job, brief, model, effort?, account?}" [label="no: herd_spawn provisions"];
+    "Domain provisions the tree?" -> "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree>" [label="yes: its tree, its Bash line"]; // <!-- mcp-lint: allow -->
+    "herd_spawn {herd, job, brief, model, effort?, account?}" -> "Spawn result?";
+    "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree>" -> "Spawn result?"; // <!-- mcp-lint: allow -->
+    "Spawn result?" -> "More jobs in this batch (cap 6)?" [label="ok"];
+    "Spawn result?" -> "Shepherd off-script gate: ask the user" [label="error: quote it"];
+    "Spawn result?" -> "STOP: never hand-roll a tree, a pane or a launch" [label="tempted to build the tree or pane yourself"];
+    "STOP: never hand-roll a tree, a pane or a launch" -> "Shepherd off-script gate: ask the user";
+    "Shepherd off-script gate: ask the user" -> "Off-script answer?";
+    "Off-script answer?" -> "Make the recorded move once" [label="take the proposed move"];
+    "Off-script answer?" -> "More jobs in this batch (cap 6)?" [label="hand back or hold: skip this job"];
+    "Make the recorded move once" -> "More jobs in this batch (cap 6)?";
+    "More jobs in this batch (cap 6)?" -> "herd_brief {job, template, strategy, strategies, fill, out}" [label="yes: the next job, one at a time"];
+    "More jobs in this batch (cap 6)?" -> "Go to the watch loop" [label="no"];
+}
+```
+
+### Specify the jobs
+
+**Domain hook -- intake.** Unbound: the jobs come from what the user
+hands you; invoked with nothing, ask what to fan out. A bound domain part
+may define a default intake for the empty invocation (a ticket queue, a
+board column) -- follow it and make one job per item it yields.
+
+Decompose into independent jobs:
+
+- Disjoint file ownership per job -- the write fence.
+- Item-coded task lists (A1, A2...) where the strategy produces items, so those reports are checkable at a glance.
+- Each job has a clear deliverable and can run without another job's output. Sequential work (B needs A) spawns B after A's report event arrives.
+
+Two kinds of job come out of this. An **execution job** is fully specified
+up front: brief in, report out, zero questions expected (a plan exists,
+findings are verified, the refactor is scoped). A **design job** expects
+questions during the run: method choices, milestone gates, mid-run
+touchpoints. N design jobs are N parallel brainstorms; the user answers one
+agent's question while the others think. If work arrives unscoped and the
+user wants it scoped before fan-out, brainstorm with them directly yourself
+(no pane, no relay), then specify execution jobs from the result.
+
+**Does the work need a herd?** The herd earns its keep through account
+distribution, mid-flight interaction (question relay, milestone gates),
+live visibility, and crash-survivable jobs. A small, fully specified
+execution fan-out with none of those belongs on the Agent tool: say so and
+dispatch subagents instead.
+
+**Exactly one job?** Push back: tell the user "this is probably not the
+right skill for this" and do the work yourself, here in the main pane. One
+agent behind a relay is pure overhead. The graph's `worktree_provision` and
+`EnterWorktree` moves keep that work isolated from the user's checkout;
+after them, the delegator rules above do not apply and you work hands-on as
+normal. A bound domain part may name the one legitimate single-worker
+exception; apply it.
+
+### Ask the strategy and model per job
+
+Strategy predicts the work shape, and the work shape predicts the tier, so
+they are one choice. Derive a per-job recommendation (strategy from the
+bound strategy table, model from the bound tier table), then ask one
+AskUserQuestion per job (single choice, batched up to 4 jobs per call): the
+recommendation first, marked "(Recommended)" with both halves in the label
+("superpowers, opus" / "direct-tdd, sonnet"), then 2-3 curated alternates
+spanning the tiers.
+
+**Effort is a session default, not a question.** Per the bound tiering
+skill, use the model's default effort and deviate only when the user names
+a reason. Every spawn carries the chosen model (`model` on `herd_spawn`,
+`--model` on a Bash spawn) and carries effort only when overridden; a spawn
+without a model launches on the default model and silently defeats tiering.
+
+**Domain hook -- model floor and strategy pin.** Unbound: both halves are
+open and the tier table's recommendation stands. A bound domain part may
+set a model floor for a class of work and pin the strategy half (its own
+method skill is the brief's Method); then the recommendation starts at
+that floor, the question carries only the half still open, and a spawn
+below the floor is wrong.
+
+### Ask the account pool question
+
+Ask it once per herd, as the Accounts section above says. It comes after
+the models are chosen: some providers budget per-model pools separately,
+so account headroom cannot be presented honestly until the herd's model mix
+is known.
+
+### Collect the repo conventions
+
+A herd pane is a real `claude` session in a real git worktree: user-level
+plugins, skills, rules, and the repo's tracked conventions (CLAUDE.md,
+AGENTS.md, tracked `.claude/skills/`) load normally. What does NOT survive
+is untracked state (`node_modules`, `.env`, `settings.local.json`,
+gitignored directories), and skills fire by description match, not by
+path, so a gate nobody names may never load.
+
+Collect the repo's development conventions from two places: workflow rules
+already loaded in your session, and the repo's convention docs (CLAUDE.md,
+AGENTS.md, CONTRIBUTING or equivalent). This read is orchestration input,
+not artifact review; specs, plans, diffs, and code stay off limits.
+
+Each brief's `Repo conventions` section carries exactly three things: the
+gate skills that bind this job, named with absolute paths; task A0 for
+untracked state (dependency install, env or secrets sync); and the branch
+name. Everything else a convention says lives in the skill that owns it.
+
+- **Branch naming**: the branch is the job name (`herd_spawn` provisions on it). If branches derive from tickets, resolve the ticket first and name the job accordingly, or a provisioning domain part spawns on a tree it named itself. No repo rule = any name; branches that never ship are ephemeral.
+- **Shipping process** (target branch, MR conventions, CI): goes in the integration job's brief, including where shipped work must land if the repo's workflow dictates it.
+
+**Domain hook -- conventions.** Unbound: the three items above. When the
+bound domain part's method skill owns the repo's conventions, the `Repo
+conventions` section names only the branch; gates, process, and evidence
+come from the skill chain the worker loads, and a brief that restates them
+competes with that chain.
+
+### Fix what the refusal names
+
+- **An unfilled marker**: the refusal lists the leftover slots; add a `fill` entry for each.
+- **A path outside every root**: the loaded skill dir is stale (the plugin updated while this session ran) or a dev checkout. Run `/reload-plugins` (in a herdr pane, queue it on yourself with `rt pane send self --text "/reload-plugins" --then "Continue: ..."` and end the turn), then retry from the reloaded base directory.
+
+Never copy the template or the strategies file elsewhere to get past a
+refusal; the retry budget hands a stubborn refusal to the off-script gate.
+
+### Shepherd off-script gate: ask the user
+
+Every refusal the graph does not resolve and every spent budget lands here,
+in all three graphs. Ask with AskUserQuestion: one sentence quoting the
+refusal or naming the budget spent, then three options:
+
+- **Take the proposed move**: its value spells the move in full (the exact tool call or Bash line), so the answer is the record.
+- **Hand it back to you**: the user deals with it.
+- **Hold**: nothing moves on this job for now.
+
+"Hand it back" and "Hold" route straight back into the loop the gate came
+from: in this graph the job is skipped and the batch goes on; in the watch
+loop and the lanes graph you end the turn until something arrives. One
+job's spent budget never ends the herd.
+
+### Make the recorded move once
+
+Make exactly the move the user took, once, as its value spells it. If that
+move fails too, that is a new off-script gate, never a retry of your own.
+
+## What the start graph cannot show
+
+**The herd contract.** Every herd is a row in the rt daemon's registry plus
+one chat room and one gate subscription, all created by `herd_start`.
+Workers ask through gates (`herd_ask`, `herd_milestone`) and report into
+the room; the daemon pushes both into this session and records job state as
+a side effect of every call. You talk to a worker with the `chat_dm` tool
+(`{to: <handle>, body}`). There is no herd DB, no script, and no background
+wait; `herd_status {herd}` is the whole picture at any moment.
+
+**Resuming.** `herd_list` shows the herd ids. `herd_resume {herd}`
+re-points the gate subscription and the chat identity to this session and
+returns the open gates, the unread room messages, and every job's state.
+There is no other resume step.
+
+**Brief assembly.** Every brief is assembled by `herd_brief`, never
+composed. Its inputs:
+
+- `template`: `${CLAUDE_SKILL_DIR}/references/job-template.md`
+- `strategy`: the job's chosen strategy name
+- `strategies`: `${CLAUDE_SKILL_DIR}/parts/strategy/references/strategies.md`
+- `fill`: one `"<slot>=<value>"` string per slot
+- `out`: an absolute path in this session's scratchpad, one file per job
+
+`${CLAUDE_SKILL_DIR}` is the base directory this skill was loaded from,
+written as an absolute path. Both paths come from that directory and
+nothing else; the tool accepts them because it is an installed plugin or
+pack root, and rt never guesses skill paths.
+
+It copies `references/job-template.md` verbatim, copies the named strategy
+body verbatim from `parts/strategy/references/strategies.md` into
+`## Method`, and fills the template's literal `<angle-bracket>` slots from
+the `fill` entries; an unfilled marker in the output is a refusal listing
+the leftovers, so nothing is retyped from memory and no slot goes silently
+empty. The `out` path is the brief you hand to the spawn.
+
+**Domain hook -- the Method copy.** Unbound: the assembly as written. A
+bound domain part may supply the `## Method` block itself (its team's
+pipeline skill is the method); then pass `methodFile: <path>` instead of
+`strategy`/`strategies` (they are mutually exclusive), the strategies-file
+slots are not filled, and the report contract is whatever that method skill
+produces. The template's remaining sections still come from the template
+verbatim; the question and report channels never change.
+
+The Method body's `<question-file>`/`<report-file>` slots get pointers to
+the brief's 'Asking the user a question' / 'Publishing a report' sections
+(the draft path is `.superpowers/report-draft.md`). A `<strategies-file>`
+slot gets the absolute path of the strategy bodies file itself:
+`parts/strategy/references/strategies.md` under this skill's directory. A
+`<strategy-skill-file>` slot gets the absolute path of the file carrying
+the strategy TABLE: this skill's own SKILL.md, whose strategy part carries
+it. The strategy skill stays medium-agnostic. Each of these is supplied as
+a `fill` entry.
+
+**Hidden mode.** When the user asks for the herd to stay out of sight
+("invisible", "background", "headless", "don't clutter my UI"), pass
+`hidden: true` to `herd_start`. Every worker pane then lives on the
+daemon's shared background herdr server (session `bg`); the generic pane
+verbs address its panes as `bg:<pane>` refs, exactly as herd surfaces print
+them. Nothing else in this skill changes. To put one worker in front of the
+user, `herd_attend {job, herd}` opens a focused tab in the visible session
+attached to that pane (the user detaches with `ctrl+b q`; close the tab it
+returned afterwards). At wrap-up, offer the Bash command
+`rt herd stop --hidden` (no tool runs it); never run it unprompted. The <!-- mcp-lint: allow -->
+background server is shared: the stop refuses while ANY background claim
+is live (another herd, a runner board, an `agent --bg` pane), naming the
+owners; report the refusal, never work around it.
+
+**The domain-provisioned spawn.** Unbound, `herd_spawn` provisions the tree
+itself (branch `<job>`, disposal `job`). A bound domain part that owns
+provisioning provisions the tree its own way, then spawns in it with this
+Bash line in place of `herd_spawn` (the tool never takes a dir):
+
+```bash
+rt herd spawn --herd <id> --job <job> --brief <path-to-brief.md> --model <model> --dir <its tree> [--effort <effort>] [--account <A>]  # <!-- mcp-lint: allow -->
+```
+
+**Spawn facts.**
+
+- `herd_start {name: <short-name>, repo, hidden?}` runs once per herd; `repo` is the repo's checkout path, identity or label. It returns the herd id, the room, the workspace label, and the subscription id. Every pane the herd creates is a tab in that one workspace; the user's own workspace is never touched.
+- `job` is the job's name (lowercase, `[a-z][a-z0-9_-]{0,31}`); it is also the worker's chat handle and its tab label. `brief` is the absolute `out` path `herd_brief` wrote.
+- `herd_spawn` provisions the tree, launches claude with the brief, signs the worker into the room, accepts the fresh-worktree trust dialog, and records the job.
+- A cold provision, when no on-deck tree is ready, can take minutes; tell the user it is provisioning.
+- **Stagger 4+ spawns**: spawn one, confirm it returned, spawn the next.
+- Agents never work in the user's checkout. Skip isolation only for read-only jobs or when the user explicitly says to work in place. The worker's directory must be a **linked worktree**; `herd_spawn` and a Bash spawn on an rt tree both satisfy this by construction.
 
 If a worker stalls on a rate limit mid-job (the diagnose read shows a
 limit banner): the accounts rules above decide whether to respawn
@@ -145,157 +382,6 @@ fails `branch-attached`. The daemon closes the old pane, reuses the stored
 brief, and relaunches in the same tree. Announce the respawn to the user afterward. With the
 accounts section above empty there is nowhere else to launch; report the
 stall to the user instead.
-
-## the herd contract
-
-Every herd is a row in the rt daemon's registry plus one chat room and one
-gate subscription, all created by `herd_start`. Workers ask through gates
-(`herd_ask`, `herd_milestone`) and the daemon pushes each open gate into
-this session; workers report and the daemon posts lifecycle notices into
-the room, which is also pushed here. You answer gates with `rt gate answer` <!-- mcp-lint: allow -->
-in Bash, you talk to a worker with the `chat_dm` tool
-(`{to: <handle>, body}`), and the daemon records job state as a side effect
-of every call. There is no herd DB, no script, and no background wait.
-`herd_status {herd}` is the whole picture at any moment.
-
-### job.md: assembled by herd_brief
-
-Every brief is assembled by the `herd_brief` tool, never composed. Call
-`herd_brief {job, template, strategy, strategies, fill, out}` with:
-
-- `template`: `${CLAUDE_SKILL_DIR}/references/job-template.md`
-- `strategy`: the job's chosen strategy name
-- `strategies`: `${CLAUDE_SKILL_DIR}/parts/strategy/references/strategies.md`
-- `fill`: one `"<slot>=<value>"` string per slot
-- `out`: an absolute path in this session's scratchpad, one file per job
-
-`${CLAUDE_SKILL_DIR}` is the base directory this skill was loaded from,
-written as an absolute path. Both paths come from that directory and
-nothing else; the tool accepts them because it is an installed plugin or
-pack root, and rt never guesses skill paths.
-
-A refusal that a path is outside every root means the loaded skill dir is
-stale (the plugin updated while this session ran) or a dev checkout. Run
-`/reload-plugins` (in a herdr pane, queue it on yourself with
-`rt pane send self --text "/reload-plugins" --then "Continue: ..."` and end
-the turn), then retry from the reloaded base directory; if it still
-refuses, report the refusal. Never copy the template or the strategies
-file elsewhere to get past it.
-
-It copies `references/job-template.md` verbatim, copies the named
-strategy body verbatim from `parts/strategy/references/strategies.md`
-into `## Method`, and fills the template's literal `<angle-bracket>`
-slots from the `fill` entries; an unfilled marker in the output is an
-error listing the leftovers, so nothing is retyped from memory and no
-slot goes silently empty. The `out` path is the brief you hand to
-`herd_spawn`.
-
-**Domain hook -- the Method copy.** Unbound: the assembly as written. A
-bound domain part may supply the `## Method` block itself (its team's
-pipeline skill is the method); then pass `methodFile: <path>` instead
-of `strategy`/`strategies` (they are mutually exclusive), the
-strategies-file slots are not filled, and the report contract is
-whatever that method skill produces. The template's remaining sections
-still come from the template verbatim -- the question and report
-channels never change.
-
-The Method body's `<question-file>`/`<report-file>` slots get pointers
-to the brief's 'Asking the user a question' / 'Publishing a report'
-sections (the draft path is `.superpowers/report-draft.md`). A
-`<strategies-file>` slot gets the absolute path of the strategy bodies
-file itself: `parts/strategy/references/strategies.md` under this
-skill's directory. A `<strategy-skill-file>` slot gets the absolute
-path of the file carrying the strategy TABLE: this skill's own
-SKILL.md, whose strategy part carries it. The strategy skill stays
-medium-agnostic. Each of these is supplied as a `fill` entry.
-
-## repo conventions travel in the brief
-
-A herd pane is a real `claude` session in a real git worktree: user-level
-plugins, skills, rules, and the repo's tracked conventions (CLAUDE.md,
-AGENTS.md, tracked `.claude/skills/`) load normally. What does NOT
-survive is untracked state -- `node_modules`, `.env`,
-`settings.local.json`, gitignored directories -- and skills fire by
-description match, not by path, so a gate nobody names may never load.
-
-Before writing briefs, collect the repo's development conventions from two places: workflow rules already loaded in your session, and the repo's convention docs (CLAUDE.md, AGENTS.md, CONTRIBUTING or equivalent). This read is orchestration input, not artifact review -- it is permitted; specs, plans, diffs, and code stay off limits.
-
-The `Repo conventions` section contains exactly three things: the gate
-skills that bind this job, named with absolute paths; task A0 for
-untracked state (dependency install, env or secrets sync); and the
-branch name. Everything else a convention says lives in the skill that
-owns it.
-
-- **Branch naming**: the branch is the job name (`herd_spawn` provisions on it); if branches derive from tickets, resolve the ticket first and name the job accordingly, or a provisioning domain part spawns with `--dir` on a tree it named itself (the Bash spawn under step 2). No repo rule = any name; branches that never ship are ephemeral.
-- **Shipping process** (target branch, MR conventions, CI): goes in the integration job's brief, including where shipped work must land if the repo's workflow dictates it.
-
-**Domain hook -- conventions.** Unbound: the three items above. When the
-bound domain part's method skill owns the repo's conventions, the `Repo
-conventions` section names only the branch; gates, process, and evidence
-come from the skill chain the worker loads, and a brief that restates
-them competes with that chain.
-
-## step 1: specify jobs
-
-**Domain hook -- intake.** Unbound: the jobs come from what the user
-hands you; invoked with nothing, ask what to fan out. A bound domain part
-may define a default intake for the empty invocation (a ticket queue, a
-board column) -- follow it and spawn one job per item it yields.
-
-Decompose into independent jobs. Good decomposition:
-
-- Disjoint file ownership per job -- the write fence.
-- Item-coded task lists (A1, A2...) where the strategy produces items, so those reports are checkable at a glance.
-- Each job has a clear deliverable and can run without another job's output. Sequential work (B needs A) spawns B after A's report event arrives.
-- Cap ~6 agents per batch.
-
-Write each brief to the scratchpad, one file per job, with `herd_brief` as above.
-
-**Single-job case:** if decomposition yields exactly one job, push back: tell the user "this is probably not the right skill for this" and do the work yourself, here in the main pane. Never spawn a single pane -- one agent behind a relay is pure overhead. Still create the worktree so the work stays isolated from the user's checkout: call `worktree_provision {repoName, branch: <job>, disposal: "job"}`, then `EnterWorktree` with `path` set to the result's `path`. The delegator rules above don't apply -- work hands-on as normal. A bound domain part may name the one legitimate single-worker exception; apply it.
-
-## step 2: spawn
-
-**Herd start**, once: call `herd_start {name: <short-name>, repo, hidden}`,
-where `repo` is the repo's checkout path, identity or label, and
-`hidden: true` only in hidden mode.
-
-It returns the herd id, the room, the workspace label, and the subscription
-id. Every pane the herd creates is a tab in that one workspace; the user's
-own workspace is never touched.
-
-**Domain hook -- provisioning.** Unbound: `herd_spawn` provisions the
-tree itself (branch `<job>`, disposal `job`). A bound domain part that
-owns provisioning replaces that flow: it provisions the tree its own way,
-then spawns in that tree with this Bash line in place of `herd_spawn`
-(the tool never takes a dir):
-
-```bash
-rt herd spawn --herd <id> --job <job> --brief <path-to-brief.md> --model <model> --dir <its tree> [--effort <effort>] [--account <A>]  # <!-- mcp-lint: allow -->
-```
-
-The error rules below still apply to the call it prescribes.
-
-**Spawn each job**, one call: `herd_spawn {herd, job, brief, model, effort, account}`,
-with `brief` the absolute `out` path `herd_brief` wrote.
-
-`job` is the job's name (lowercase, `[a-z][a-z0-9_-]{0,31}`); it is also
-the worker's chat handle and its tab label. `model` comes from the
-strategy and model question, `effort` from the session default when
-overridden, `account` from the bound accounts skill when the herd is
-account-distributed. The tool provisions the tree, launches claude with the
-brief, signs the worker into the room, accepts the fresh-worktree trust
-dialog, and records the job. A cold provision, when no on-deck tree is
-ready, can take minutes; tell the user it is provisioning. Stagger 4+
-spawns: spawn one, confirm it returned, spawn the next.
-
-Any error from the spawn is reported to the user; never hand-roll a tree,
-a pane, or a launch.
-
-Agents never work in the user's checkout. Skip isolation only for
-read-only jobs or when the user explicitly says to work in place. The
-worker's directory must be a **linked worktree** (what superpowers'
-worktree Step 0 tests); `herd_spawn` and a Bash spawn with `--dir <rt-tree>`
-both satisfy this by construction.
 
 ## what arrives, and what you do
 
