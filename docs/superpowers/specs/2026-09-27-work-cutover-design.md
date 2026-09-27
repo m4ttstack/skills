@@ -96,7 +96,8 @@ Inside the moved files, and nothing beyond this list:
 - `{{verb.path:work-next-<stage>}}` becomes `{{verb.path:stage-<stage>}}`.
 - `{{run-start.flags:work-next}}` becomes `{{run-start.flags:work}}`.
 - `{{include:work-next-gate}}` becomes the gate-protocol and wrap-up-form
-  pair, under the same `## Gates` heading.
+  pair, under the `## Gate protocol` and `## Wrap-up form contract`
+  headings every other gated verb uses.
 - Hold record nodes and off-script edges per decisions 4 and 5, and the
   orchestrator's own-gate wording per decision 6; the orchestrator heading
   becomes `# work -- the pipeline orchestrator` and its graph
