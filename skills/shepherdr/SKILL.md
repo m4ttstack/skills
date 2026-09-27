@@ -9,7 +9,7 @@ metadata:
 
 <!-- compiled by rt skills compile from the sources below; slots pre-resolved; edits here are working-tree drift (rt skills promote) -->
 
-<!-- part: step source=mattstack:shepherdr version=0.25.3 path=attachments/orchestration/shepherdr/SKILL.md lines=15-571 -->
+<!-- part: step source=mattstack:shepherdr version=0.25.3 path=attachments/orchestration/shepherdr/SKILL.md lines=15-572 -->
 
 # shepherdr
 
@@ -413,7 +413,7 @@ gate subscription, all created by `herd_start`. Workers ask through gates
 this session; workers report and the daemon posts lifecycle notices into
 the room, which is also pushed here. You answer gates with `rt gate answer` <!-- mcp-lint: allow -->
 in Bash, you talk to a worker with the `chat_dm` tool
-(`{to: <the job's handleName from herd_status>, body}`), and the daemon
+(`{to: <the job's handle from herd_status>, body}`), and the daemon
 records job state as a side effect
 of every call. There is no herd DB, no script, and no background wait.
 `herd_status {herd}` is the whole picture at any moment.
@@ -541,9 +541,10 @@ with `brief` the absolute `out` path `herd_brief` wrote.
 `job` is the job's name (lowercase, `[a-z][a-z0-9_-]{0,31}`); it is also
 the worker's tab label and chat display name. The spawn mints the worker a
 fresh chat identity under that name, so a job named like an earlier herd's
-never inherits that herd's DMs. `herd_status` shows the job's `handleName`
-(the name to DM; `<job>-2` while another live session holds the job name)
-beside `handle` (the identity id). `model` comes from the
+never inherits that herd's DMs. `herd_status` shows the job's `handle`
+(the identity id, which every tool call takes, `chat_dm`'s `to` included)
+beside `handleName` (the display name people read; `<job>-2` while another
+live session holds the job name). `model` comes from the
 strategy and model question, `effort` from the session default when
 overridden, `account` from the bound accounts skill when the herd is
 account-distributed. The tool provisions the tree, launches claude with the
@@ -662,7 +663,7 @@ rt herd spawn --herd <id> --job review-<job> --brief <review-brief.md> --dir <th
 **The reviewer spawn is this Bash line, never `herd_spawn`:** the tool
 never takes a dir, so it would land the reviewer in a fresh tree instead of
 the job's. Give it a brief that reads the artifact, sends its findings with
-the `chat_dm` tool (`to` = the job's `handleName` from `herd_status`), and
+the `chat_dm` tool (`to` = the job's `handle` from `herd_status`), and
 reports a verdict; the
 daemon closes the reviewer's pane on that report. The job revises and opens
 a fresh milestone gate when it is ready; every round is gate, DM, gate. You
@@ -735,7 +736,7 @@ ask. Either way the hands-on work stays with workers, never with you.
 
 A ruling that invalidates in-flight work, a scope change, or a reviewer's
 findings go to the worker through the `chat_dm` tool, `to` = the
-`handleName` `herd_status` shows for the job. It lands in the worker's context mid-turn
+`handle` `herd_status` shows for the job. It lands in the worker's context mid-turn
 and is on the room record.
 
 If the user redirects scope: one sentence naming the running agents, then the structured-question tool with **Let them finish** (recommended) / **Kill and respawn with the new briefs**; **Hold**. A kill is `herd_close {job, herd}`, then the Bash respawn with the new brief (the tree stays attached after the close, so never `herd_spawn`):
