@@ -41,11 +41,12 @@ digraph ship {
     "Checks pass?" [shape=diamond];
     "Fix rounds = 3?" [shape=diamond];
     "Fix test-first, commit, rerun" [shape=box];
-    "Domain rebases before the push?" [shape=diamond];
+    "Domain rebases, and no rebase finished this pass?" [shape=diamond];
     "git_rebase {tree: <root>, onto: origin/<default>}" [shape=plaintext];
     "Rebase status?" [shape=diamond];
     "Conflict rounds = 3?" [shape=diamond];
     "Resolve the files, then git rebase --continue on Bash" [shape=box];
+    "Continue result?" [shape=diamond];
     "git_push {tree: <root>, setUpstream: true}" [shape=plaintext];
     "git_push result?" [shape=diamond];
     "Retried with the printed root?" [shape=diamond];
@@ -58,20 +59,25 @@ digraph ship {
     "Forge host?" [shape=diamond];
     "mr_for_branch {repoName: <root>, branches: [<branch>]}" [shape=plaintext];
     "Open MR on the branch?" [shape=diamond];
+    "Created once already?" [shape=diamond];
     "mr_create {repoName: <root>, sourceBranch, targetBranch, title, description, draft, squash?, labels?}" [shape=plaintext];
     "mr_create result?" [shape=diamond];
     "mr_update {mrUrl, squash: true}" [shape=plaintext];
     "STOP: GitLab reads and writes go through mr_* tools, never the GitLab CLI" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "gh pr create, draft unless the gate said ready" [shape=plaintext];
+    "gh pr create result?" [shape=diamond];
     "Gate clarify: which forge?" [shape=box];
+    "run_field_set {key: mr, value: <url>, stage: ship}" [shape=plaintext];
     "Capture the AFTER when the domain names one" [shape=box];
+    "AFTER captured, or none named?" [shape=diamond];
+    "AFTER attempts = 3?" [shape=diamond];
     "Files to attach?" [shape=diamond];
     "mr_upload {mrUrl, path} per file; keep each markdown" [shape=plaintext];
+    "mr_view {mrUrl, maxAgeMs: 5000}, or gh pr view <mr> --json title,body on GitHub" [shape=plaintext];
     "Write the title and description" [shape=box];
     "mr_update {mrUrl, title, description}, or gh pr edit on GitHub" [shape=plaintext];
-    "run_field_set {key: mr, value: <url>, stage: ship}" [shape=plaintext];
     "run_stage {action: fail, stage: ship, reason}" [shape=plaintext];
-    "No push: Hold or Abort per the gate part" [shape=doublecircle];
+    "Held per the gate part" [shape=doublecircle];
     "Hand the Go back answer to the orchestrator" [shape=doublecircle];
     "Stage failed" [shape=doublecircle];
     "Ship done: return to the orchestrator" [shape=doublecircle style=filled fillcolor=lightgreen];
@@ -83,26 +89,30 @@ digraph ship {
     "ship answer?" -> "dirty answer?" [label="proceed"];
     "ship answer?" -> "Run the domain steps before the gate (none when unbound)" [label="iterate: redo with their note"];
     "ship answer?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
-    "ship answer?" -> "No push: Hold or Abort per the gate part" [label="hold, or dirty = abort"];
+    "ship answer?" -> "Held per the gate part" [label="hold"];
+    "ship answer?" -> "run_stage {action: fail, stage: ship, reason}" [label="dirty = abort: reason 'aborted at the ship gate'"];
     "dirty answer?" -> "Commit named files, ticket-prefixed subject" [label="commit"];
     "dirty answer?" -> "Stash them; nothing in this stage pops it" [label="stash"];
     "dirty answer?" -> "Run the domain's fast checks (none when unbound)" [label="clean tree"];
     "Commit named files, ticket-prefixed subject" -> "Run the domain's fast checks (none when unbound)";
     "Stash them; nothing in this stage pops it" -> "Run the domain's fast checks (none when unbound)";
     "Run the domain's fast checks (none when unbound)" -> "Checks pass?";
-    "Checks pass?" -> "Domain rebases before the push?" [label="yes"];
+    "Checks pass?" -> "Domain rebases, and no rebase finished this pass?" [label="yes"];
     "Checks pass?" -> "Fix rounds = 3?" [label="no"];
     "Fix rounds = 3?" -> "Fix test-first, commit, rerun" [label="no"];
     "Fix rounds = 3?" -> "Gate ship (table below)" [label="yes: reopen, failing output quoted"];
     "Fix test-first, commit, rerun" -> "Run the domain's fast checks (none when unbound)";
-    "Domain rebases before the push?" -> "git_rebase {tree: <root>, onto: origin/<default>}" [label="yes"];
-    "Domain rebases before the push?" -> "git_push {tree: <root>, setUpstream: true}" [label="no"];
+    "Domain rebases, and no rebase finished this pass?" -> "git_rebase {tree: <root>, onto: origin/<default>}" [label="yes"];
+    "Domain rebases, and no rebase finished this pass?" -> "git_push {tree: <root>, setUpstream: true}" [label="no"];
     "git_rebase {tree: <root>, onto: origin/<default>}" -> "Rebase status?";
     "Rebase status?" -> "git_push {tree: <root>, setUpstream: true}" [label="clean"];
     "Rebase status?" -> "Conflict rounds = 3?" [label="conflict"];
+    "Rebase status?" -> "run_stage {action: fail, stage: ship, reason}" [label="any other error: quote it as the reason"];
     "Conflict rounds = 3?" -> "Resolve the files, then git rebase --continue on Bash" [label="no"];
     "Conflict rounds = 3?" -> "Gate ship (table below)" [label="yes: reopen, conflicted files quoted"];
-    "Resolve the files, then git rebase --continue on Bash" -> "Run the domain's fast checks (none when unbound)";
+    "Resolve the files, then git rebase --continue on Bash" -> "Continue result?";
+    "Continue result?" -> "Conflict rounds = 3?" [label="another commit conflicted"];
+    "Continue result?" -> "Run the domain's fast checks (none when unbound)" [label="rebase finished"];
     "git_push {tree: <root>, setUpstream: true}" -> "git_push result?";
     "git_push {tree: <the root the error prints>, setUpstream: true}" -> "git_push result?";
     "git_push result?" -> "git remote get-url origin" [label="ok"];
@@ -121,22 +131,32 @@ digraph ship {
     "Forge host?" -> "Gate clarify: which forge?" [label="anything else"];
     "Gate clarify: which forge?" -> "Forge host?" [label="answered: the named forge"];
     "mr_for_branch {repoName: <root>, branches: [<branch>]}" -> "Open MR on the branch?";
-    "Open MR on the branch?" -> "Capture the AFTER when the domain names one" [label="yes: keep its url"];
-    "Open MR on the branch?" -> "mr_create {repoName: <root>, sourceBranch, targetBranch, title, description, draft, squash?, labels?}" [label="no"];
+    "Open MR on the branch?" -> "run_field_set {key: mr, value: <url>, stage: ship}" [label="yes: keep its url"];
+    "Open MR on the branch?" -> "Created once already?" [label="no"];
+    "Created once already?" -> "mr_create {repoName: <root>, sourceBranch, targetBranch, title, description, draft, squash?, labels?}" [label="no"];
+    "Created once already?" -> "run_stage {action: fail, stage: ship, reason}" [label="yes: the mr_create error is the reason"];
     "mr_create {repoName: <root>, sourceBranch, targetBranch, title, description, draft, squash?, labels?}" -> "mr_create result?";
-    "mr_create result?" -> "Capture the AFTER when the domain names one" [label="url, squash applied or not asked"];
+    "mr_create result?" -> "run_field_set {key: mr, value: <url>, stage: ship}" [label="url, squash applied or not asked"];
     "mr_create result?" -> "mr_update {mrUrl, squash: true}" [label="squashApplied: false"];
     "mr_create result?" -> "STOP: GitLab reads and writes go through mr_* tools, never the GitLab CLI" [label="error, or url null"];
     "STOP: GitLab reads and writes go through mr_* tools, never the GitLab CLI" -> "mr_for_branch {repoName: <root>, branches: [<branch>]}" [label="read it back; never create twice"];
-    "mr_update {mrUrl, squash: true}" -> "Capture the AFTER when the domain names one";
-    "gh pr create, draft unless the gate said ready" -> "Capture the AFTER when the domain names one";
-    "Capture the AFTER when the domain names one" -> "Files to attach?";
+    "mr_update {mrUrl, squash: true}" -> "run_field_set {key: mr, value: <url>, stage: ship}";
+    "gh pr create, draft unless the gate said ready" -> "gh pr create result?";
+    "gh pr create result?" -> "run_field_set {key: mr, value: <url>, stage: ship}" [label="url printed"];
+    "gh pr create result?" -> "run_field_set {key: mr, value: <url>, stage: ship}" [label="already exists: keep the url it prints"];
+    "gh pr create result?" -> "run_stage {action: fail, stage: ship, reason}" [label="any other error: quote it as the reason"];
+    "run_field_set {key: mr, value: <url>, stage: ship}" -> "Capture the AFTER when the domain names one";
+    "Capture the AFTER when the domain names one" -> "AFTER captured, or none named?";
+    "AFTER captured, or none named?" -> "Files to attach?" [label="yes"];
+    "AFTER captured, or none named?" -> "AFTER attempts = 3?" [label="no: the capture failed"];
+    "AFTER attempts = 3?" -> "Capture the AFTER when the domain names one" [label="no: another attempt"];
+    "AFTER attempts = 3?" -> "Files to attach?" [label="yes: go on without it; the description names the gap"];
     "Files to attach?" -> "mr_upload {mrUrl, path} per file; keep each markdown" [label="yes, GitLab"];
-    "Files to attach?" -> "Write the title and description" [label="no, or GitHub: link the paths"];
-    "mr_upload {mrUrl, path} per file; keep each markdown" -> "Write the title and description";
+    "Files to attach?" -> "mr_view {mrUrl, maxAgeMs: 5000}, or gh pr view <mr> --json title,body on GitHub" [label="no, or GitHub: link the paths"];
+    "mr_upload {mrUrl, path} per file; keep each markdown" -> "mr_view {mrUrl, maxAgeMs: 5000}, or gh pr view <mr> --json title,body on GitHub";
+    "mr_view {mrUrl, maxAgeMs: 5000}, or gh pr view <mr> --json title,body on GitHub" -> "Write the title and description";
     "Write the title and description" -> "mr_update {mrUrl, title, description}, or gh pr edit on GitHub";
-    "mr_update {mrUrl, title, description}, or gh pr edit on GitHub" -> "run_field_set {key: mr, value: <url>, stage: ship}";
-    "run_field_set {key: mr, value: <url>, stage: ship}" -> "Ship done: return to the orchestrator";
+    "mr_update {mrUrl, title, description}, or gh pr edit on GitHub" -> "Ship done: return to the orchestrator";
     "run_stage {action: fail, stage: ship, reason}" -> "Stage failed";
 }
 ```
@@ -162,21 +182,26 @@ counter is fix rounds within this pass through the stage.
 ### Resolve the files, then git rebase --continue on Bash
 
 Resolve each conflicted file `git_rebase` returned, then continue the
-rebase on Bash (no tool continues one). The fast checks run again
-afterwards because the tree changed under them.
+rebase on Bash (no tool continues one). A later commit that conflicts
+counts as another round. Once the rebase finishes, the fast checks run
+again because the tree changed under them, and then the push follows:
+this pass never starts a second rebase.
 
 ### Capture the AFTER when the domain names one
 
-The same view as the BEFORE in `evidence`, on the sha you pushed. Three
-failed attempts go to the off-script gate with what was tried. Unbound,
-there is no AFTER.
+The same view as the BEFORE in `evidence`, on the sha you pushed. The
+counter is attempts within this pass through the stage; after the third
+failure, ship without it and say in the description what was tried.
+Unbound, there is no AFTER.
 
 ### Write the title and description
 
 Title from the ticket or the first commit subject; the body links the
 ticket and every `evidence` entry, with the upload markdown where it
-exists. The domain's title, template and voice rules win over this
-paragraph.
+exists. The update replaces the whole body, so start from the one just
+read back: keep what is already there (evidence the evidence stage
+attached, a teammate's edits) and change only what this stage owns. The
+domain's title, template and voice rules win over this paragraph.
 
 ## What the graph cannot show
 
