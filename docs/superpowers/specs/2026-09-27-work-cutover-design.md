@@ -18,7 +18,7 @@ entries.
    `{{verb.path:stage-<stage>}}` and starts runs with
    `{{run-start.flags:work}}`, so runs record `--work-type work --pipeline
    work`. A pack's `pipelines` key survives only as the stage roster: it
-   must list all eight `stage-*` engines. claimview already lists exactly
+   must list all eight `stage-*` engines. The team pack already lists exactly
    the canonical eight in canonical order, so its `pipelines` block stays
    as it is. A pipeline naming a subset (rt's acme compile fixture: plan,
    implement, ship) fails compile loudly on the first `verb.path` whose
@@ -121,7 +121,7 @@ slots under the same engine names they bind today.
   `UNKNOWN (no base pipelines scanned)` verdict instead of a clean one.
   `plugin/tests/test-resolve-args.sh` requires the standalone
   `attachments/pipeline/watch-ci/scripts/` to match `stage-watch-ci`'s
-  byte for byte, so the new `ci-triage.sh` is copied there too. claimview's
+  byte for byte, so the new `ci-triage.sh` is copied there too. the team pack's
   public `watch-ci` verb changes behavior this way when recompiled.
 - **Work-type choice dropped.** The prose `work` offered a work-type menu
   when a manifest declared several `pipelines` keys. The digraph `work`
@@ -129,7 +129,7 @@ slots under the same engine names they bind today.
 - **Stage allowed-tools union dropped.** rt unions the stage fills'
   allowed-tools into the orchestrator only when its body carries
   `{{pipeline.stages}}`; the digraph `work` declares its own list
-  (`git -C` plus the four ci scripts). claimview is unaffected: its
+  (`git -C` plus the four ci scripts). The team pack is unaffected: its
   compiled prose `work` and compiled `work-next` carry the same five
   entries. A pack whose stage fill declares extra allowed-tools would lose
   them from `work`.
@@ -152,7 +152,7 @@ slots under the same engine names they bind today.
 
 ## Team pack changes (for the shepherd; no ticket ids)
 
-claimview (`packs/claimview/`), in order:
+The team pack (`packs/<team>/`), in order:
 
 1. `pack/stubs.jsonc`: delete the `work-next` verb and the eight
    `work-next-<stage>` verbs. Keep `work` (engine `work`).
@@ -162,10 +162,10 @@ claimview (`packs/claimview/`), in order:
    `pipelines.feature` and every `mattstack:stage-*` binding; their
    domains already match the work-next ones exactly.
 3. `pack/surface.jsonc`: drop `work-next` from `public`.
-4. Per-repo manifest `~/.mattstack/repos/gitlab.com-assured-assured-dev/skills.jsonc`:
+4. Per-repo manifest `~/.mattstack/repos/<repo slug>/skills.jsonc`:
    it carries the eight `mattstack:work-next*` bindings with no provenance
    lines (written by `rt skills bind`). `merge-manifests.sh --repo
-   <assured-dev checkout>` rewrites the whole file from the team fragments
+   <repo checkout>` rewrites the whole file from the team fragments
    plus `~/.mattstack/user/skills/overrides.jsonc` (absent today) and keeps
    nothing from the old file, so regenerating after step 2 clears them; no
    unbind is needed.
@@ -180,7 +180,7 @@ No RED/GREEN rerun. Instead, with a scratch mattstack home whose
 `plugins/mattstack` points at this worktree (after) or at an export of the
 base commit (before):
 
-1. **After.** A scratch copy of the claimview pack with steps 1 to 3 and 5
+1. **After.** A scratch copy of the team pack with steps 1 to 3 and 5
    applied, and a scratch per-repo manifest regenerated from the edited
    fragment by `merge-manifests.sh` (run with `MATTSTACK_HOME` at a
    scratch home holding the edited team zone) and passed explicitly with
