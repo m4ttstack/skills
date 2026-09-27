@@ -24,13 +24,13 @@ review, respond, doctor, shepherdr, ship, watch-ci, sync, release. Use it even
 when simple: a coarse graph still gives the agent its position, labelled exits
 and room to add structure later.
 
-Not for reference skills, style skills, or a short linear procedure with no
-branches (a numbered list reads better).
+Not for reference skills (tables to look things up), style skills (voice), or a
+short linear procedure with no branches (a numbered list reads better).
 
 ## Node vocabulary
 
-The shape carries the meaning; the node text is its identity, never an opaque
-id with a separate `label`.
+The shape carries the meaning. The node's text is its identity: write the
+sentence as the quoted node id, never an opaque id with a separate `label`.
 
 | Shape | Means | Phrase it as |
 | --- | --- | --- |
@@ -133,7 +133,7 @@ nothing moved), hand back (report the refusal to the caller). Record the
 answer with the gate before anything else happens.
 ````
 
-One graph, one section per step; tool calls are the nodes.
+One graph, one section per judgment step, and the tool calls are the nodes.
 
 ## Recipe
 
@@ -198,6 +198,6 @@ Check the spec against every line; each one caught a real graph in review.
 ## Not yet standard
 
 Recording the current node in the run db (a `run_field_set` key `node` at
-stage entry and outward nodes) would let consoles show progress and let a
-re-orientation hook resume at the right node. It costs about 16 writes per
-work run; skip it until adopted as a standard.
+stage entry and at outward nodes) would let consoles show "ship > git_push" and
+a re-orientation hook resume at the right node. It costs about 16 extra writes
+per work run; do not add it until it is adopted as a standard.
