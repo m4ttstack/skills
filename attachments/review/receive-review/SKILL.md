@@ -126,6 +126,7 @@ digraph receive_review {
 
     "Next thread to act on: offered threads, then gate-1: reply rows?" [shape=diamond];
     "post: decided for this thread?" [shape=diamond];
+    "Thread already carries this receive-review run's reply?" [shape=diamond];
     "Forge for the reply?" [shape=diamond];
     "mr_reply_thread {mrUrl, discussionId, body}" [shape=plaintext];
     "mr_reply_thread result?" [shape=diamond];
@@ -303,7 +304,9 @@ digraph receive_review {
 
     "Next thread to act on: offered threads, then gate-1: reply rows?" -> "post: decided for this thread?" [label="next thread; a held row acts on nothing"];
     "Next thread to act on: offered threads, then gate-1: reply rows?" -> "respond-post decided by a gate or a handed post?" [label="threads done"];
-    "post: decided for this thread?" -> "Forge for the reply?" [label="yes"];
+    "post: decided for this thread?" -> "Thread already carries this receive-review run's reply?" [label="yes"];
+    "Thread already carries this receive-review run's reply?" -> "resolve: decided for this thread?" [label="yes: count it posted, never post again"];
+    "Thread already carries this receive-review run's reply?" -> "Forge for the reply?" [label="no: post it"];
     "post: decided for this thread?" -> "resolve: decided for this thread?" [label="no"];
     "Forge for the reply?" -> "mr_reply_thread {mrUrl, discussionId, body}" [label="GitLab"];
     "Forge for the reply?" -> "Post the reply on GitHub with gh" [label="GitHub"];
@@ -788,6 +791,13 @@ it is never offered at a re-asked gate, and it is never posted again,
 whatever the snapshot or the report says of it. Only a thread with no
 such note posts or is offered.
 
+This read answers the test at the post site, Thread already carries this
+receive-review run's reply?, for every thread before its reply posts: yes
+counts the reply posted and goes on to the thread's resolve decision,
+never posting it again; no posts it. Never assume the answer: it comes
+from the notes read here. With no resume and no re-ask, nothing from this
+run has posted yet, so every thread answers no.
+
 The ask that follows a respond-post hold, once it lifts, or an iteration,
 once it is applied, is a NEW gate (gate-protocol's Closed gates, Hold /
 Iterate), its open rebuilt from the report rows minus every thread already
@@ -805,7 +815,8 @@ retired-shape `post` decides it (Acting on respond-post, below). A `skip`
 row, and a `fix` row whose Fixed reply was never finalized, post nothing.
 
 - **No thread offered** (no finalized fix and no override) **and no
-  caller-handed `post`**: post the `gate-1: reply` rows now. There is no
+  caller-handed `post`**: post the `gate-1: reply` rows now, each one
+  not already carrying this run's reply (Posted already). There is no
   respond-post gate and no respond-post record: open nothing, record
   nothing for this scope (the respond-plan record covers those replies),
   and close. A caller that owns the gates gets no open file back, only
@@ -1014,7 +1025,8 @@ proceeds, or a caller hands `post`, and before acting on those rows:
 **Acting on respond-post.** Act only once respond-post proceeds: its
 `next` answer is `proceed`, or a caller handed `post`, which carries no
 `next`. A `hold` or `iterate` answer decides nothing (Decide nothing at
-respond-post).
+respond-post). A thread that already carries this run's reply (Posted
+already) never posts again, whatever its pick or its row says.
 
 On proceed, act per thread, reading each `thread-<n>` answer (a `{value,
 note, text}` object unwraps to its `value`; the note rides the decision
@@ -1025,8 +1037,8 @@ thread's reply, which is the answer's `text` when it carries one and the
 posts nothing); `resolve:<threadId>` resolves the thread, after its reply
 when both are picked and on its own when only resolve is, where the forge
 distinguishes resolve from reply; an empty array leaves the thread
-untouched. Then post every `gate-1: reply` row, its row's reply,
-unresolved: this gate never offers those threads, so they post whatever
+untouched. Then post every `gate-1: reply` row that does not already
+carry this run's reply, its row's reply, unresolved: this gate never offers those threads, so they post whatever
 it picked for its own threads. When the open offers such a thread, or an
 answer value names it (an open built before this rule), that thread's
 answer decides it instead, an empty array included, and no reply posts
