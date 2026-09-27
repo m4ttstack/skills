@@ -616,7 +616,9 @@ digraph shepherdr_lanes {
 
     "Trigger: a job's report, or a nag about a done job's open pane" [shape=ellipse];
     "rt_verb {args: [git, log], cwd: <worktree>}" [shape=plaintext];
-    "cd <tree> as its own Bash call, then bare git diff --stat, per active job" [shape=plaintext];
+    "cd <an active job's tree>" [shape=plaintext];
+    "git diff --stat" [shape=plaintext];
+    "More active job trees to diff?" [shape=diamond];
     "Drift outside the fence, or a file two jobs changed?" [shape=diamond];
     "Flag the drift or collision to the user" [shape=box];
     "Relay only what you measured" [shape=box];
@@ -657,8 +659,11 @@ digraph shepherdr_lanes {
     "Herd wrapped up" [shape=doublecircle style=filled fillcolor=lightgreen];
 
     "Trigger: a job's report, or a nag about a done job's open pane" -> "rt_verb {args: [git, log], cwd: <worktree>}";
-    "rt_verb {args: [git, log], cwd: <worktree>}" -> "cd <tree> as its own Bash call, then bare git diff --stat, per active job";
-    "cd <tree> as its own Bash call, then bare git diff --stat, per active job" -> "Drift outside the fence, or a file two jobs changed?";
+    "rt_verb {args: [git, log], cwd: <worktree>}" -> "cd <an active job's tree>";
+    "cd <an active job's tree>" -> "git diff --stat";
+    "git diff --stat" -> "More active job trees to diff?";
+    "More active job trees to diff?" -> "cd <an active job's tree>" [label="yes: the next one, the reporting job's first"];
+    "More active job trees to diff?" -> "Drift outside the fence, or a file two jobs changed?" [label="no"];
     "Drift outside the fence, or a file two jobs changed?" -> "Flag the drift or collision to the user" [label="yes"];
     "Drift outside the fence, or a file two jobs changed?" -> "Relay only what you measured" [label="no"];
     "Flag the drift or collision to the user" -> "Relay only what you measured";
@@ -769,9 +774,10 @@ The stop calls before this step cover every job in the dispose list plus every
 job whose pane is closing. Their `repoName` is the herd's repo, and their
 `tree` is the job's `tree` field from `herd_status`, a registry name, never a
 path. A null tree (a job spawned in a given dir) is skipped unless that dir is
-an rt tree; then pass the name `rt_verb {args: ["worktree", "list", "--repo",
-"<the herd's repo>"]}` prints for it. They run before `herd_wrap_up` because a
-disposed tree leaves rt's registry and the call then fails.
+an rt tree; then pass the name
+`rt_verb {args: ["worktree", "list", "--repo", "<the herd's repo>"]}` prints for it.
+They run before `herd_wrap_up` because a disposed tree leaves rt's registry
+and the call then fails.
 
 `not-held` means rt has no recorded hold on the tree, not that nothing runs
 there: rt records a hold only after the tree's MR merges or closes with a
@@ -791,7 +797,7 @@ the Bash command `rt herd stop --hidden` (no tool runs it); never run it unpromp
 
 ## What the lanes graph cannot show
 
-- **The two objective checks.** The commits come from the graph's `rt_verb` git log call on the job's worktree. For the changed files, `cd <worktree>` as its own Bash call, then the bare `git diff --stat`, for the reporting job and every other active job; compare against the write fence and across jobs.
+- **The two objective checks.** The commits come from the graph's `rt_verb` git log call on the job's worktree. The changed files come from two separate Bash calls per active job: the `cd` alone, then the bare `git diff --stat`; never chain them. Compare each job's files against its write fence and across jobs.
 - **Job state is the daemon's.** It marked the job `done` when the report was published; `herd_status` is the status table's source. Nothing to record by hand.
 - **A report is a claim, not a merge.** Answer "Merged on the repo?" from the repo itself (`gh pr view --json state,mergeCommit`, or the sha on `origin/main`), never from the report alone.
 - **The integration job.** Its brief merges or cherry-picks the job branches, runs full verification, and reports; it carries the repo's shipping conventions. Never merge, fix or push on the agents' behalf.
