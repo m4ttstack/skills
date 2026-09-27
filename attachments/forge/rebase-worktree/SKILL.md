@@ -67,6 +67,7 @@ digraph rebase_worktree {
     "Gate conflict:rebase-worktree:<attempt>" [shape=box];
     "conflict answer?" [shape=diamond];
     "git_rebase {tree, abort: true}" [shape=plaintext];
+    "Abort succeeded?" [shape=diamond];
     "git -C <tree> status" [shape=plaintext];
     "Still mid-rebase?" [shape=diamond];
     "Conflict attempts = 3?" [shape=diamond];
@@ -101,6 +102,7 @@ digraph rebase_worktree {
     "Handed back: conflicted files named" [shape=doublecircle];
     "Left mid-rebase for the human" [shape=doublecircle];
     "Aborted" [shape=doublecircle];
+    "Abort failed: error reported, tree left for the human" [shape=doublecircle];
     "Rebase aborted in the human's pane: reported" [shape=doublecircle];
     "Handed back: push to decide" [shape=doublecircle];
     "Rebased, left unpushed" [shape=doublecircle];
@@ -173,7 +175,9 @@ digraph rebase_worktree {
     "conflict answer?" -> "git_rebase {tree, abort: true}" [label="abort"];
     "conflict answer?" -> "Held: end the turn naming the gate" [label="hold"];
     "conflict answer?" -> "git -C <tree> status" [label="iterate: the human worked in their pane"];
-    "git_rebase {tree, abort: true}" -> "Aborted";
+    "git_rebase {tree, abort: true}" -> "Abort succeeded?";
+    "Abort succeeded?" -> "Aborted" [label="yes"];
+    "Abort succeeded?" -> "Abort failed: error reported, tree left for the human" [label="no"];
     "git -C <tree> status" -> "Still mid-rebase?";
     "Still mid-rebase?" -> "Conflict attempts = 3?" [label="yes"];
     "Still mid-rebase?" -> "git -C <tree> log -1 --oneline HEAD" [label="no"];
@@ -201,6 +205,7 @@ digraph rebase_worktree {
     "git_push result?" -> "Rebased, push refused: reported" [label="safety refusal: lease, protected or default branch, detached HEAD, upstream mismatch"];
     "git_push result?" -> "Push retried once?" [label="tree must be the absolute path of the root"];
     "git_push result?" -> "STOP: push only with git_push" [label="not registered with rt"];
+    "git_push result?" -> "Rebased, push refused: reported" [label="any other error"];
     "Push retried once?" -> "git_push {tree: <the root the error prints>, forceWithLease: true}" [label="no"];
     "Push retried once?" -> "STOP: push only with git_push" [label="yes"];
     "STOP: push only with git_push" -> "Off-script gate";
@@ -260,7 +265,8 @@ else does:
 ### Apply the child and parent checks
 
 A single-branch rebase is legal only when the branch is stack-free in both
-directions. On GitLab both checks read the one `mr_list` result; on GitHub
+directions. On GitLab both checks read the one `mr_list` result
+(`mr_for_branch` takes no `maxAgeMs`, so it is not used here); on GitHub
 they read the two `gh` results.
 
 - **Child check:** the branch's open MR or PR (GitLab: the row whose
@@ -291,9 +297,9 @@ never improvise a multi-branch rebase here.
 
 ### Gate conflict:rebase-worktree:<attempt>
 
-One sentence listing the conflicted files (the bundle's `unresolvedFiles`,
-the files `git_rebase` returned, or the `UU` and similar rows of
-`git -C <tree> status --porcelain`). That sentence is also the hand-back
+Scope `conflict:rebase-worktree:<attempt>`. One sentence listing the
+conflicted files (the bundle's `unresolvedFiles`, the files `git_rebase`
+returned, or the `UU` and similar rows of `git -C <tree> status --porcelain`). That sentence is also the hand-back
 when a caller composes this per branch.
 
 `<attempt>` counts from 1. The questions, each its own question (never
@@ -318,8 +324,10 @@ reads: the one before `branch_sync`, and the same read once the rebase
 finished (the `HEAD` read already made it after an iterate). The line ends
 "already current; nothing pushed" when the heads match, or "pushed by
 branch_sync" when `branch_sync` moved it. Carry any "stack check covered
-<scope> only" caveat on the line. When a caller composes this per branch,
-this line is what goes back.
+<scope> only" caveat on the line. On the manual path, also show the
+`origin/<default>..HEAD` commits: what's about to replay, not just what
+replayed. When a caller composes this per branch, this line is what goes
+back.
 
 ### Gate push
 
@@ -333,6 +341,8 @@ queue):
 - `next`: **Proceed** / **Iterate here** / **Hold**
 
 Selection `{"push":true|false,"next":"proceed|iterate|hold","note":"<their words or null>"}`.
+Any other `git_push` error is reported with its text; the rebase stands
+unpushed.
 
 {{include:spawned-no-run-guard}}
 
@@ -345,8 +355,8 @@ Selection `{"push":true|false,"next":"proceed|iterate|hold","note":"<their words
 
 ### Off-script gate
 
-Scope `off-script:<run.current_stage>:<n>`, `n` counting from 1 within
-this attempt; with no run, the in-pane form per the gate steps. The
+Scope `off-script:<run.current_stage>:<n>`, `n` counting from 1 per
+rebase-worktree invocation; with no run, per the gate steps. The
 context sentence quotes the `git_push` refusal. The questions, each its
 own question:
 
@@ -366,6 +376,7 @@ node; a failure is reported, never a second off-script gate.
 ## What the graph cannot show
 
 - The two "caller composing per branch?" diamonds are yes when the invoking verb said it composes this as its per-branch step (sync-open-mrs does).
+- **Handed back: conflicted files named** is one sentence listing the conflicted files, drawn as in **Gate conflict:rebase-worktree:<attempt>**.
 - "Head still the old head?" yes means the human aborted in their pane, never "already current".
 - A mechanical `git_push` refusal is one of "tree must be the absolute path of the root" (retry once with the printed root) or "not registered with rt" (no retry).
 - Never push unasked.
