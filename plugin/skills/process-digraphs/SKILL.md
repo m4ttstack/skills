@@ -130,10 +130,10 @@ digraph hotfix_push {
 ### Open the off-script gate: push refused
 
 Quote the refusal and offer four answers: take (the human pushed), iterate
-(retry `git_push` without resetting the push attempt count, so a second
-refusal returns here), hold (end the turn with nothing moved), hand back
-(report the refusal to the caller). Record the answer with the gate before
-anything else happens.
+(pass `Off-script rounds = 2?`, then retry `git_push`; the push attempt
+count is not reset, so a second refusal returns here), hold (end the turn
+with nothing moved), hand back (report the refusal to the caller). Record
+the answer with the gate before anything else happens.
 ````
 
 One graph, one section per judgment step, and the tool calls are the nodes.
