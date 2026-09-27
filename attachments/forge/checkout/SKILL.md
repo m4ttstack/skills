@@ -167,7 +167,9 @@ questions, each its own question:
 
 Selection `{"move":"<the move>","why":"<the refusal>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`.
 **Iterate here** means the human fixed the cause (started the daemon,
-registered the repo) and wants `worktree_provision` retried. A plain-git
+registered the repo) and wants `worktree_provision` retried. The proposed
+move is one plain-git worktree for the branch at a path the value names;
+retrying the refused tool is **Iterate here**, never **Take**. A plain-git
 worktree is a move only the human's **Take** can authorize; never make one
 on any other answer. **Provision refused: reported** quotes the
 `worktree_provision` error.
