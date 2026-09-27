@@ -98,7 +98,7 @@ digraph receive_review {
     "Forge for the posted-already read?" [shape=diamond];
     "mr_threads {mrUrl, refresh: true} for the posted-already read" [shape=plaintext];
     "Read the PR's threads with gh for the posted-already test" [shape=box];
-    "Posted-already read returned every thread's notes?" [shape=diamond];
+    "Which threads does the posted-already read show carrying this run's reply?" [shape=diamond];
     "Resuming a respond-post record that carries held?" [shape=diamond];
     "Any thread offered (a finalized fix or an override)?" [shape=diamond];
     "Nothing offered: caller handed a respond-post decision?" [shape=diamond];
@@ -268,10 +268,11 @@ digraph receive_review {
     "Posted already: read each thread on the forge" -> "Forge for the posted-already read?";
     "Forge for the posted-already read?" -> "mr_threads {mrUrl, refresh: true} for the posted-already read" [label="GitLab"];
     "Forge for the posted-already read?" -> "Read the PR's threads with gh for the posted-already test" [label="GitHub"];
-    "mr_threads {mrUrl, refresh: true} for the posted-already read" -> "Posted-already read returned every thread's notes?";
-    "Read the PR's threads with gh for the posted-already test" -> "Posted-already read returned every thread's notes?";
-    "Posted-already read returned every thread's notes?" -> "Resuming a respond-post record that carries held?" [label="yes: test each thread from those notes"];
-    "Posted-already read returned every thread's notes?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="no, or an error: hold, the error verbatim"];
+    "mr_threads {mrUrl, refresh: true} for the posted-already read" -> "Which threads does the posted-already read show carrying this run's reply?";
+    "Read the PR's threads with gh for the posted-already test" -> "Which threads does the posted-already read show carrying this run's reply?";
+    "Which threads does the posted-already read show carrying this run's reply?" -> "Resuming a respond-post record that carries held?" [label="none: every thread due still posts or is offered"];
+    "Which threads does the posted-already read show carrying this run's reply?" -> "Resuming a respond-post record that carries held?" [label="some or all: count those posted, never post or offer them again"];
+    "Which threads does the posted-already read show carrying this run's reply?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="no result, or an error: hold, the error verbatim"];
     "Resuming a respond-post record that carries held?" -> "Picks post or resolve a gate-1: fix row?" [label="yes: act on the held threads only"];
     "Resuming a respond-post record that carries held?" -> "Any thread offered (a finalized fix or an override)?" [label="no, or a held override has no recorded text: offer it again"];
     "Any thread offered (a finalized fix or an override)?" -> "Nothing offered: caller handed a respond-post decision?" [label="no"];
@@ -860,9 +861,14 @@ such note posts or is offered.
 This read is made here, after the report rows, every time the graph
 reaches this box: `mr_threads {mrUrl, refresh: true} for the posted-already read` on GitLab, Read the PR's threads with gh for the posted-already test on GitHub. A read made earlier
 in the run, for a redraft or at the start, never stands in for it; its
-result, and only its result, is what the post-site test uses. With no
-result (an error, or a thread whose notes did not come back), nothing
-posts and nothing is offered: the run holds, with the error verbatim.
+result, and only its result, is what the post-site test uses. Write the
+verdict down here, one line per thread, from the notes this read
+returned, before anything is offered or posted: the thread, then
+`posted` (naming the note that shows it) or `not posted`. Threads it
+shows carrying this run's reply are counted posted and drop out of every
+post and offer; the rest still post or are offered. With no result (an
+error, or a thread whose notes did not come back), nothing posts and
+nothing is offered: the run holds, with the error verbatim.
 
 The ask that follows a respond-post hold, once it lifts, or an iteration,
 once it is applied, is a NEW gate (gate-protocol's Closed gates, Hold /
