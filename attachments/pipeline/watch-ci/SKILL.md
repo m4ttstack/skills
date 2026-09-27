@@ -178,6 +178,7 @@ digraph watch_ci {
     "ci_watch state (watch-ci)?" [shape=diamond];
     "STOP: GitLab CI watches go through ci_watch, reads through mr_job_trace, retries through mr_retry" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Watch calls = 9 (watch-ci)?" [shape=diamond];
+    "Re-claims after a lost lease = 2 (watch-ci)?" [shape=diamond];
     "Verify the branch was pushed" [shape=box];
     "Fixed the ci_watch call once already (watch-ci)?" [shape=diamond];
     "Fix what the ci_watch error names" [shape=box];
@@ -310,7 +311,10 @@ digraph watch_ci {
     "ci_watch state (watch-ci)?" -> "Own run (watch-ci green)?" [label="success or success_with_warnings"];
     "ci_watch state (watch-ci)?" -> "Triage with what (watch-ci)?" [label="failed"];
     "ci_watch state (watch-ci)?" -> "watch-ci gate ci" [label="canceled, skipped, manual, superseded or aborted"];
-    "ci_watch state (watch-ci)?" -> "STOP: while another attendant holds the lease, every commit, push and retry is theirs" [label="lease_lost"];
+    "ci_watch state (watch-ci)?" -> "STOP: while another attendant holds the lease, every commit, push and retry is theirs" [label="lease_lost, holder named"];
+    "ci_watch state (watch-ci)?" -> "Re-claims after a lost lease = 2 (watch-ci)?" [label="lease_lost, no holder: no lease held"];
+    "Re-claims after a lost lease = 2 (watch-ci)?" -> "ci_lease_claim {mrUrl, branch}" [label="no: claim it again"];
+    "Re-claims after a lost lease = 2 (watch-ci)?" -> "watch-ci gate ci" [label="yes: the lease keeps vanishing"];
     "ci_watch state (watch-ci)?" -> "Fixed the ci_watch call once already (watch-ci)?" [label="tool error"];
     "ci_watch state (watch-ci)?" -> "STOP: GitLab CI watches go through ci_watch, reads through mr_job_trace, retries through mr_retry" [label="tempted to watch with a script or the GitLab CLI"];
     "STOP: GitLab CI watches go through ci_watch, reads through mr_job_trace, retries through mr_retry" -> "ci_watch {repoName: <root>, iid, sha, priorPipelineId?}";
@@ -340,6 +344,7 @@ digraph watch_ci {
     "Heartbeat result (GitHub poll)?" -> "sleep 60 as a background Bash task (GitHub poll)" [label="ok: true"];
     "Heartbeat result (GitHub poll)?" -> "STOP: while another attendant holds the lease, every commit, push and retry is theirs" [label="lost"];
     "Heartbeat result (GitHub poll)?" -> "ci_lease_claim {mrUrl, branch}" [label="none: claim it again"];
+    "Heartbeat result (GitHub poll)?" -> "watch-ci gate ci" [label="tool error"];
     "sleep 60 as a background Bash task (GitHub poll)" -> "gh pr checks <mr> (poll)";
     "gh pr view <mr> --json headRefOid (sha guard, GitHub poll)" -> "Checks are for the watched sha (GitHub poll)?";
     "Checks are for the watched sha (GitHub poll)?" -> "Checks passed or failed (GitHub poll)?" [label="yes"];
@@ -414,6 +419,7 @@ digraph watch_ci {
     "Heartbeat result (during the fix)?" -> "Fix the REAL failure, commit" [label="ok: true"];
     "Heartbeat result (during the fix)?" -> "STOP: while another attendant holds the lease, every commit, push and retry is theirs" [label="lost"];
     "Heartbeat result (during the fix)?" -> "ci_lease_claim {mrUrl, branch} (before the fix)" [label="none: claim it again"];
+    "Heartbeat result (during the fix)?" -> "watch-ci gate ci" [label="tool error"];
     "watch-ci off-script gate: ci_lease_claim refused" -> "watch-ci off-script answer (ci_lease_claim)?";
     "watch-ci off-script answer (ci_lease_claim)?" -> "Was a lease claimed (watch-ci exit)?" [label="take: the human attends the MR"];
     "watch-ci off-script answer (ci_lease_claim)?" -> "Off-script rounds = 2 (ci_lease_claim)?" [label="iterate: the human fixed it"];
@@ -517,6 +523,9 @@ the `git remote get-url origin` line as the context.
 `ci_lease_claim` refused its input. Correct what the error names (`mrUrl`
 must be the MR's or PR's https URL, `.../-/merge_requests/<iid>` or
 `.../pull/<n>`; `branch` the MR's source branch) and claim again, once.
+An error that names none of these inputs (no session id, for example) has
+nothing to correct: claim again unchanged, once, and the off-script gate
+follows.
 
 ### watch-ci off-script gate: ci_lease_claim refused
 
@@ -624,7 +633,8 @@ stays draft.
 
 Red, timeout, no pipeline, or no pipeline for the pushed HEAD. Scope
 `ci:<stage>:<attempt>`. One sentence above the form: the verdict and a
-one-line triage per blocking failure.
+one-line triage per blocking failure. A `ci_lease_heartbeat` tool error
+also reaches it, quoted in the sentence above the form.
 
 | Question | Options (recommended first) | Shown when |
 |---|---|---|
@@ -698,9 +708,11 @@ watch-ci stage, or the board's doctor. The `ci_lease_*` tools own the
 lease; the owner is this session, so any other fresh lease (a doctor or
 another watch-ci session) refuses the claim. `ci_watch` heartbeats on every
 poll and returns `lease_lost` the moment someone else holds the MR; the
-GitHub poll and a long fix heartbeat with `ci_lease_heartbeat`. A lease
-with no heartbeat goes stale after 10 minutes and may then be taken over,
-so re-claim before every repair (the fix itself, a push, a retry). A
+GitHub poll and a long fix heartbeat with `ci_lease_heartbeat`. A
+`lease_lost` with no `holder` means no lease is held at all (its `next`
+says to claim first): claim again, twice at most, never a stand-down. A
+lease with no heartbeat goes stale after 10 minutes and may then be taken
+over, so re-claim before every repair (the fix itself, a push, a retry). A
 crashed session needs no cleanup. Every exit that leaves the MR unattended
 releases it with `ci_lease_release`; the stand-down never touches it,
 because that lease is someone else's.

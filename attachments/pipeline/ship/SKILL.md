@@ -481,12 +481,12 @@ pipeline id. The prior id is read only when the push moves the branch (the
 open MR's sha from `mr_for_branch` differs from `git rev-parse HEAD`), so
 `ci_watch` can tell the new pipeline from the old one: watch-ci passes the
 number `N` of that `gitlab:pipeline:N` as `priorPipelineId`. With no prior
-id handed over, `ci_watch` matches on the sha alone. It hands back its
-verdict (after its `ci` gate when red),
-an off-script answer, a failure, a stand-down, or a hold. A stand-down means
-the doctor holds the MR's lease: an own run closes `done`, since the MR
-exists, and the report says the doctor has it; an inherited run hands the
-stand-down back.
+id handed over, `ci_watch` matches on the sha, or on a merged-results
+pipeline's merge commit parents. It hands back its verdict (after its `ci`
+gate when red), an off-script answer, a failure, a stand-down, or a hold. A
+stand-down means another attendant (the doctor or another watch-ci session)
+holds the MR's lease: an own run closes `done`, since the MR exists, and the
+report names the holder; an inherited run hands the stand-down back.
 
 ### ship gate mark-ready
 
