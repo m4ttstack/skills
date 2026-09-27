@@ -232,9 +232,11 @@ digraph self_review {
 No run of yours exists yet, so this gate is the structured-question tool
 in the pane. One sentence naming each candidate's `spawned_by`,
 `started_at` and `current_stage`, then one **Resume** option per candidate
-(recommended for a run this session started earlier; a run another live
-pane owns is not yours), **Start fresh**, **Hold**. A surface-launched pane
-never reaches this gate: another pane's live run is not yours to resume.
+this pane may take, a run this session started earlier (recommended) or
+one no live pane owns; a run another live pane owns gets no Resume
+option, named unavailable, then **Start fresh**, **Hold**. A
+surface-launched pane never reaches this gate: another pane's live run is
+not yours to resume.
 Resume: your `runDb` is `<home>/.mattstack/runs/<repo>/<its id>/state.db`
 (the candidate row's `id`, the home directory written out, never `~`). Hold
 here records nothing (no run has started or been resumed to record it
