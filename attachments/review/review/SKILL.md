@@ -84,7 +84,9 @@ digraph review {
     "git fetch origin <targetBranch> +refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>" [shape=plaintext];
     "git diff origin/<targetBranch>...origin/mr-<iid>" [shape=plaintext];
     "MR-head checkout in hand for the review checks?" [shape=diamond];
-    "STOP: never create a checkout for the review; dispatch with the checks noted as not run" [shape=octagon style=filled fillcolor=red fontcolor=white];
+    "worktree_provision {repoName, branch: <source branch>} for the review head" [shape=plaintext];
+    "Review head worktree_provision returned a path?" [shape=diamond];
+    "STOP: create a review checkout only with worktree_provision" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Set up for the review depth" [shape=box];
     "Dispatch the fresh reviewer; it forms the findings" [shape=box];
     "Assemble the review draft" [shape=box];
@@ -211,9 +213,12 @@ digraph review {
     "gh pr diff <ref>" -> "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>";
     "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>" -> "MR-head checkout in hand for the review checks?";
     "MR-head checkout in hand for the review checks?" -> "Set up for the review depth" [label="yes, or read depth"];
-    "MR-head checkout in hand for the review checks?" -> "Dispatch the fresh reviewer; it forms the findings" [label="no: the checks are noted as not run"];
-    "MR-head checkout in hand for the review checks?" -> "STOP: never create a checkout for the review; dispatch with the checks noted as not run" [label="tempted to create one"];
-    "STOP: never create a checkout for the review; dispatch with the checks noted as not run" -> "Dispatch the fresh reviewer; it forms the findings";
+    "MR-head checkout in hand for the review checks?" -> "worktree_provision {repoName, branch: <source branch>} for the review head" [label="no: verify or repro depth"];
+    "MR-head checkout in hand for the review checks?" -> "STOP: create a review checkout only with worktree_provision" [label="tempted to create one by hand"];
+    "STOP: create a review checkout only with worktree_provision" -> "worktree_provision {repoName, branch: <source branch>} for the review head";
+    "worktree_provision {repoName, branch: <source branch>} for the review head" -> "Review head worktree_provision returned a path?";
+    "Review head worktree_provision returned a path?" -> "Set up for the review depth" [label="yes: run the checks in that path"];
+    "Review head worktree_provision returned a path?" -> "Dispatch the fresh reviewer; it forms the findings" [label="no: refused; the checks are noted as not run"];
     "Set up for the review depth" -> "Dispatch the fresh reviewer; it forms the findings";
     "Dispatch the fresh reviewer; it forms the findings" -> "Assemble the review draft";
     "Assemble the review draft" -> "Verify each blocking finding against the MR head";
@@ -370,19 +375,23 @@ resolving it returned (title, description, changed files).
 
 ### MR-head checkout in hand for the review checks?
 
-In hand means a checkout already at the MR head: the one a caller handed,
-or this pane's own tree when it sits at the MR head. At `read` depth
-nothing runs, so take the yes edge. The review never creates one; that is
-the caller's job. With none in hand, the setup checks and the verify
-step's command check are noted as not run, and the anchor and quote
-decide.
+In hand means a checkout already at the MR head: one a caller handed, or
+this pane's own tree when it sits at the MR head. At `read` depth nothing
+runs, so take the yes edge. At `verify` or `repro` depth with none in
+hand, provision one with `worktree_provision` (`repoName` = this
+checkout's path, `branch` = the MR's or PR's source branch) and run every
+check in the path it returns; never change this pane's own directory for
+it. The tree keeps rt's default disposal, so rt disposes it once the MR
+merges; the review never disposes it by hand. A refusal is quoted in the
+setup observations, and the setup checks and the verify step's command
+check are noted as not run.
 
 ### Set up for the review depth
 
 The review flow's "Set up for the depth". The GitLab fetch and diff above
 are two separate commands, `targetBranch` from the live `mr_view`. Run
-the checks the depth names in that checkout. Record every command and its
-result.
+the checks the depth names in the MR-head checkout (the one in hand or
+the one provisioned). Record every command and its result.
 
 ### Dispatch the fresh reviewer; it forms the findings
 
@@ -408,9 +417,9 @@ Check each blocking finding's facts, never its reasoning:
   checked on its quote and command only.
 - **Quote:** code the finding quotes appears at or near that line.
 - **Command:** a command the finding names (a test, a script) re-runs only
-  in the MR-head checkout the graph found in hand; with none, skip it and
-  note it. A command that passes where the finding says it fails is a
-  failed check.
+  in the MR-head checkout (in hand or provisioned); with none, skip it and
+  note it; at `read` depth note "not run at read depth". A command that
+  passes where the finding says it fails is a failed check.
 
 A round counts each time this step runs, whether the first pass or a
 re-dispatch.
