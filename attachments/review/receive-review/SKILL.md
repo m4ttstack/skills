@@ -272,7 +272,7 @@ digraph receive_review {
     "Read the PR's threads with gh for the posted-already test" -> "Which threads does the posted-already read show carrying this run's reply?";
     "Which threads does the posted-already read show carrying this run's reply?" -> "Resuming a respond-post record that carries held?" [label="none: every thread due still posts or is offered"];
     "Which threads does the posted-already read show carrying this run's reply?" -> "Resuming a respond-post record that carries held?" [label="some or all: count those posted, never post or offer them again"];
-    "Which threads does the posted-already read show carrying this run's reply?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="no result, or an error: hold, the error verbatim"];
+    "Which threads does the posted-already read show carrying this run's reply?" -> "run_field_set {key: hold, value: held, stage: <stage>}" [label="no result, or an error: hold, the error verbatim"];
     "Resuming a respond-post record that carries held?" -> "Picks post or resolve a gate-1: fix row?" [label="yes: act on the held threads only"];
     "Resuming a respond-post record that carries held?" -> "Any thread offered (a finalized fix or an override)?" [label="no, or a held override has no recorded text: offer it again"];
     "Any thread offered (a finalized fix or an override)?" -> "Nothing offered: caller handed a respond-post decision?" [label="no"];
@@ -418,9 +418,12 @@ before the turn ends: `run_decision` with `contract: "gate@1"`, `scope:
 `decidedBy: <the answer's by>`, then `run_field_set` with `key: "hold"`,
 `value: "<their words, or held>"`, `stage: <stage>`. A thread hold is
 the other case: threads left held (a failed push, or a forge-refusal Hold
-that holds only its thread) record no `hold:<stage>:<attempt>` decision,
-only their `"held"` entry, and set `run_field_set` with `key:
-"hold"`, `value: "held"`, `stage: <stage>` before the turn ends. The
+that holds only its thread) and a posted-already read that returned no
+result or an error record no `hold:<stage>:<attempt>` decision (held
+threads keep their `"held"` entry), and set `run_field_set` with `key:
+"hold"`, `value: "held"`, `stage: <stage>` before the turn ends. A read
+error is reported verbatim (to the caller when it owns the gates), the
+run stays open, and a resume retries the read. The
 clarify Hold comes before any run and records nothing. A resume clears
 the field.
 
@@ -874,7 +877,10 @@ the snapshot or the report. Threads it shows carrying this run's reply
 are counted posted and drop out of every
 post and offer; the rest still post or are offered. With no result (an
 error, or a thread whose notes did not come back), nothing posts and
-nothing is offered: the run holds, with the error verbatim.
+nothing is offered: the run holds. No gate answered, so there is no
+`hold:<stage>:<attempt>` decision: set `hold` to `held`, report the
+error verbatim (to the caller when it owns the gates), and leave the run
+open. A resume retries the read.
 
 The ask that follows a respond-post hold, once it lifts, or an iteration,
 once it is applied, is a NEW gate (gate-protocol's Closed gates, Hold /
