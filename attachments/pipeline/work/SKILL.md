@@ -88,6 +88,8 @@ digraph work {
         "run_field_set {key: <each produce from <to> on>, value: -}" [shape=plaintext];
     }
 
+    "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}" [shape=plaintext];
+    "run_field_set {key: hold, value: <their words, or held>, stage}" [shape=plaintext];
     "Held: end the turn naming run and stage" [shape=doublecircle];
     "Run abandoned" [shape=doublecircle];
     "Run done" [shape=doublecircle style=filled fillcolor=lightgreen];
@@ -133,12 +135,14 @@ digraph work {
     "Gate <stage>-failed:<attempt>" -> "failure answer?";
     "failure answer?" -> "run_stage {action: start, stage}" [label="retry: a new attempt"];
     "failure answer?" -> "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [label="go back, or iterate here (to = this stage)"];
-    "failure answer?" -> "Held: end the turn naming run and stage" [label="hold"];
+    "failure answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}" [label="hold"];
     "failure answer?" -> "run_status {status: abandoned}" [label="abandon"];
     "Gate close" -> "close answer?";
     "close answer?" -> "run_status {status: done}" [label="done"];
     "close answer?" -> "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [label="iterate (to = implement) or go back"];
-    "close answer?" -> "Held: end the turn naming run and stage" [label="hold"];
+    "close answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}" [label="hold"];
+    "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}" -> "run_field_set {key: hold, value: <their words, or held>, stage}";
+    "run_field_set {key: hold, value: <their words, or held>, stage}" -> "Held: end the turn naming run and stage";
     "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" -> "Is the <from> row still running?";
     "Is the <from> row still running?" -> "run_stage {action: redirect, stage: <from>, to, reason}" [label="yes: a Go back or Fix handed back mid-stage"];
     "Is the <from> row still running?" -> "run_field_set {key: <each produce from <to> on>, value: -}" [label="no: done (Close) or failed (failure gate): no redirect call"];

@@ -45,7 +45,9 @@ digraph provision {
     "This stage found or created the ticket?" [shape=diamond];
     "run_field_set {key: ticket, value: <id>, stage: provision}" [shape=plaintext];
     "run_stage {action: fail, stage: provision, reason}" [shape=plaintext];
-    "Held per the gate part" [shape=doublecircle];
+    "run_decision {contract: gate@1, scope: hold:provision:<attempt>, selection: {reason}}" [shape=plaintext];
+    "run_field_set {key: hold, value: <their words, or held>, stage: provision}" [shape=plaintext];
+    "Held: end the turn naming run and stage" [shape=doublecircle];
     "Stage failed" [shape=doublecircle];
     "Provision done: return to the orchestrator" [shape=doublecircle style=filled fillcolor=lightgreen];
 
@@ -79,7 +81,9 @@ digraph provision {
     "provision answer?" -> "Follow the domain's provision flow" [label="slug: their typed text"];
     "provision answer?" -> "Follow the domain's provision flow" [label="a domain answer"];
     "provision answer?" -> "Follow the domain's provision flow" [label="iterate: redo with their note"];
-    "provision answer?" -> "Held per the gate part" [label="hold"];
+    "provision answer?" -> "run_decision {contract: gate@1, scope: hold:provision:<attempt>, selection: {reason}}" [label="hold"];
+    "run_decision {contract: gate@1, scope: hold:provision:<attempt>, selection: {reason}}" -> "run_field_set {key: hold, value: <their words, or held>, stage: provision}";
+    "run_field_set {key: hold, value: <their words, or held>, stage: provision}" -> "Held: end the turn naming run and stage";
     "Provisioned fresh once already?" -> "worktree_provision {repoName, ticket, ticketTitle?} or {repoName, branch: <slug>}" [label="no: under a new title"];
     "Provisioned fresh once already?" -> "run_stage {action: fail, stage: provision, reason}" [label="yes"];
     "run_field_set {key: branch}; run_field_set {key: worktree}" -> "This stage found or created the ticket?";

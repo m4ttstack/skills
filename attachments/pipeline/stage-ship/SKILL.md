@@ -52,8 +52,9 @@ digraph ship {
     "Retried with the printed root?" [shape=diamond];
     "git_push {tree: <the root the error prints>, setUpstream: true}" [shape=plaintext];
     "STOP: push only with git_push; a shell push is off-script" [shape=octagon style=filled fillcolor=red fontcolor=white];
-    "Off-script gate (gate part)" [shape=box];
+    "Off-script gate (gate-protocol, scope off-script:ship:<n>)" [shape=box];
     "off-script answer?" [shape=diamond];
+    "Off-script rounds = 2?" [shape=diamond];
     "Make the recorded move once" [shape=box];
     "git remote get-url origin" [shape=plaintext];
     "Forge host?" [shape=diamond];
@@ -77,7 +78,9 @@ digraph ship {
     "Write the title and description" [shape=box];
     "mr_update {mrUrl, title, description}, or gh pr edit on GitHub" [shape=plaintext];
     "run_stage {action: fail, stage: ship, reason}" [shape=plaintext];
-    "Held per the gate part" [shape=doublecircle];
+    "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}}" [shape=plaintext];
+    "run_field_set {key: hold, value: <their words, or held>, stage: ship}" [shape=plaintext];
+    "Held: end the turn naming run and stage" [shape=doublecircle];
     "Hand the Go back answer to the orchestrator" [shape=doublecircle];
     "Stage failed" [shape=doublecircle];
     "Ship done: return to the orchestrator" [shape=doublecircle style=filled fillcolor=lightgreen];
@@ -89,7 +92,9 @@ digraph ship {
     "ship answer?" -> "dirty answer?" [label="proceed"];
     "ship answer?" -> "Run the domain steps before the gate (none when unbound)" [label="iterate: redo with their note"];
     "ship answer?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
-    "ship answer?" -> "Held per the gate part" [label="hold"];
+    "ship answer?" -> "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}}" [label="hold"];
+    "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}}" -> "run_field_set {key: hold, value: <their words, or held>, stage: ship}";
+    "run_field_set {key: hold, value: <their words, or held>, stage: ship}" -> "Held: end the turn naming run and stage";
     "ship answer?" -> "run_stage {action: fail, stage: ship, reason}" [label="dirty = abort: reason 'aborted at the ship gate'"];
     "dirty answer?" -> "Commit named files, ticket-prefixed subject" [label="commit"];
     "dirty answer?" -> "Stash them; nothing in this stage pops it" [label="stash"];
@@ -120,10 +125,14 @@ digraph ship {
     "git_push result?" -> "STOP: push only with git_push; a shell push is off-script" [label="any other error"];
     "Retried with the printed root?" -> "git_push {tree: <the root the error prints>, setUpstream: true}" [label="no"];
     "Retried with the printed root?" -> "STOP: push only with git_push; a shell push is off-script" [label="yes"];
-    "STOP: push only with git_push; a shell push is off-script" -> "Off-script gate (gate part)";
-    "Off-script gate (gate part)" -> "off-script answer?";
-    "off-script answer?" -> "Make the recorded move once" [label="take"];
-    "off-script answer?" -> "run_stage {action: fail, stage: ship, reason}" [label="hand back"];
+    "STOP: push only with git_push; a shell push is off-script" -> "Off-script gate (gate-protocol, scope off-script:ship:<n>)";
+    "Off-script gate (gate-protocol, scope off-script:ship:<n>)" -> "off-script answer?";
+    "off-script answer?" -> "Make the recorded move once" [label="proceed + take"];
+    "off-script answer?" -> "run_stage {action: fail, stage: ship, reason}" [label="proceed + hand back"];
+    "off-script answer?" -> "Off-script rounds = 2?" [label="iterate: the human fixed the cause, retry the push"];
+    "off-script answer?" -> "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}}" [label="hold: no move made"];
+    "Off-script rounds = 2?" -> "git_push {tree: <root>, setUpstream: true}" [label="no"];
+    "Off-script rounds = 2?" -> "run_stage {action: fail, stage: ship, reason}" [label="yes: hand back, the refusal quoted"];
     "Make the recorded move once" -> "git remote get-url origin";
     "git remote get-url origin" -> "Forge host?";
     "Forge host?" -> "mr_for_branch {repoName: <root>, branches: [<branch>]}" [label="GitLab"];
@@ -206,6 +215,10 @@ domain's title, template and voice rules win over this paragraph.
 
 ## What the graph cannot show
 
+- **Off-script answers.** Read `next` first: Hold ends the turn with no
+  move made; Iterate means the human fixed the cause and ignores
+  `action`; only Proceed applies `action`. Retrying `git_push` is
+  Iterate, never Take; rounds count per stage attempt.
 - After a rebase that rewrote already-pushed commits, push with
   `git_push {tree: <root>, forceWithLease: true}` instead. Never force
   otherwise, and never push a branch whose tests you have not seen pass in
