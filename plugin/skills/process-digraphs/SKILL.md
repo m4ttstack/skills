@@ -64,7 +64,7 @@ tests") is a `box`.
    bound" is the rationalization that produces runaway runs.
 5. **A STOP forbids one move and has at most one way out.** It ends the
    path, exits to an outcome, or hands to the off-script gate ("STOP: push
-   only with git_push" -> "Push attempt = 2?"). A guard STOP, entered only on
+   only with git_push" -> "Off-script gate"). A guard STOP, entered only on
    edges labelled `tempted to ...` that leave a decision, may redirect to
    the move it names ("STOP: rt reads go through rt_verb" -> the `rt_verb`
    node); the real branch goes straight there, never through the STOP. A
