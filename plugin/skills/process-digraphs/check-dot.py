@@ -25,18 +25,20 @@ def two_calls(name):
     quote_openers = {}
     stack, opens, closes = [], set(), set()
     for i, ch in enumerate(name):
-        if ch in "{<(":
-            stack.append(i)
-        elif ch in "}>)":
-            if stack:
-                opens.add(stack.pop())
-                closes.add(i)
-        elif ch in "\"`":
+        if ch in "\"`":
             if ch in quote_openers:
                 opens.add(quote_openers.pop(ch))
                 closes.add(i)
             else:
                 quote_openers[ch] = i
+        elif quote_openers:
+            continue
+        elif ch in "{<(":
+            stack.append(i)
+        elif ch in "}>)":
+            if stack:
+                opens.add(stack.pop())
+                closes.add(i)
     depth, flat = 0, []
     for i, ch in enumerate(name):
         if i in opens:
