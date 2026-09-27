@@ -80,12 +80,13 @@ digraph review {
     "Print the review depth block" [shape=box];
     "Review diff forge?" [shape=diamond];
     "gh pr diff <ref>" [shape=plaintext];
-    "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>" [shape=plaintext];
+    "git fetch origin +pull/<n>/head:refs/remotes/origin/pr-<n>" [shape=plaintext];
     "git fetch origin <targetBranch> +refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>" [shape=plaintext];
     "git diff origin/<targetBranch>...origin/mr-<iid>" [shape=plaintext];
     "MR-head checkout in hand for the review checks?" [shape=diamond];
     "worktree_provision {repoName, branch: <source branch>} for the review head" [shape=plaintext];
     "Review head worktree_provision returned a path?" [shape=diamond];
+    "Provisioned review tree at the fetched head?" [shape=diamond];
     "STOP: create a review checkout only with worktree_provision" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Set up for the review depth" [shape=box];
     "Dispatch the fresh reviewer; it forms the findings" [shape=box];
@@ -122,7 +123,7 @@ digraph review {
     "gh pr review result?" [shape=diamond];
     "Open the review off-script gate: gh pr review refused" [shape=box];
     "gh pr review off-script answer?" [shape=diamond];
-    "Make the recorded gh move once" [shape=box];
+    "gh pr comment <ref> with the summary body" [shape=plaintext];
     "Next selected finding with a file anchor?" [shape=diamond];
     "mr_comment_inline {mrUrl, path, line, body}" [shape=plaintext];
     "mr_comment_inline result?" [shape=diamond];
@@ -210,15 +211,17 @@ digraph review {
     "Review diff forge?" -> "git fetch origin <targetBranch> +refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>" [label="GitLab"];
     "git fetch origin <targetBranch> +refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>" -> "git diff origin/<targetBranch>...origin/mr-<iid>";
     "git diff origin/<targetBranch>...origin/mr-<iid>" -> "MR-head checkout in hand for the review checks?";
-    "gh pr diff <ref>" -> "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>";
-    "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>" -> "MR-head checkout in hand for the review checks?";
+    "gh pr diff <ref>" -> "git fetch origin +pull/<n>/head:refs/remotes/origin/pr-<n>";
+    "git fetch origin +pull/<n>/head:refs/remotes/origin/pr-<n>" -> "MR-head checkout in hand for the review checks?";
     "MR-head checkout in hand for the review checks?" -> "Set up for the review depth" [label="yes, or read depth"];
     "MR-head checkout in hand for the review checks?" -> "worktree_provision {repoName, branch: <source branch>} for the review head" [label="no: verify or repro depth"];
     "MR-head checkout in hand for the review checks?" -> "STOP: create a review checkout only with worktree_provision" [label="tempted to create one by hand"];
     "STOP: create a review checkout only with worktree_provision" -> "worktree_provision {repoName, branch: <source branch>} for the review head";
     "worktree_provision {repoName, branch: <source branch>} for the review head" -> "Review head worktree_provision returned a path?";
-    "Review head worktree_provision returned a path?" -> "Set up for the review depth" [label="yes: run the checks in that path"];
+    "Review head worktree_provision returned a path?" -> "Provisioned review tree at the fetched head?" [label="yes: run the checks in that path"];
     "Review head worktree_provision returned a path?" -> "Dispatch the fresh reviewer; it forms the findings" [label="no: refused; the checks are noted as not run"];
+    "Provisioned review tree at the fetched head?" -> "Set up for the review depth" [label="yes"];
+    "Provisioned review tree at the fetched head?" -> "Dispatch the fresh reviewer; it forms the findings" [label="no: checks noted as not run, both shas quoted"];
     "Set up for the review depth" -> "Dispatch the fresh reviewer; it forms the findings";
     "Dispatch the fresh reviewer; it forms the findings" -> "Assemble the review draft";
     "Assemble the review draft" -> "Verify each blocking finding against the MR head";
@@ -270,11 +273,11 @@ digraph review {
     "gh pr review result?" -> "run_decision {contract: gate@1, scope: post, selection: {findings, disposition}, decidedBy}" [label="posted"];
     "gh pr review result?" -> "Open the review off-script gate: gh pr review refused" [label="error"];
     "Open the review off-script gate: gh pr review refused" -> "gh pr review off-script answer?";
-    "gh pr review off-script answer?" -> "Make the recorded gh move once" [label="take"];
+    "gh pr review off-script answer?" -> "gh pr comment <ref> with the summary body" [label="take"];
     "gh pr review off-script answer?" -> "gh pr review <ref> with the disposition and the summary body" [label="iterate here: retry with their note"];
     "gh pr review off-script answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for review" [label="hold"];
     "gh pr review off-script answer?" -> "Own review run: close it as abandoned?" [label="hand back"];
-    "Make the recorded gh move once" -> "run_decision {contract: gate@1, scope: post, selection: {findings, disposition}, decidedBy}";
+    "gh pr comment <ref> with the summary body" -> "run_decision {contract: gate@1, scope: post, selection: {findings, disposition}, decidedBy}";
     "Next selected finding with a file anchor?" -> "mr_comment_inline {mrUrl, path, line, body}" [label="yes"];
     "Next selected finding with a file anchor?" -> "mr_comment {mrUrl, body, resolvable}" [label="no: all posted or moved to the summary"];
     "mr_comment_inline {mrUrl, path, line, body}" -> "mr_comment_inline result?";
@@ -347,7 +350,9 @@ given a URL, else `repoName` = the checkout path plus `iid`; its
 branch, or more than one candidate, is the clarify gate. A lookup that
 comes back empty means rt's open-MR cache does not hold the MR (outside its
 author or time window): say so, and hold with that message as the reason
-(`decidedBy: "pane"`). Never a guess.
+(`decidedBy: "pane"`). Never a guess. On a resume in a new session the
+target is not in the conversation: the resumed snapshot's `mr` field is
+the target.
 
 ### Gate review clarify: which target?
 
@@ -384,7 +389,15 @@ check in the path it returns; never change this pane's own directory for
 it. The tree keeps rt's default disposal, so rt disposes it once the MR
 merges; the review never disposes it by hand. A refusal is quoted in the
 setup observations, and the setup checks and the verify step's command
-check are noted as not run.
+check are noted as not run. A `branch-attached:<tree>` refusal names an
+existing tree, which counts as in hand when it sits at the fetched head.
+
+### Provisioned review tree at the fetched head?
+
+Compare `git rev-parse HEAD` run in that path with the fetched head
+(`origin/mr-<iid>`, or `origin/pr-<n>` on GitHub). On a mismatch the tree
+is not in hand: quote both shas, and note the setup checks and the verify
+step's command check as not run. Never reset or pull that tree.
 
 ### Set up for the review depth
 
@@ -538,11 +551,6 @@ block and resets the verify-round counter, since a deeper depth means new
 setup and a fresh verify pass. Anything else is a draft edit only:
 re-present, and the next gate is a NEW gate, never the old one reopened.
 
-### Make the recorded gh move once
-
-Exactly the move the off-script gate recorded for the refused `gh pr
-review`, once.
-
 ### Make the recorded summary move once
 
 Exactly the move the off-script gate recorded for the refused summary,
@@ -574,7 +582,8 @@ pr comment <ref>`, and leave the disposition to the human.
 
 The daemon already verified placement and retried once, so a refusal
 here is final for this position. The proposed move is to post the finding
-in the summary comment instead, as if it had no `file` anchor.
+in the summary comment instead, as if it had no `file` anchor, so the
+summary posts resolvable.
 
 ### Open the review off-script gate: mr_comment summary refused
 
@@ -606,7 +615,9 @@ null>"}`. `action: handback` is hand back, whatever `next` says; otherwise
 is take. Take makes exactly that move, once, then continues after it.
 Iterate here retries the refused call with their note; each retry that
 fails opens a new gate. A hold's reason, like a hand-back's, names every
-thread and note already posted.
+thread and note already posted. A gate that comes back `closed` is a
+hold whose reason is "gate closed"; record it as any hold and end the
+turn.
 
 ## What the graph cannot show
 
@@ -640,6 +651,10 @@ thread and note already posted.
 - On a resume, a thread or note that the latest hold's reason names as
   already posted is never posted again; its finding is skipped at
   posting.
+- A gate that comes back `closed` is a hold whose reason is "gate
+  closed"; record it as any hold and end the turn.
+- A fetch, diff or `gh pr diff` that errors is a hold whose reason quotes
+  the error.
 
 ## The review flow
 
@@ -692,4 +707,6 @@ placement and, on the silent general-note degrade, retries ONCE with fresh
 diff_refs (deleting the stray notes; it cannot fix a position GitLab
 rejects outright), so never hand-build a position payload.
 `mr_comment` returns `mrUrl`, the link the close needs. On GitHub use `gh
-pr review` / `gh pr comment`.
+pr review` / `gh pr comment`: GitHub has no inline mechanism, so every
+selected finding, anchored or not, rides in the one `gh pr review` body,
+with its `file:line` in the text.
