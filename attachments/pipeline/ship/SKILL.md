@@ -155,6 +155,8 @@ digraph ship {
     "Conflict rounds = 3 (ship)?" [shape=diamond];
     "Resolve the files, then git rebase --continue on Bash (ship)" [shape=box];
     "Continue result (ship)?" [shape=diamond];
+    "Rebase in progress (ship abort)?" [shape=diamond];
+    "git_rebase {tree: <root>, abort: true}" [shape=plaintext];
 
     "git remote get-url origin (ship)" [shape=plaintext];
     "Forge host (ship, before git_push)?" [shape=diamond];
@@ -169,7 +171,7 @@ digraph ship {
     "STOP: push only with git_push (ship)" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "ship off-script gate: git_push refused" [shape=box];
     "ship off-script answer (git_push)?" [shape=diamond];
-    "Make the recorded move once (ship push)" [shape=box];
+    "Confirm the human's push landed (ship)" [shape=box];
 
     "Forge host (ship, open the MR)?" [shape=diamond];
     "mr_for_branch {repoName: <root>, branches: [<branch>]} (after git_push)" [shape=plaintext];
@@ -233,7 +235,10 @@ digraph ship {
     "ship answer (ship)?" -> "dirty answer (ship)?" [label="proceed"];
     "ship answer (ship)?" -> "Run the domain steps before the gate (none when unbound)" [label="iterate: redo with their note"];
     "ship answer (ship)?" -> "Which exit is this (ship)?" [label="hold"];
-    "ship answer (ship)?" -> "Which exit is this (ship)?" [label="dirty = abort: nothing is pushed"];
+    "ship answer (ship)?" -> "Rebase in progress (ship abort)?" [label="dirty = abort: nothing is pushed"];
+    "Rebase in progress (ship abort)?" -> "git_rebase {tree: <root>, abort: true}" [label="yes"];
+    "Rebase in progress (ship abort)?" -> "Which exit is this (ship)?" [label="no"];
+    "git_rebase {tree: <root>, abort: true}" -> "Which exit is this (ship)?";
     "dirty answer (ship)?" -> "Commit named files (ship)" [label="commit"];
     "dirty answer (ship)?" -> "Stash them; nothing in this verb pops it" [label="stash"];
     "dirty answer (ship)?" -> "Run the domain's fast checks (none when unbound)" [label="clean tree"];
@@ -248,7 +253,7 @@ digraph ship {
     "Domain rebases, and no rebase finished this pass (ship)?" -> "git_rebase {tree: <root>, onto: origin/<default>}" [label="yes"];
     "Domain rebases, and no rebase finished this pass (ship)?" -> "git remote get-url origin (ship)" [label="no"];
     "git_rebase {tree: <root>, onto: origin/<default>}" -> "Rebase status (ship)?";
-    "Rebase status (ship)?" -> "git remote get-url origin (ship)" [label="clean"];
+    "Rebase status (ship)?" -> "Run the domain's fast checks (none when unbound)" [label="clean"];
     "Rebase status (ship)?" -> "Conflict rounds = 3 (ship)?" [label="conflict"];
     "Rebase status (ship)?" -> "Which exit is this (ship)?" [label="any other error: a failure, quoted as the reason"];
     "Conflict rounds = 3 (ship)?" -> "Resolve the files, then git rebase --continue on Bash (ship)" [label="no"];
@@ -275,11 +280,12 @@ digraph ship {
     "Retried with the printed root (ship)?" -> "STOP: push only with git_push (ship)" [label="yes"];
     "STOP: push only with git_push (ship)" -> "ship off-script gate: git_push refused";
     "ship off-script gate: git_push refused" -> "ship off-script answer (git_push)?";
-    "ship off-script answer (git_push)?" -> "Make the recorded move once (ship push)" [label="take the proposed move"];
+    "ship off-script answer (git_push)?" -> "Confirm the human's push landed (ship)" [label="take: the human pushed"];
+    "ship off-script answer (git_push)?" -> "git_push {tree: <root>, setUpstream: true}" [label="take: registration fixed, retry"];
     "ship off-script answer (git_push)?" -> "Which exit is this (ship)?" [label="hand back: a failure, the refusal is the reason"];
     "ship off-script answer (git_push)?" -> "Which exit is this (ship)?" [label="hold"];
     "ship off-script answer (git_push)?" -> "ship off-script gate: git_push refused" [label="iterate: a new gate with their note"];
-    "Make the recorded move once (ship push)" -> "Forge host (ship, open the MR)?";
+    "Confirm the human's push landed (ship)" -> "Forge host (ship, open the MR)?";
 
     "Forge host (ship, open the MR)?" -> "mr_for_branch {repoName: <root>, branches: [<branch>]} (after git_push)" [label="GitLab"];
     "Forge host (ship, open the MR)?" -> "gh pr create --fill --base <default>, --draft unless the gate said ready" [label="GitHub"];
@@ -320,9 +326,10 @@ digraph ship {
     "Domain runs CI after the MR (ship)?" -> "Run watch-ci inheriting this run" [label="yes"];
     "Domain runs CI after the MR (ship)?" -> "Which exit is this (ship)?" [label="no: done, print the URL"];
     "Run watch-ci inheriting this run" -> "watch-ci handed back what (ship)?";
-    "watch-ci handed back what (ship)?" -> "ship gate mark-ready" [label="green, the MR a draft"];
-    "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="green and ready, or red after its ci gate: done"];
-    "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="an off-script hand back or a failure"];
+    "watch-ci handed back what (ship)?" -> "ship gate mark-ready" [label="verdict: green and the MR a draft"];
+    "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="verdict: green and ready, or red after its ci gate: done"];
+    "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="off-script answer or failure"];
+    "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="stood down: the doctor holds the lease"];
     "watch-ci handed back what (ship)?" -> "Which exit is this (ship)?" [label="held"];
     "ship gate mark-ready" -> "mark-ready answer (ship)?";
     "mark-ready answer (ship)?" -> "Forge host (ship, mark-ready)?" [label="mark ready now"];
@@ -335,7 +342,7 @@ digraph ship {
     "mr_ready {repoName: <root>, iid}" -> "Which exit is this (ship)?";
     "gh pr ready <number>" -> "Which exit is this (ship)?";
 
-    "Which exit is this (ship)?" -> "run_stage {action: done, stage: ship}" [label="own run: done"];
+    "Which exit is this (ship)?" -> "run_stage {action: done, stage: ship}" [label="own run: done, or stood down"];
     "Which exit is this (ship)?" -> "run_stage {action: done, stage: ship} (abort)" [label="own run: abort"];
     "Which exit is this (ship)?" -> "run_stage {action: fail, stage: ship, reason}" [label="own run: a failure or an off-script hand back"];
     "Which exit is this (ship)?" -> "Hand the answer back to the caller (ship)" [label="inherited run: any exit but hold"];
@@ -359,7 +366,9 @@ than asking on its own. Unbound, there are none.
 ### ship gate ship
 
 Before anything is pushed. One sentence above the form: the branch, the
-commits about to go, and whether the tree is dirty.
+commits about to go, and whether the tree is dirty. When the gate reopens
+with a rebase in progress (the conflict rounds are spent), the context says
+so, and Abort aborts that rebase first.
 
 | Question | Options (recommended first) | Shown when |
 |---|---|---|
@@ -386,7 +395,10 @@ report that the stash exists.
 
 Only the checks the domain names, on the changed files. Revert generated
 drift the checks leave behind before continuing. A full suite the domain
-rules out stays out: CI runs it.
+rules out stays out: CI runs it. A finished rebase, clean or resolved,
+sends the checks round again because the tree changed under them; the "no
+rebase finished this pass" guard keeps that second round from rebasing
+again.
 
 ### Fix test-first, commit, rerun (ship)
 
@@ -397,9 +409,8 @@ counter is fix rounds within this pass through the verb.
 
 Resolve each conflicted file `git_rebase` returned, then continue the
 rebase on Bash (no tool continues one). A later commit that conflicts
-counts as another round. Once the rebase finishes, the fast checks run
-again because the tree changed under them; this pass never starts a second
-rebase.
+counts as another round. A finished rebase goes back to the fast checks,
+like a clean one.
 
 ### ship gate clarify: which forge?
 
@@ -418,11 +429,11 @@ attempt), `context` quoting the refusal.
 
 Selection: `{"move":"<the move>","why":"<the refusal>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`.
 
-### Make the recorded move once (ship push)
+### Confirm the human's push landed (ship)
 
-Exactly the move the gate recorded, once. When the human pushed, confirm
-the remote branch now carries `HEAD`; when they fixed the registration, the
-move is one more `git_push {tree: <root>, setUpstream: true}`.
+The human pushed outside this verb. Compare `git rev-parse HEAD` with the
+remote branch and say what it shows in the final report; never push from
+here.
 
 ### Capture the AFTER when the domain names one (ship)
 
@@ -443,8 +454,11 @@ owns. The domain's title, template and voice rules win over this paragraph.
 Invoke the `watch-ci` verb with this run's `runDb`, so it inherits the run
 and fires no gate beyond `ci`. Hand it the MR and, when one was read before
 the push, the prior pipeline id, so its sha guard can tell the new pipeline
-from the old one. It hands back its verdict, its `ci` gate answer, an
-off-script hand back, or a hold.
+from the old one. It hands back its verdict (after its `ci` gate when red),
+an off-script answer, a failure, a stand-down, or a hold. A stand-down means
+the doctor holds the MR's lease: an own run closes `done`, since the MR
+exists, and the report says the doctor has it; an inherited run hands the
+stand-down back.
 
 ### ship gate mark-ready
 
@@ -454,7 +468,7 @@ the attachments are there (or are not).
 | Question | Options (recommended first) | Shown when |
 |---|---|---|
 | `ready` | **Mark ready now** (when CI is green and the evidence is attached) / **Keep it draft** | always |
-| `next` | **Proceed** / **Iterate here** / **Go back** / **Hold** | always |
+| `next` | **Proceed** / **Iterate here** / **Go back** / **Hold** | always; **Go back** only in an inherited run |
 | `to` | one option per earlier stage, split `to-1`, `to-2`, ... over 4; with exactly one candidate it labels **Go back to `<stage>`** in `next` instead | Go back answered and `run_snapshot` shows more than one earlier stage row |
 
 Scope `mark-ready`. Selection: `{"ready":true|false,"next":"proceed|iterate|redirect|hold","to":"<stage or null>","note":"<their words or null>"}`.
