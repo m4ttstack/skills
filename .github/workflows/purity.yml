@@ -18,6 +18,10 @@ jobs:
           fetch-depth: 50
       - name: No banned references in tree, file names, or recent messages
         run: sh tests/repo-purity.sh
+      - name: Install graphviz (certify renders process digraphs)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq graphviz
+      - name: Digraph checker cases
+        run: bash plugin/skills/process-digraphs/test-check-dot.sh
       - name: Certify every skill and attachment dir
         run: |
           set -e
