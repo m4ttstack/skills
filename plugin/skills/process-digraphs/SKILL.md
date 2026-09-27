@@ -170,7 +170,8 @@ Check the spec (the graph, its step sections and its test plan) against every
 line; each one caught a real graph in review.
 
 1. **One off-script gate per origin**, never shared, each with take, iterate,
-   hold and hand back exits.
+   hold and hand back exits. A tool refusal is an origin even where the prose
+   already says "ask the human".
 2. **A budget on every loop**, per-item repeats too: retries per job,
    reviewer rounds, the off-script iterate.
 3. **A preservation inventory**: map every current rule and step to its own
