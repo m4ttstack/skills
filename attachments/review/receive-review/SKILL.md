@@ -445,8 +445,9 @@ What the snapshot records picks the re-entry:
   pane without it, from the snapshot: the respond-post entry's `text` when
   it has one, else the respond-plan record read as the snapshot-only
   reading under Rewrite the receive-review report rows describes. A held
-  fix row with neither is finalized again from its commit (Commit the fix
-  and finalize its Fixed reply) before it posts.
+  fix row with neither gets its Fixed reply text written again from the
+  committed change, in the shape Commit the fix and finalize its Fixed
+  reply gives it, before it posts; nothing is committed again.
 - **`respond-post` recorded, nothing held:** report the outcome and close.
 
 ### Resolve the change and record its identity
@@ -807,19 +808,25 @@ it is never offered at a re-asked gate, and it is never posted again,
 whatever the snapshot or the report says of it. Only a thread with no
 such note posts or is offered.
 
-This read answers the test at the post site, Thread already carries this
-receive-review run's reply?, for every thread before its reply posts: yes
-counts the reply posted and goes on to the thread's resolve decision,
-never posting it again; no posts it. Never assume the answer: it comes
-from the notes read here. With no resume and no re-ask, nothing from this
-run has posted yet, so every thread answers no.
-
 The ask that follows a respond-post hold, once it lifts, or an iteration,
 once it is applied, is a NEW gate (gate-protocol's Closed gates, Hold /
-Iterate), its open rebuilt from the report rows minus every thread already
-posted: one whose respond-post record entry has `post: true`, or one the
-forge shows carrying this run's reply. A thread that has posted is never
-offered twice.
+Iterate). Read the forge first, then build its open: the report rows
+minus every thread already posted, one whose respond-post record entry
+has `post: true`, or one the forge shows carrying this run's reply. A
+thread that has posted is never offered twice. Name the read even when
+you expect it to find nothing: a pane can post and die before it records.
+
+On a resume or a re-ask, this read alone answers the test at the post
+site, Thread already carries this receive-review run's reply?, one thread
+at a time: from the notes it returned, never from when a thread was
+opened, how old its last note is, the snapshot or the report. Yes counts
+the reply posted and goes on to the thread's resolve decision, never
+posting it again; no posts it. When the notes are not in front of you
+(describing the run rather than making it), write both outcomes for every
+thread: if it carries this run's reply, count it posted and post nothing;
+if not, post it. Only a run that was never resumed or re-asked answers no
+without a read, and only for a thread it has not yet tried to post; after
+an `mr_reply_thread` error, re-read that thread before the retry.
 
 ### Build the respond-post open
 
@@ -978,12 +985,16 @@ since the close waits for every reply. Never force, rebase or merge past
 it. Every other reply posts as decided either way. Then record the
 respond-post decision at once, with the held thread ids under `"held"`.
 
+Verbatim means the text itself: the error `git_push` returned, or for a
+mismatch the output of the two git reads, whole and unedited, in a fenced
+block. Never a summary, a paraphrase, or an excerpt with parts elided.
+
 ### Hold the thread the forge refused and report the refusal verbatim
 
 A Hold answer at the refused-reply or refused-resolve off-script gate
 holds only that thread, as a failed push holds the fix rows: nothing more
-acts on it this pass. Report the refusal verbatim (in the hand-back when a
-caller owns the gates) and leave the run open, since the close waits for
+acts on it this pass. Report the refusal verbatim, the forge's error whole
+in a fenced block (in the hand-back when a caller owns the gates) and leave the run open, since the close waits for
 every reply. Every other thread still acts. The respond-post record lists
 the thread under `"held"` (The respond-post record). With nothing offered
 and no caller-handed `post` there is no respond-post record; a resume
@@ -1120,7 +1131,11 @@ Every `Off-script gate: ...` box asks this one gate, through
 gate-protocol's Runs integration (this engine does not include
 work-next-gate). Its scope is `off-script:receive-review:<n>`, `n`
 counting from 1 within the stage attempt; its `context` quotes the refusal
-or failure.
+or failure. Ask it with the `gate_ask` tool and submit the answer, a Hold
+included, through the `gate_answer` tool (`id` the gate's id, `answers`
+keyed by question id) before `run_decision` records it, per
+gate-protocol's Acting on the response, so the registry gate never stays
+open.
 
 | Question | Options (recommended first) |
 |---|---|
