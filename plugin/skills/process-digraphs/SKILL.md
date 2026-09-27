@@ -64,7 +64,7 @@ tests") is a `box`.
    bound" is the rationalization that produces runaway runs.
 5. **A STOP forbids one move and has at most one way out.** It ends the
    path, exits to an outcome, or hands to the off-script gate ("STOP: push
-   only with git_push" -> "Off-script gate"). A guard STOP, entered only on
+   only with git_push" -> "Push attempt = 2?"). A guard STOP, entered only on
    edges labelled `tempted to ...` that leave a decision, may redirect to
    the move it names ("STOP: rt reads go through rt_verb" -> the `rt_verb`
    node); the real branch goes straight there, never through the STOP. A
@@ -116,7 +116,7 @@ digraph hotfix_push {
     "Push attempt = 2?" -> "Use the repo root git_push printed" [label="no: retry once"];
     "Use the repo root git_push printed" -> "git_push {tree, setUpstream: true}";
     "Push attempt = 2?" -> "Open the off-script gate: push refused" [label="yes: budget spent"];
-    "STOP: push only with git_push" -> "Open the off-script gate: push refused";
+    "STOP: push only with git_push" -> "Push attempt = 2?";
     "Open the off-script gate: push refused" -> "mr_create {repoName, sourceBranch, targetBranch, title, description}" [label="take: the human pushed"];
     "Open the off-script gate: push refused" -> "Off-script rounds = 2?" [label="iterate: the human fixed it"];
     "Open the off-script gate: push refused" -> "Held: the turn ends naming the gate" [label="hold"];
