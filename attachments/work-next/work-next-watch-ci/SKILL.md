@@ -67,6 +67,7 @@ digraph watch_ci {
     "Gate mark-ready (table below)" [shape=box];
     "ready answer?" [shape=diamond];
     "Forge host?" [shape=diamond];
+    "Gate clarify: which forge?" [shape=box];
     "mr_ready {repoName, iid}" [shape=plaintext];
     "gh pr ready <number>" [shape=plaintext];
     "run_field_set {key: ci, value: green, stage: watch-ci}" [shape=plaintext];
@@ -127,6 +128,7 @@ digraph watch_ci {
     "ci answer?" -> "run_status {status: abandoned}" [label="abandon"];
     "ci answer?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
     "ci answer?" -> "Held per the gate part" [label="hold"];
+    "ci answer?" -> "Gate ci (table below)" [label="iterate: re-triage with their note"];
     "run_status {status: abandoned}" -> "Run abandoned";
     "MR still a draft?" -> "Gate mark-ready (table below)" [label="yes"];
     "MR still a draft?" -> "run_field_set {key: ci, value: green, stage: watch-ci}" [label="no"];
@@ -135,8 +137,11 @@ digraph watch_ci {
     "ready answer?" -> "run_field_set {key: ci, value: green, stage: watch-ci}" [label="keep it draft"];
     "ready answer?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
     "ready answer?" -> "Held per the gate part" [label="hold"];
+    "ready answer?" -> "Gate mark-ready (table below)" [label="iterate: re-ask with their note"];
     "Forge host?" -> "mr_ready {repoName, iid}" [label="GitLab"];
     "Forge host?" -> "gh pr ready <number>" [label="GitHub"];
+    "Forge host?" -> "Gate clarify: which forge?" [label="anything else"];
+    "Gate clarify: which forge?" -> "Forge host?" [label="answered: the named forge"];
     "mr_ready {repoName, iid}" -> "run_field_set {key: ci, value: green, stage: watch-ci}";
     "gh pr ready <number>" -> "run_field_set {key: ci, value: green, stage: watch-ci}";
     "run_field_set {key: ci, value: green, stage: watch-ci}" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>";
