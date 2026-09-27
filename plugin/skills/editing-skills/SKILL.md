@@ -133,7 +133,7 @@ digraph publish_skill {
     "GREEN clean, with no shell call a tool covers?" -> "Craft rounds = 3?" [label="no"];
     "Craft rounds = 3?" -> "Revise the skill against the GREEN transcript" [label="no"];
     "Craft rounds = 3?" -> "Gate: craft rounds spent" [label="yes"];
-    "Revise the skill against the GREEN transcript" -> "Verify with a fresh agent (GREEN)";
+    "Revise the skill against the GREEN transcript" -> "The edit compiles into a pack verb?";
     "Gate: craft rounds spent" -> "Revise the skill against the GREEN transcript" [label="retry with their note"];
     "Gate: craft rounds spent" -> "Handed to the human" [label="human takes over"];
     "What changed?" -> "Add its root to the manifest skills array" [label="a new mattstack skill under a new root"];

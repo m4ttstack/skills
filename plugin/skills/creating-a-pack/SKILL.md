@@ -36,6 +36,7 @@ digraph create_pack {
     "Relay error.message and error.wrote" [shape=box];
     "write-failed?" [shape=diamond];
     "Removed the pack dir once already?" [shape=diamond];
+    "Gate: write failed after cleanup" [shape=box];
     "Remove the pack dir" [shape=box];
     "STOP: never re-run init on a written pack" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Follow the printed remedy" [shape=box];
@@ -98,7 +99,9 @@ digraph create_pack {
     "write-failed?" -> "STOP: never re-run init on a written pack" [label="tempted to re-run init"];
     "STOP: never re-run init on a written pack" -> "Follow the printed remedy";
     "Removed the pack dir once already?" -> "Remove the pack dir" [label="no"];
-    "Removed the pack dir once already?" -> "Gate: init budget spent" [label="yes"];
+    "Removed the pack dir once already?" -> "Gate: write failed after cleanup" [label="yes"];
+    "Gate: write failed after cleanup" -> "Remove the pack dir" [label="retry: author fixed it"];
+    "Gate: write failed after cleanup" -> "Handed to the author" [label="author takes over"];
     "Remove the pack dir" -> "rt skills init --json --zone <slug> --repo <repo-path>";
     "Follow the printed remedy" -> "The remedy completed the pack?";
     "The remedy completed the pack?" -> "In a herdr pane?" [label="yes"];
@@ -152,8 +155,10 @@ digraph create_pack {
 ### Name each miss and the command that installs it
 
 Report the missing thing and the command that installs it: `rt setup pack`,
-run once and not routine, covers the first three rows. Do not improvise a
-substitute.
+run once and not routine, covers only the first three rows. A missing or
+non-GitLab `origin` is the author's to fix: name the miss and say the remote
+must be the repo on its GitLab host. Never set a remote yourself. Do not
+improvise a substitute.
 
 ### Ask the author: which team, and a remote it owns
 
@@ -261,11 +266,17 @@ init: a `snapshot:` commit covering the pack dir, `team.jsonc`, and
 
 ### Gate: init budget spent
 
-Quote each init envelope's `error.message` (and `error.wrote` after a
-write) and propose the next move: the zone and remote to use, or what to
-clear. After a `write-failed`, the retry needs the pack dir removed first.
-Retry: the author fixed it; run init again, with `Init runs` starting again
-at zero. Takes over: the author runs init.
+Quote each init envelope's `error.message` and propose the next move: the
+zone and remote to use, or what to clear. Retry: the author fixed it; run
+init again, with `Init runs` starting again at zero. Takes over: the author
+runs init.
+
+### Gate: write failed after cleanup
+
+Quote both init envelopes' `error.message` and `error.wrote`, and propose
+the fix for the write failure (permissions, disk space). Retry: the author
+fixed it; remove the pack dir again and run init once more. Takes over: the
+author finishes the pack.
 
 ### Gate: remedy did not complete the pack
 
