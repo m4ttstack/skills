@@ -130,6 +130,10 @@ Selection: `{"resume_in":"<tree or null>","ticket":"create|recheck|null","slug":
 
 ## Domain rules
 
+The domain rules below supply the provision flow, the ticket lookup and
+extra gate questions. Where a domain step names a move the graph above
+marks STOP (hand-rolling a worktree), the STOP node wins.
+
 {{slot:domain}}
 
 When nothing is inlined above, the graph alone is the flow.

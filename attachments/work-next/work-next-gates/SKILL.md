@@ -40,6 +40,7 @@ digraph gates {
     "Domain rules inlined?" -> "Apply every triggered pre-implementation gate" [label="yes"];
     "Say in one line there are no domain gates" -> "Gates done: return to the orchestrator";
     "Say in one line there are no domain gates" -> "STOP: never invent a gate" [label="tempted to add one"];
+    "STOP: never invent a gate" -> "Gates done: return to the orchestrator";
     "Apply every triggered pre-implementation gate" -> "run_field_set {key: extra.gates, value: <the gates that fired>, stage: gates}";
     "run_field_set {key: extra.gates, value: <the gates that fired>, stage: gates}" -> "Any gate failed?";
     "Any gate failed?" -> "run_stage {action: fail, stage: gates, reason}" [label="yes"];
@@ -55,5 +56,9 @@ now, before implement. Ship-time gates run again inside the ship stage's
 domain flow: firing here does not discharge them.
 
 ## Domain rules
+
+The domain rules below supply the gates and the paths that trigger them.
+Where a domain step names a move the graph above marks STOP (inventing a
+gate), the STOP node wins.
 
 {{slot:domain}}

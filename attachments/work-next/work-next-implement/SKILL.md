@@ -34,6 +34,8 @@ digraph implement {
     "STOP: implement never pushes; ship owns the push" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "git log --format=%h <branch-point>..HEAD" [shape=plaintext];
     "run_field_set {key: commits, value: <shas>, stage: implement}" [shape=plaintext];
+    "run_stage {action: fail, stage: implement, reason}" [shape=plaintext];
+    "Stage failed" [shape=doublecircle];
     "Tell the orchestrator the triage was wrong: Go back to plan" [shape=doublecircle];
     "Implement done: return to the orchestrator" [shape=doublecircle style=filled fillcolor=lightgreen];
 
@@ -46,12 +48,15 @@ digraph implement {
     "Found yourself writing a test?" -> "Tell the orchestrator the triage was wrong: Go back to plan" [label="yes"];
     "Found yourself writing a test?" -> "Commit incrementally on branch, inside worktree" [label="no"];
     "Run RED, GREEN, REFACTOR from the named failing test" -> "Commit incrementally on branch, inside worktree";
+    "Run RED, GREEN, REFACTOR from the named failing test" -> "run_stage {action: fail, stage: implement, reason}" [label="a failure the approach cannot get past"];
     "Run the superpowers chain" -> "Commit incrementally on branch, inside worktree";
+    "Run the superpowers chain" -> "run_stage {action: fail, stage: implement, reason}" [label="a failure the approach cannot get past"];
     "Commit incrementally on branch, inside worktree" -> "git log --format=%h <branch-point>..HEAD";
     "Commit incrementally on branch, inside worktree" -> "STOP: implement never pushes; ship owns the push" [label="tempted to push"];
     "STOP: implement never pushes; ship owns the push" -> "git log --format=%h <branch-point>..HEAD";
     "git log --format=%h <branch-point>..HEAD" -> "run_field_set {key: commits, value: <shas>, stage: implement}";
     "run_field_set {key: commits, value: <shas>, stage: implement}" -> "Implement done: return to the orchestrator";
+    "run_stage {action: fail, stage: implement, reason}" -> "Stage failed";
 }
 ```
 
@@ -71,3 +76,14 @@ superpowers:brainstorming, then the spec, then superpowers:writing-plans,
 then subagent execution. TDD still holds inside every task. When
 dispatching sub-agents, apply the orchestrator's resolved tiering skill if
 it announced one.
+
+## What the graph cannot show
+
+- **A failure the approach cannot get past** (a test that cannot be made
+  to run, a dependency that will not resolve, a question the plan left
+  open) ends the stage with `run_stage {action: fail, stage: "implement",
+  reason}` naming it. Switching approach inside this stage is not a way
+  past it.
+- **Go back to plan** is a Redirect, not a failure: hand it to the
+  orchestrator with `to: plan`, `decidedBy: "pane"`, and the triage
+  mismatch (what made the trivial change need a test) as the reason.
