@@ -110,9 +110,11 @@ digraph checkout {
 
 ### Pick the branch from the result
 
-Read the source branch from the result. The GitLab tools take `repoName` =
-the current checkout's absolute path; `mr_view` takes `mrUrl` = the link,
-or `iid` = the number. For a ticket id, keep the rows whose `sourceBranch`
+Read the source branch from the result. The GitLab tools and
+`worktree_provision` take `repoName` = the current checkout's absolute
+path; `worktree_provision` takes `branch` = the picked branch (a given
+branch name verbatim); `mr_view` takes `mrUrl` = the link, or `iid` = the
+number. For a ticket id, keep the rows whose `sourceBranch`
 (GitHub: head branch) or `title` carries the id. The GitLab tools read the
 daemon's open-MR cache, which may not hold every MR: an empty GitLab
 result means ask, not "none exists".
@@ -141,11 +143,13 @@ Never a guess.
 
 ### Fix the named argument
 
-Change only the argument the error names (for example a `repoName` that
-is not an absolute path: pass the current checkout's absolute path), then
-call `worktree_provision` once more. Never start, restart or replace the
-daemon: a daemon that is down or a repo rt does not know goes to the
-off-script gate, not here.
+Fix only the form of the argument the error names (for example a
+`repoName` that is not an absolute path: pass the current checkout's
+absolute path; or a malformed branch string), then call
+`worktree_provision` once more. Never pick a different branch or repo, and
+never start, restart or replace the daemon. A branch the error says does
+not exist is not an argument error, and a daemon that is down or a repo rt
+does not know goes to the off-script gate, not here.
 
 ### Off-script gate
 
