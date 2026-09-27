@@ -146,7 +146,7 @@ digraph rebase_worktree {
     "Pulled once already?" -> "git_pull {tree}" [label="no"];
     "Pulled once already?" -> "Refused: reported" [label="yes"];
     "git_pull {tree}" -> "git_pull result?";
-    "git_pull result?" -> "branch_sync {tree}" [label="fast-forwarded"];
+    "git_pull result?" -> "git -C <tree> log -1 --oneline" [label="fast-forwarded"];
     "git_pull result?" -> "Refused: reported" [label="error"];
     "git -C <tree> remote get-url origin" -> "Forge host?";
     "Forge host?" -> "mr_list {repoName: <tree>, maxAgeMs: 5000}" [label="GitLab"];
@@ -321,16 +321,15 @@ or continue or skip the rebase.
 
 ### Report the move
 
-Old head -> new head. The old head is the `git -C <tree> log -1 --oneline`
-read before `branch_sync`. The new head is the `git -C <tree> log -1
---oneline --no-decorate` read on the synced and clean paths, and the
-`git -C <tree> log -1 --oneline HEAD` read after an iterate. The line ends
+Old head -> new head. The old head is the latest `git -C <tree> log -1
+--oneline` read before `branch_sync` (read again after a `git_pull`). The
+new head is the `git -C <tree> log -1 --oneline --no-decorate` read on the
+synced and clean paths, and the `git -C <tree> log -1 --oneline HEAD` read
+after an iterate. The line ends
 "already current; nothing pushed" when the heads match, or "pushed by
 branch_sync" when `branch_sync` moved it. Carry any "stack check covered
-<scope> only" caveat on the line. On the manual path, also show the
-`origin/<default>..HEAD` commits: what's about to replay, not just what
-replayed. When a caller composes this per branch, this line is what goes
-back.
+<scope> only" caveat on the line. When a caller composes this per branch,
+this line is what goes back.
 
 ### Gate push
 
@@ -369,7 +368,8 @@ own question:
 
 Selection `{"move":"<the move>","why":"<the refusal>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`.
 **Iterate here** means the human fixed the cause and wants the push
-retried.
+retried. The proposed move is one plain-git force-with-lease push of the
+branch; retrying the refused tool is **Iterate here**, never **Take**.
 
 ### Make the recorded move once
 
@@ -384,6 +384,7 @@ node; a failure is reported, never a second off-script gate.
 - A mechanical `git_push` refusal is one of "tree must be the absolute path of the root" (retry once with the printed root) or "not registered with rt" (no retry).
 - Never push unasked.
 - Aborting the rebase happens only on the **Abort the rebase** answer.
+- The `git -C <tree> log --oneline origin/<default>..HEAD` read is shown before the rebase: what's about to replay, not just what replayed.
 - "Upstream set?" is no when the `status -sb` branch line carries no `...origin/<branch>` tracking ref.
 
 ## Gates
