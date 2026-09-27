@@ -264,8 +264,7 @@ init: a `snapshot:` commit covering the pack dir, `team.jsonc`, and
 Quote each init envelope's `error.message` (and `error.wrote` after a
 write) and propose the next move: the zone and remote to use, or what to
 clear. Retry: the human fixed it; run init again, with `Init runs` starting
-again at zero and no pack-dir removal counted yet. Takes over: the human
-runs init.
+again at zero. Takes over: the human runs init.
 
 ### Gate: remedy did not complete the pack
 
