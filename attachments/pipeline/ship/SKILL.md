@@ -136,6 +136,7 @@ digraph ship {
     "run_stage {action: fail, stage: ship, reason: the default branch}" [shape=plaintext];
     "run_status {status: failed} (default branch)" [shape=plaintext];
     "STOP: never ship the default branch" [shape=octagon style=filled fillcolor=red fontcolor=white];
+    "STOP: never ship the default branch (inherited)" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Own run (ship identity)?" [shape=diamond];
     "run_field_set {key: branch, value: <branch>, stage: ship}" [shape=plaintext];
     "Run the domain steps before the gate (none when unbound)" [shape=box];
@@ -166,7 +167,9 @@ digraph ship {
     "Open MR on the branch (before git_push)?" [shape=diamond];
     "Push moves the MR's head (ship)?" [shape=diamond];
     "mr_pipeline {repoName, iid} (the prior pipeline id, ship)" [shape=plaintext];
+    "Push needs force-with-lease (ship)?" [shape=diamond];
     "git_push {tree: <root>, setUpstream: true}" [shape=plaintext];
+    "git_push {tree: <root>, forceWithLease: true}" [shape=plaintext];
     "git_push result (ship)?" [shape=diamond];
     "Retried with the printed root (ship)?" [shape=diamond];
     "git_push {tree: <the root the error prints>, setUpstream: true}" [shape=plaintext];
@@ -228,7 +231,8 @@ digraph ship {
     "On the default branch (ship)?" -> "Own run (default branch)?" [label="yes"];
     "On the default branch (ship)?" -> "Own run (ship identity)?" [label="no"];
     "Own run (default branch)?" -> "run_stage {action: fail, stage: ship, reason: the default branch}" [label="yes: close it first"];
-    "Own run (default branch)?" -> "STOP: never ship the default branch" [label="no: inherited"];
+    "Own run (default branch)?" -> "STOP: never ship the default branch (inherited)" [label="no: inherited"];
+    "STOP: never ship the default branch (inherited)" -> "Hand the answer back to the caller (ship)";
     "run_stage {action: fail, stage: ship, reason: the default branch}" -> "run_status {status: failed} (default branch)";
     "run_status {status: failed} (default branch)" -> "STOP: never ship the default branch";
     "Own run (ship identity)?" -> "run_field_set {key: branch, value: <branch>, stage: ship}" [label="yes"];
@@ -271,16 +275,19 @@ digraph ship {
 
     "git remote get-url origin (ship)" -> "Forge host (ship, before git_push)?";
     "Forge host (ship, before git_push)?" -> "mr_for_branch {repoName: <root>, branches: [<branch>]} (before git_push)" [label="GitLab"];
-    "Forge host (ship, before git_push)?" -> "git_push {tree: <root>, setUpstream: true}" [label="GitHub"];
+    "Forge host (ship, before git_push)?" -> "Push needs force-with-lease (ship)?" [label="GitHub"];
     "Forge host (ship, before git_push)?" -> "ship gate clarify: which forge?" [label="anything else"];
     "ship gate clarify: which forge?" -> "Forge host (ship, before git_push)?" [label="answered: the named forge"];
     "mr_for_branch {repoName: <root>, branches: [<branch>]} (before git_push)" -> "Open MR on the branch (before git_push)?";
     "Open MR on the branch (before git_push)?" -> "Push moves the MR's head (ship)?" [label="yes"];
     "Push moves the MR's head (ship)?" -> "mr_pipeline {repoName, iid} (the prior pipeline id, ship)" [label="yes: HEAD differs"];
-    "Push moves the MR's head (ship)?" -> "git_push {tree: <root>, setUpstream: true}" [label="no: already pushed"];
-    "Open MR on the branch (before git_push)?" -> "git_push {tree: <root>, setUpstream: true}" [label="no"];
-    "mr_pipeline {repoName, iid} (the prior pipeline id, ship)" -> "git_push {tree: <root>, setUpstream: true}";
+    "Push moves the MR's head (ship)?" -> "Push needs force-with-lease (ship)?" [label="no: already pushed"];
+    "Open MR on the branch (before git_push)?" -> "Push needs force-with-lease (ship)?" [label="no"];
+    "mr_pipeline {repoName, iid} (the prior pipeline id, ship)" -> "Push needs force-with-lease (ship)?";
+    "Push needs force-with-lease (ship)?" -> "git_push {tree: <root>, setUpstream: true}" [label="no"];
+    "Push needs force-with-lease (ship)?" -> "git_push {tree: <root>, forceWithLease: true}" [label="yes: the rebase rewrote pushed commits"];
     "git_push {tree: <root>, setUpstream: true}" -> "git_push result (ship)?";
+    "git_push {tree: <root>, forceWithLease: true}" -> "git_push result (ship)?";
     "git_push {tree: <the root the error prints>, setUpstream: true}" -> "git_push result (ship)?";
     "git_push result (ship)?" -> "Forge host (ship, open the MR)?" [label="ok"];
     "git_push result (ship)?" -> "Retried with the printed root (ship)?" [label="tree must be the absolute path of the root"];
@@ -290,7 +297,7 @@ digraph ship {
     "STOP: push only with git_push (ship)" -> "ship off-script gate: git_push refused";
     "ship off-script gate: git_push refused" -> "ship off-script answer (git_push)?";
     "ship off-script answer (git_push)?" -> "Confirm the human's push landed (ship)" [label="take: the human pushed"];
-    "ship off-script answer (git_push)?" -> "git_push {tree: <root>, setUpstream: true}" [label="take: registration fixed, retry"];
+    "ship off-script answer (git_push)?" -> "Push needs force-with-lease (ship)?" [label="take: registration fixed, retry"];
     "ship off-script answer (git_push)?" -> "Which exit is this (ship)?" [label="hand back: a failure, the refusal is the reason"];
     "ship off-script answer (git_push)?" -> "Which exit is this (ship)?" [label="hold"];
     "ship off-script answer (git_push)?" -> "ship off-script gate: git_push refused" [label="iterate: a new gate with their note"];
@@ -412,7 +419,8 @@ drift the checks leave behind before continuing. A full suite the domain
 rules out stays out: CI runs it. A finished rebase, clean or resolved,
 sends the checks round again because the tree changed under them; the "no
 rebase finished this pass" guard keeps that second round from rebasing
-again.
+again. So a force-with-lease push always follows checks that ran on the
+rewritten tree; no extra check node is needed before it.
 
 ### Fix test-first, commit, rerun (ship)
 
@@ -493,9 +501,9 @@ Scope `mark-ready`. Selection: `{"ready":true|false,"next":"proceed|iterate|redi
 
 ## What the graph cannot show
 
-- After a rebase that rewrote already-pushed commits, push with
-  `git_push {tree: <root>, forceWithLease: true}` instead, and only once
-  you have seen its checks pass in this session. Never force otherwise.
+- Force only on the "yes" edge of "Push needs force-with-lease (ship)?":
+  a rebase finished in this pass and the branch's upstream already held the
+  commits it rewrote. Never force otherwise.
 - Keep the `url` `mr_create` returns as `mrUrl` for every later write, and
   print it. `mr_create` takes `draft: false` only when the gate said ready;
   write its title from the branch's commits.
