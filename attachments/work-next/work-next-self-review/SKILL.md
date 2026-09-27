@@ -33,6 +33,8 @@ digraph self_review {
     "Blocking findings?" [shape=diamond];
     "Review rounds = 3?" [shape=diamond];
     "Fix each blocking finding test-first, commit" [shape=box];
+    "git log --format=%h <branch-point>..HEAD" [shape=plaintext];
+    "run_field_set {key: commits, value: <all shas, fixes included>, stage: self-review}" [shape=plaintext];
     "run_field_set {key: review, value: <verdict; findings fixed or waived>, stage: self-review}" [shape=plaintext];
     "run_stage {action: fail, stage: self-review, reason: blocking findings after 3 rounds}" [shape=plaintext];
     "Stage failed" [shape=doublecircle];
@@ -48,7 +50,9 @@ digraph self_review {
     "Blocking findings?" -> "Review rounds = 3?" [label="yes"];
     "Review rounds = 3?" -> "Fix each blocking finding test-first, commit" [label="no"];
     "Review rounds = 3?" -> "run_stage {action: fail, stage: self-review, reason: blocking findings after 3 rounds}" [label="yes"];
-    "Fix each blocking finding test-first, commit" -> "Domain rules inlined?" [label="review again"];
+    "Fix each blocking finding test-first, commit" -> "git log --format=%h <branch-point>..HEAD";
+    "git log --format=%h <branch-point>..HEAD" -> "run_field_set {key: commits, value: <all shas, fixes included>, stage: self-review}";
+    "run_field_set {key: commits, value: <all shas, fixes included>, stage: self-review}" -> "Domain rules inlined?" [label="review again"];
     "run_field_set {key: review, value: <verdict; findings fixed or waived>, stage: self-review}" -> "Self-review done: return to the orchestrator";
     "run_stage {action: fail, stage: self-review, reason: blocking findings after 3 rounds}" -> "Stage failed";
 }
@@ -59,6 +63,12 @@ digraph self_review {
 The unbound review: one subagent reads `git diff <branch-point>..HEAD`
 against the ticket or task description for correctness, tests present and
 honest, and scope drift.
+
+### Fix each blocking finding test-first, commit
+
+Each fix gets its failing test first, then the fix, then a commit. Ship
+presents and pushes what `commits` names, so the field is rewritten with
+every sha on the branch, fixes included, before the next review round.
 
 ### Follow the domain review
 
