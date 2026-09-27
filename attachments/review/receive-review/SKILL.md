@@ -864,8 +864,14 @@ in the run, for a redraft or at the start, never stands in for it; its
 result, and only its result, is what the post-site test uses. Write the
 verdict down here, one line per thread, from the notes this read
 returned, before anything is offered or posted: the thread, then
-`posted` (naming the note that shows it) or `not posted`. Threads it
-shows carrying this run's reply are counted posted and drop out of every
+`posted` (naming the note that shows it) or `not posted`. Each verdict
+comes only from the notes this read returned. When those notes are not
+in front of you (describing the run rather than making it), a thread's
+verdict line gives both outcomes: if it carries this run's reply, it is
+counted posted and nothing posts or is offered for it; if not, it posts
+or is offered. Never a single verdict inferred from thread open times,
+the snapshot or the report. Threads it shows carrying this run's reply
+are counted posted and drop out of every
 post and offer; the rest still post or are offered. With no result (an
 error, or a thread whose notes did not come back), nothing posts and
 nothing is offered: the run holds, with the error verbatim.
@@ -883,10 +889,7 @@ site, Thread already carries this receive-review run's reply?, one thread
 at a time: from the notes it returned, never from when a thread was
 opened, how old its last note is, the snapshot or the report. Yes counts
 the reply posted and goes on to the thread's resolve decision, never
-posting it again; no posts it. When the notes are not in front of you
-(describing the run rather than making it), write both outcomes for every
-thread: if it carries this run's reply, count it posted and post nothing;
-if not, post it. Only a run that was never resumed or re-asked answers no
+posting it again; no posts it. Only a run that was never resumed or re-asked answers no
 without a read, and only for a thread it has not yet tried to post; after
 an `mr_reply_thread` error, re-read that thread before the retry.
 
