@@ -63,6 +63,7 @@ digraph watch_ci {
     "ci answer?" [shape=diamond];
     "run_field_set {key: ci, value: red: <triage>, stage: watch-ci}" [shape=plaintext];
     "run_status {status: abandoned}" [shape=plaintext];
+    "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" [shape=plaintext];
     "MR still a draft?" [shape=diamond];
     "Gate mark-ready (table below)" [shape=box];
     "ready answer?" [shape=diamond];
@@ -72,6 +73,10 @@ digraph watch_ci {
     "gh pr ready <number>" [shape=plaintext];
     "run_field_set {key: ci, value: green, stage: watch-ci}" [shape=plaintext];
     "<scripts>/ci-attendant.sh release <mr-url> <iid>" [shape=plaintext];
+    "Which exit is releasing the lease?" [shape=diamond];
+    "Fixed the claim call once already?" [shape=diamond];
+    "run_stage {action: fail, stage: watch-ci, reason}" [shape=plaintext];
+    "Stage failed" [shape=doublecircle];
     "Hand Fix and re-push to the orchestrator: Redirect to implement" [shape=doublecircle];
     "Hand the Go back answer to the orchestrator" [shape=doublecircle];
     "Held per the gate part" [shape=doublecircle];
@@ -85,15 +90,19 @@ digraph watch_ci {
     "<scripts>/ci-attendant.sh claim <mr-url> <iid> --branch <branch>" -> "claim exit?";
     "claim exit?" -> "Which flow?" [label="0: the MR is yours"];
     "claim exit?" -> "STOP: while the doctor holds the lease, every commit, push and retry is the doctor's" [label="3: the doctor is repairing it"];
+    "claim exit?" -> "Fixed the claim call once already?" [label="any other exit: a usage error"];
+    "Fixed the claim call once already?" -> "<scripts>/ci-attendant.sh claim <mr-url> <iid> --branch <branch>" [label="no: fix what the usage line names"];
+    "Fixed the claim call once already?" -> "run_stage {action: fail, stage: watch-ci, reason}" [label="yes: the usage line is the reason"];
+    "run_stage {action: fail, stage: watch-ci, reason}" -> "Stage failed";
     "STOP: while the doctor holds the lease, every commit, push and retry is the doctor's" -> "Stand down: report it, stop or watch read-only";
     "Which flow?" -> "Follow the domain's watch flow" [label="domain rules inlined"];
     "Which flow?" -> "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" [label="forge bound, no domain"];
     "Which flow?" -> "mr_pipeline {repoName, iid}" [label="neither, GitLab"];
     "Which flow?" -> "gh pr checks <mr> --watch" [label="neither, GitHub"];
-    "Follow the domain's watch flow" -> "MR still a draft?" [label="green"];
+    "Follow the domain's watch flow" -> "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" [label="green"];
     "Follow the domain's watch flow" -> "Gate ci (table below)" [label="red, timeout or no pipeline"];
     "<scripts>/ci-watch.sh --forge <forge> --ref <branch> --timeout 2700 (background)" -> "watcher exit?";
-    "watcher exit?" -> "MR still a draft?" [label="0: green"];
+    "watcher exit?" -> "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" [label="0: green"];
     "watcher exit?" -> "Read the triage report" [label="1: red"];
     "watcher exit?" -> "Relaunched once already?" [label="2: timeout"];
     "watcher exit?" -> "Verify the branch was pushed" [label="4: no pipeline appeared"];
@@ -106,37 +115,38 @@ digraph watch_ci {
     "Verify the branch was pushed" -> "Gate ci (table below)";
     "mr_pipeline {repoName, iid}" -> "Settled?";
     "Settled?" -> "Polled 45 minutes?" [label="no"];
-    "Settled?" -> "MR still a draft?" [label="green"];
+    "Settled?" -> "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" [label="green"];
     "Settled?" -> "mr_job_trace {repoName, iid, jobId} per failed job" [label="red"];
     "Polled 45 minutes?" -> "sleep 60 as a background Bash task; ci-attendant.sh heartbeat" [label="no"];
     "Polled 45 minutes?" -> "Gate ci (table below)" [label="yes: timeout"];
     "sleep 60 as a background Bash task; ci-attendant.sh heartbeat" -> "mr_pipeline {repoName, iid}";
     "mr_pipeline {repoName, iid}" -> "STOP: GitLab CI reads and retries go through mr_pipeline, mr_job_trace and mr_retry, never the GitLab CLI" [label="tempted by the CLI"];
-    "STOP: GitLab CI reads and retries go through mr_pipeline, mr_job_trace and mr_retry, never the GitLab CLI" -> "mr_job_trace {repoName, iid, jobId} per failed job";
+    "STOP: GitLab CI reads and retries go through mr_pipeline, mr_job_trace and mr_retry, never the GitLab CLI" -> "Settled?";
     "mr_job_trace {repoName, iid, jobId} per failed job" -> "Classify each failure REAL or INFRA";
     "Classify each failure REAL or INFRA" -> "INFRA only, each retried under once?";
     "INFRA only, each retried under once?" -> "mr_retry {repoName, iid, jobId}" [label="yes"];
     "INFRA only, each retried under once?" -> "Gate ci (table below)" [label="no"];
     "mr_retry {repoName, iid, jobId}" -> "mr_pipeline {repoName, iid}";
     "gh pr checks <mr> --watch" -> "Checks green?";
-    "Checks green?" -> "MR still a draft?" [label="yes"];
+    "Checks green?" -> "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" [label="yes"];
     "Checks green?" -> "Gate ci (table below)" [label="no"];
     "Gate ci (table below)" -> "ci answer?";
     "ci answer?" -> "Hand Fix and re-push to the orchestrator: Redirect to implement" [label="fix and re-push: write no ci"];
     "ci answer?" -> "Which flow?" [label="retry the job, then watch again"];
     "ci answer?" -> "run_field_set {key: ci, value: red: <triage>, stage: watch-ci}" [label="hand back"];
-    "ci answer?" -> "run_status {status: abandoned}" [label="abandon"];
-    "ci answer?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
-    "ci answer?" -> "Held per the gate part" [label="hold"];
+    "ci answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="abandon"];
+    "ci answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="go back"];
+    "ci answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="hold"];
     "ci answer?" -> "Gate ci (table below)" [label="iterate: re-triage with their note"];
     "run_status {status: abandoned}" -> "Run abandoned";
+    "mr_view {repoName, iid, maxAgeMs: 5000}, or gh pr view <mr> --json isDraft on GitHub" -> "MR still a draft?";
     "MR still a draft?" -> "Gate mark-ready (table below)" [label="yes"];
     "MR still a draft?" -> "run_field_set {key: ci, value: green, stage: watch-ci}" [label="no"];
     "Gate mark-ready (table below)" -> "ready answer?";
     "ready answer?" -> "Forge host?" [label="mark ready now"];
     "ready answer?" -> "run_field_set {key: ci, value: green, stage: watch-ci}" [label="keep it draft"];
-    "ready answer?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
-    "ready answer?" -> "Held per the gate part" [label="hold"];
+    "ready answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="go back"];
+    "ready answer?" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>" [label="hold"];
     "ready answer?" -> "Gate mark-ready (table below)" [label="iterate: re-ask with their note"];
     "Forge host?" -> "mr_ready {repoName, iid}" [label="GitLab"];
     "Forge host?" -> "gh pr ready <number>" [label="GitHub"];
@@ -146,7 +156,11 @@ digraph watch_ci {
     "gh pr ready <number>" -> "run_field_set {key: ci, value: green, stage: watch-ci}";
     "run_field_set {key: ci, value: green, stage: watch-ci}" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>";
     "run_field_set {key: ci, value: red: <triage>, stage: watch-ci}" -> "<scripts>/ci-attendant.sh release <mr-url> <iid>";
-    "<scripts>/ci-attendant.sh release <mr-url> <iid>" -> "Watch-ci done: return to the orchestrator";
+    "<scripts>/ci-attendant.sh release <mr-url> <iid>" -> "Which exit is releasing the lease?";
+    "Which exit is releasing the lease?" -> "Watch-ci done: return to the orchestrator" [label="ci written"];
+    "Which exit is releasing the lease?" -> "Held per the gate part" [label="hold"];
+    "Which exit is releasing the lease?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
+    "Which exit is releasing the lease?" -> "run_status {status: abandoned}" [label="abandon"];
 }
 ```
 
@@ -174,6 +188,10 @@ auto-doctor. Both honour the lease files under `~/.mattstack/ci-attendants/`.
 Refresh it each poll round with `<scripts>/ci-attendant.sh heartbeat
 <mr-url> <iid>`; a lease without heartbeats goes stale after 10 minutes
 and the doctor may take over. A crashed session needs no cleanup.
+Release it on every exit that leaves the MR unattended (a written `ci`,
+Hold, Go back, Abandon); with `mr` unset nothing was claimed, so skip the
+release. Fix and re-push keeps it, because the re-run claims it again, and
+Stand down never touches it: that lease is the doctor's.
 
 | Thought | Reality |
 |---|---|
