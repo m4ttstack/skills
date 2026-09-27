@@ -97,11 +97,11 @@ digraph evidence {
     "Same source the gate recorded?" -> "STOP: a new data source is an off-script move" [label="no"];
     "STOP: a new data source is an off-script move" -> "Off-script gate (gate-protocol, scope off-script:evidence:<n>)";
     "Off-script gate (gate-protocol, scope off-script:evidence:<n>)" -> "off-script answer?";
-    "off-script answer?" -> "Capture the BEFORE" [label="proceed + take: the recorded source"];
+    "off-script answer?" -> "Capture the BEFORE" [label="proceed + take: the proposed source"];
     "off-script answer?" -> "run_stage {action: fail, stage: evidence, reason, detailPath}" [label="proceed + hand back"];
-    "off-script answer?" -> "Off-script rounds = 2?" [label="iterate: the human fixed the recorded source, retry it"];
+    "off-script answer?" -> "Off-script rounds = 2?" [label="iterate: the human fixed the evidence gate's source, retry it"];
     "off-script answer?" -> "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}}" [label="hold: no capture made"];
-    "Off-script rounds = 2?" -> "Capture the BEFORE" [label="no: the source the gate recorded"];
+    "Off-script rounds = 2?" -> "Capture the BEFORE" [label="no: the evidence gate's source"];
     "Off-script rounds = 2?" -> "run_stage {action: fail, stage: evidence, reason, detailPath}" [label="yes: hand back"];
     "Domain attaches evidence to an MR here?" -> "run_field_get {key: branch}" [label="yes"];
     "run_field_get {key: branch}" -> "mr_for_branch {repoName: <worktree>, branches: [<branch>]}";
@@ -153,10 +153,10 @@ same source. The counter is attempts within this pass through the stage.
 ## What the graph cannot show
 
 - **Off-script answers.** Read `next` first: Hold ends the turn with no
-  capture made; Iterate means the human fixed the recorded source and
-  ignores `action`; only Proceed applies `action`. Retrying the recorded
-  source is Iterate; a new source is only Take; rounds count per stage
-  attempt.
+  capture made; Iterate means the human fixed the evidence gate's source
+  and ignores `action`; only Proceed applies `action`. Retrying the
+  evidence gate's source is Iterate; the proposed new source is only Take;
+  rounds count per stage attempt.
 
 ## Gate `evidence` (before any capture)
 
