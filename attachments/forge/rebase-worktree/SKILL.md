@@ -313,11 +313,11 @@ to the wait queue):
 - `next`: **Proceed** (recommended) / **Iterate here** / **Hold**
 
 Selection `{"next":"leave|abort|iterate|hold","note":"<their words or null>"}`.
-Read `next` first: **Hold** ends the turn with nothing aborted; **Iterate
-here** re-reads the tree (the human worked in their own pane) and ignores
-`conflict`; only **Proceed** applies `conflict` (leave or abort). Never
-resolve the conflict yourself, stage the files, or continue or skip the
-rebase.
+The recorded `next` folds both questions into one value: **Hold** records
+`hold` and ends the turn with nothing aborted; **Iterate here** records
+`iterate` and re-reads the tree, ignoring `conflict`; **Proceed** records
+the `conflict` choice itself (`leave` or `abort`). Never resolve the
+conflict yourself, stage the files, or continue or skip the rebase.
 
 {{include:spawned-no-run-guard}}
 
