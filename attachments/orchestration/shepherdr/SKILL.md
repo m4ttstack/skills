@@ -412,6 +412,7 @@ digraph shepherdr_watch {
     "rt herd spawn --herd <id> --job review-<job> --brief <review brief> --dir <the job's tree> --disposable --model <model> [--account <A>]" [shape=plaintext]; // <!-- mcp-lint: allow -->
     "rt_verb {args: [pane, peek, <pane>]}: the unconsumed lane" [shape=plaintext];
     "Is the lane alive?" [shape=diamond];
+    "Smart-distribute pool in use?" [shape=diamond];
     "Nudges for this gate?" [shape=diamond];
     "An idle prompt, and no form on screen?" [shape=diamond];
     "chat_dm {to: <job>, body: call herd_answer for <gate>}" [shape=plaintext];
@@ -485,7 +486,9 @@ digraph shepherdr_watch {
     "rt herd spawn --herd <id> --job review-<job> --brief <review brief> --dir <the job's tree> --disposable --model <model> [--account <A>]" -> "End the turn until something arrives"; // <!-- mcp-lint: allow -->
     "rt_verb {args: [pane, peek, <pane>]}: the unconsumed lane" -> "Is the lane alive?";
     "Is the lane alive?" -> "Nudges for this gate?" [label="alive"];
-    "Is the lane alive?" -> "Respawns of this job = 2?" [label="dead: a login expired, or no claude on it"];
+    "Is the lane alive?" -> "Smart-distribute pool in use?" [label="dead: a login expired, or no claude on it"];
+    "Smart-distribute pool in use?" -> "Pick the account per the accounts rules" [label="yes"];
+    "Smart-distribute pool in use?" -> "Respawns of this job = 2?" [label="no: relaunch on the same account"];
     "Nudges for this gate?" -> "chat_dm {to: <job>, body: call herd_answer for <gate>}" [label="0"];
     "Nudges for this gate?" -> "An idle prompt, and no form on screen?" [label="1: the DM was lost too"];
     "An idle prompt, and no form on screen?" -> "rt pane send <pane> --text <the same nudge>" [label="yes"];
@@ -573,7 +576,8 @@ string exactly as the gate row gives it.
 The Accounts section decides whether to respawn now or ask the user first.
 Its pick is the `--account` on the shared respawn. Announce the respawn to
 the user afterward. When the user chooses to wait or to abandon the job,
-end the turn.
+end the turn. A dead lane with a smart-distribute pool takes the same pick
+before its respawn.
 
 ### Report the stall to the user
 
