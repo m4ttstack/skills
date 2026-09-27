@@ -44,6 +44,7 @@ digraph sync_open_mrs {
     "Say nothing was selected" [shape=box];
     "Selected branches left?" [shape=diamond];
     "Follow rebase-worktree for the next branch" [shape=box];
+    "rebase-worktree ended Held?" [shape=diamond];
     "Record the branch in its bucket" [shape=box];
     "Any rebased, still unpushed?" [shape=diamond];
     "Summarize the rebase pass" [shape=box];
@@ -112,7 +113,9 @@ digraph sync_open_mrs {
     "Say nothing was selected" -> "Started this run here?";
     "Selected branches left?" -> "Follow rebase-worktree for the next branch" [label="yes"];
     "Selected branches left?" -> "Any rebased, still unpushed?" [label="no"];
-    "Follow rebase-worktree for the next branch" -> "Record the branch in its bucket";
+    "Follow rebase-worktree for the next branch" -> "rebase-worktree ended Held?";
+    "rebase-worktree ended Held?" -> "Held: end the turn naming the gate" [label="yes: its dirty-tree question was held"];
+    "rebase-worktree ended Held?" -> "Record the branch in its bucket" [label="no"];
     "Record the branch in its bucket" -> "Selected branches left?";
     "Any rebased, still unpushed?" -> "Summarize the rebase pass" [label="yes"];
     "Any rebased, still unpushed?" -> "Report every branch in one bucket" [label="no"];
@@ -251,8 +254,8 @@ nothing.
 
 ### Record the branch in its bucket
 
-What `rebase-worktree` hands back decides the bucket. No branch's outcome
-ever blocks the rest of the sweep:
+What `rebase-worktree` hands back decides the bucket. Apart from a
+**Held**, no branch's outcome blocks the rest of the sweep:
 
 - The conflicted-files sentence (the branch is left mid-rebase): needs-hands.
 - "pushed by branch_sync": pushed.
@@ -265,8 +268,10 @@ ever blocks the rest of the sweep:
   the reason. `rebase-worktree` already pulls once on "run git_pull
   first", so that text arrives here only when the refusal survived the
   pull.
-- `rebase-worktree` ending at its own dirty-tree question (**Aborted:
-  nothing touched** or **Held**): skipped, with that answer as the reason.
+- `rebase-worktree` ending at **Aborted: nothing touched** on its
+  dirty-tree question: skipped, with that reason. A **Held** there never
+  reaches this step: it holds the whole sweep, and the turn ends naming
+  that gate.
 
 ### Summarize the rebase pass
 
@@ -323,7 +328,9 @@ each its own question:
 
 Selection `{"move":"<one move per listed branch>","why":"<each refusal>","action":"take|handback","next":"proceed|iterate|hold","note":"<their words or null>"}`.
 **Iterate here** means the human fixed the cause and wants those pushes
-retried; **Hand back** leaves them push failed.
+retried; **Hand back** leaves them push failed. The proposed move is the
+same plain-git force-with-lease push, once per listed branch; retrying the
+refused tool is **Iterate here**, never **Take**.
 
 ### Queue the mechanical failures again
 
