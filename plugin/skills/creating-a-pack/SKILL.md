@@ -263,29 +263,30 @@ init: a `snapshot:` commit covering the pack dir, `team.jsonc`, and
 
 Quote each init envelope's `error.message` (and `error.wrote` after a
 write) and propose the next move: the zone and remote to use, or what to
-clear. Retry: the human fixed it; run init again, with `Init runs` starting
-again at zero. Takes over: the human runs init.
+clear. After a `write-failed`, the retry needs the pack dir removed first.
+Retry: the author fixed it; run init again, with `Init runs` starting again
+at zero. Takes over: the author runs init.
 
 ### Gate: remedy did not complete the pack
 
 Quote the remedy and what is still missing, and propose the next move.
-Retry: follow the remedy again with the human's note, and a remedy that
+Retry: follow the remedy again with the author's note, and a remedy that
 still leaves the pack incomplete comes back here. Takes over: the pack stays
-as init and the remedy left it, for the human.
+as init and the remedy left it, for the author.
 
 ### Gate: zone push rejected
 
 Quote the rejection and propose the next move (bring in the remote change,
-fix the credentials). Never force. Retry: the human fixed it; push again,
+fix the credentials). Never force. Retry: the author fixed it; push again,
 and a second rejection comes back here. Takes over: the commit stays local
-for the human to push.
+for the author to push.
 
 ### Gate: snapshot never landed
 
 Quote the three `git status -sb` results and propose the next move (check
 the daemon is running with `rt_verb {args: ["daemon", "status"]}`, or the
-human commits the zone). Retry: the human fixed it; check the status again,
-with `Status checks` starting again at zero. Takes over: the human commits
+author commits the zone). Retry: the author fixed it; check the status again,
+with `Status checks` starting again at zero. Takes over: the author commits
 and pushes the zone.
 
 ## What the graph cannot show
@@ -300,7 +301,8 @@ and pushes the zone.
 - Before `git status -sb`, `cd <zone checkout>` as its own Bash call.
 - At `Pack published`, however the zone got there, say that teammates
   receive the pack through `rt setup`, and hand any later change to
-  `mattstack:editing-skills`.
+  `mattstack:editing-skills`; a rule made and GREEN in a
+  `mattstack:extending-a-pack` round enters it at `What changed?`.
 
 ## Writing fills later
 

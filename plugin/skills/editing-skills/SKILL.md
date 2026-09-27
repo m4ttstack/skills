@@ -122,6 +122,7 @@ digraph publish_skill {
     "Trigger: a skill change to make, or a change that is not live" -> "Is there an edit to make?";
     "Is there an edit to make?" -> "Baseline a fresh agent (RED)" [label="yes"];
     "Is there an edit to make?" -> "List the packs to bring current" [label="no: not live, or the cache lags"];
+    "Is there an edit to make?" -> "What changed?" [label="made and GREEN in an extending-a-pack round"];
     "Baseline a fresh agent (RED)" -> "Edit or create SKILL.md in the source path";
     "Edit or create SKILL.md in the source path" -> "The edit compiles into a pack verb?";
     "The edit compiles into a pack verb?" -> "Compile the checkout's sources on Bash" [label="yes: engine, include or fill"];
@@ -249,6 +250,10 @@ A team pack's own fill compiles as that pack against its checkout:
 
 `rt skills compile --pack <pack> --pack-dir <pack checkout>` <!-- mcp-lint: allow -->
 
+For the pack's canonical checkout,
+`rt_verb {args: ["skills", "compile", "--pack", "<pack>"]}` is enough; the
+bare `--pack-dir` form is for a worktree or another checkout.
+
 ### Verify with a fresh agent (GREEN)
 
 Run the baseline scenario again on a fresh agent with the edited skill,
@@ -256,7 +261,7 @@ loaded unbumped and uncommitted through a `--plugin-dir` session (see What
 the graph cannot show).
 GREEN asks one more question: did the fresh agent run a
 shell command a tool covers (`rt runs`, `glab`, `git push`, `git rebase`, `rt herd`, `rt worktree provision`)? <!-- mcp-lint: allow -->
-Then the skill is not green.
+If it did, the skill is not green.
 `${CLAUDE_SKILL_DIR}/../../../attachments/mcp-tools/reference.md` lists
 every tool.
 
@@ -429,7 +434,8 @@ human brings the rest current.
 
 ### Gate: cached version still behind
 
-Quote the cache listing and the version you bumped to, and propose why it
+Quote the cache listing and the version you bumped to (with no edit, the
+manifest's `version`), and propose why it
 lags (the update ran under another config dir, a marketplace points
 elsewhere). Retry: bring the packs current again, with `Sync calls`
 starting again at zero. Takes over: the human chases the cache.
@@ -440,12 +446,16 @@ starting again at zero. Takes over: the human chases the cache.
   then the bare commands (`git add`, `git commit`), never
   `git -C <path> ...`.
 - To try an uncommitted edit for one session without touching the cache:
-  `claude --plugin-dir ~/Documents/GitHub/mattstack-skills`.
+  `claude --plugin-dir ~/Documents/GitHub/mattstack-skills`, or
+  `claude --plugin-dir <pack dir>` for a team pack.
+- A change handed from `mattstack:extending-a-pack` or
+  `mattstack:creating-a-pack` already passed its RED and GREEN, so it enters
+  at `What changed?`.
 - Skills verbs go through `rt_verb`: `--pack <pack>` sits in `args`, and
   the call never carries a `cwd`. `--pack-dir <dir>` rides in `args` for
   `check` only.
 - A team pack's own skill certifies with `--domain`
-  (`sh tests/certify.sh <dir> --domain`): the purity greps skip, every
+  (`sh <mattstack-skills>/tests/certify.sh <dir> --domain`): the purity greps skip, every
   structural check still runs.
 - The cswap sessions sync warns about are those whose `plugins` is not a
   symlink resolving to `<config>/plugins`.

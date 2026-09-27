@@ -218,6 +218,8 @@ yet: write it first. Other causes a refusal can name:
 - a verb-level bind (`mattstack:ship`) needs the door rostered first. The
   stage-level bind (`mattstack:stage-ship`) works either way.
 
+`Bind attempts` counts the refused binds this round.
+
 ### Add it to pack/surface.jsonc public
 
 `context` needs no bind: it is public by being under `skills/`. Add it to
@@ -235,7 +237,8 @@ stale line:
 
 Fix the source the output names: a certify `FAIL` in the skill or fill you
 wrote, a stale line by compiling again with
-`rt_verb {args: ["skills", "compile", "--pack", "<pack>"]}`.
+`rt_verb {args: ["skills", "compile", "--pack", "<pack>"]}`. `Fix rounds`
+counts the fixes made this round.
 
 ### Re-run the same stage on the same task
 
@@ -247,10 +250,9 @@ the same stop point, and record that the miss is gone.
 
 ### Revise the rule
 
-Revise the same source file against the miss the last run showed, then
-compile, certify and check again before the fresh
-`claude --plugin-dir <pack dir>` session. The session that ran the last
-GREEN still holds the old text; exit it.
+Revise the same source file against the miss the last run showed. The
+session that ran the last GREEN still holds the old text; exit it before the
+next `claude --plugin-dir`. `GREEN rounds` counts the GREEN runs this round.
 
 ### Gate: bind refused twice
 
@@ -268,8 +270,8 @@ finishes the change.
 
 ### Gate: fragment still missing the binding
 
-Quote the bind results and the `bindings` in `pack/skills.jsonc`, and
-propose the next move (the stage-level bind, or the author adds the entry).
+`Fragment checks` counts the fragment checks this round. Quote the bind
+results and the `bindings` in `pack/skills.jsonc`, and propose the next move (the stage-level bind, or the author adds the entry).
 Retry: the author fixed it; bind again, with `Fragment checks` starting
 again at zero. Takes over: the author finishes the binding.
 
@@ -292,9 +294,11 @@ again at zero. Takes over: the author finishes the rule.
 
 ## Publish
 
-Hand to `mattstack:editing-skills`: bump, commit, push,
-`rt_verb {args: ["skills", "sync", "--pack", "<pack>"]}`, restart. The daemon's team snapshot may commit the zone first; that is
-fine, the bump and push still go through editing-skills.
+Hand to `mattstack:editing-skills`: bump, commit, push, check and sync each
+pack (`rt_verb {args: ["skills", "sync", "--pack", "<pack>"]}`), then
+`/reload-plugins`. The round already passed RED and GREEN, so it enters
+editing-skills at `What changed?`. The daemon's team snapshot may commit the
+zone first; that is fine, the bump and push still go through editing-skills.
 
 ## Red flags
 
