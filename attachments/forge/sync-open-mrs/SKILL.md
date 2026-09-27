@@ -129,6 +129,7 @@ digraph sync_open_mrs {
     "git_push result?" -> "Record push failed, reason quoted" [label="safety refusal: lease, protected or default branch, detached HEAD, upstream mismatch"];
     "git_push result?" -> "Retried this branch once?" [label="tree must be the absolute path of the root"];
     "git_push result?" -> "Record push failed, mechanical" [label="not registered with rt"];
+    "git_push result?" -> "Record push failed, reason quoted" [label="any other error"];
     "Retried this branch once?" -> "git_push {tree: <the root the error prints>, forceWithLease: true}" [label="no"];
     "Retried this branch once?" -> "Record push failed, mechanical" [label="yes"];
     "Record pushed" -> "Selected pushes left?";
@@ -264,6 +265,8 @@ ever blocks the rest of the sweep:
   the reason. `rebase-worktree` already pulls once on "run git_pull
   first", so that text arrives here only when the refusal survived the
   pull.
+- `rebase-worktree` ending at its own dirty-tree question (**Aborted:
+  nothing touched** or **Held**): skipped, with that answer as the reason.
 
 ### Summarize the rebase pass
 
@@ -297,7 +300,7 @@ The branch lands in the pushed bucket.
 The branch lands in push failed with the `git_push` error quoted as the
 reason, and the rest carry on. A safety refusal (lease, protected or
 default branch, detached HEAD, upstream mismatch) is a verdict on that
-branch: never gated, never retried.
+branch: never gated, never retried; so is any other `git_push` error.
 
 ### Record push failed, mechanical
 
