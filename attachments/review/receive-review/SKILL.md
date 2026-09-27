@@ -157,6 +157,9 @@ digraph receive_review {
     "run_stage {action: done, stage: receive-review}" [shape=plaintext];
     "run_status {status: done|abandoned}" [shape=plaintext];
     "run_stage {action: fail, stage: <stage>, reason}" [shape=plaintext];
+    "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [shape=plaintext];
+    "run_field_set {key: hold, value: <their words, or held>, stage: <stage>}" [shape=plaintext];
+    "run_field_set {key: hold, value: held, stage: <stage>}" [shape=plaintext];
 
     "No open MR: nothing to answer" [shape=doublecircle];
     "Held: end the turn naming the run and stage" [shape=doublecircle];
@@ -220,7 +223,7 @@ digraph receive_review {
     "Off-script gate: the respond-plan open will not fit" -> "Answer at the respond-plan fit off-script gate?";
     "Answer at the respond-plan fit off-script gate?" -> "Make the recorded move once at the respond-plan fit" [label="take"];
     "Answer at the respond-plan fit off-script gate?" -> "Fix the respond-plan source the fit names" [label="iterate: fix again with their note"];
-    "Answer at the respond-plan fit off-script gate?" -> "Held: end the turn naming the run and stage" [label="hold"];
+    "Answer at the respond-plan fit off-script gate?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
     "Answer at the respond-plan fit off-script gate?" -> "run_stage {action: fail, stage: <stage>, reason}" [label="hand back"];
     "Make the recorded move once at the respond-plan fit" -> "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-plan.source.json > <dir>/respond-plan.open.json";
     "Caller owns the receive-review gates at respond-plan?" -> "Hand back the verdict table and the respond-plan open's path" [label="yes"];
@@ -229,7 +232,7 @@ digraph receive_review {
     "Gate respond-plan through gate-protocol" -> "respond-plan pane next answer?";
     "respond-plan pane next answer?" -> "run_decision {contract: gate@1, scope: respond-plan, selection, decidedBy}" [label="continue, or answered off the pane"];
     "respond-plan pane next answer?" -> "Redraft the replies with the respond-plan note" [label="iterate here"];
-    "respond-plan pane next answer?" -> "Held: end the turn naming the run and stage" [label="hold"];
+    "respond-plan pane next answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
     "Redraft the replies with the respond-plan note" -> "Build the open" [label="a new gate"];
     "run_decision {contract: gate@1, scope: respond-plan, selection, decidedBy}" -> "Rewrite the receive-review report rows";
     "Rewrite the receive-review report rows" -> "code-changes answer?";
@@ -250,7 +253,7 @@ digraph receive_review {
     "Off-script gate: the thread's fix did not converge" -> "Answer at the unconverged-fix off-script gate?";
     "Answer at the unconverged-fix off-script gate?" -> "Make the recorded move once for the unconverged fix" [label="take"];
     "Answer at the unconverged-fix off-script gate?" -> "Implement the thread's fix" [label="iterate: try again with their note"];
-    "Answer at the unconverged-fix off-script gate?" -> "Held: end the turn naming the run and stage" [label="hold"];
+    "Answer at the unconverged-fix off-script gate?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
     "Answer at the unconverged-fix off-script gate?" -> "run_stage {action: fail, stage: <stage>, reason}" [label="hand back"];
     "Make the recorded move once for the unconverged fix" -> "Next report row, in verdict-table order?";
     "Commit the fix and finalize its Fixed reply" -> "Next report row, in verdict-table order?";
@@ -277,7 +280,7 @@ digraph receive_review {
     "Off-script gate: the respond-post open will not fit" -> "Answer at the respond-post fit off-script gate?";
     "Answer at the respond-post fit off-script gate?" -> "Make the recorded move once at the respond-post fit" [label="take"];
     "Answer at the respond-post fit off-script gate?" -> "Fix the respond-post source the fit names" [label="iterate: fix again with their note"];
-    "Answer at the respond-post fit off-script gate?" -> "Held: end the turn naming the run and stage" [label="hold"];
+    "Answer at the respond-post fit off-script gate?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
     "Answer at the respond-post fit off-script gate?" -> "run_stage {action: fail, stage: <stage>, reason}" [label="hand back"];
     "Make the recorded move once at the respond-post fit" -> "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-post.source.json > <dir>/respond-post.open.json";
     "Caller owns the receive-review gates at respond-post?" -> "Hand back the offered replies and the respond-post open's path" [label="yes"];
@@ -287,7 +290,7 @@ digraph receive_review {
     "respond-post next answer?" -> "Picks post or resolve a gate-1: fix row?" [label="proceed"];
     "respond-post next answer?" -> "Decide nothing at respond-post: no push, post, resolve or record" [label="hold"];
     "respond-post next answer?" -> "Apply the respond-post note" [label="iterate"];
-    "Decide nothing at respond-post: no push, post, resolve or record" -> "Held: end the turn naming the run and stage";
+    "Decide nothing at respond-post: no push, post, resolve or record" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}";
     "Apply the respond-post note" -> "Posted already: read each thread on the forge" [label="a new gate"];
 
     "Picks post or resolve a gate-1: fix row?" -> "git branch --show-current" [label="yes"];
@@ -352,7 +355,7 @@ digraph receive_review {
     "respond-post decided by a gate or a handed post?" -> "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" [label="yes"];
     "respond-post decided by a gate or a handed post?" -> "Any thread held this pass: a failed push or a forge refusal?" [label="no: nothing was offered or handed"];
     "run_decision {contract: gate@1, scope: respond-post, selection, decidedBy}" -> "Any thread held this pass: a failed push or a forge refusal?";
-    "Any thread held this pass: a failed push or a forge refusal?" -> "Threads held: run left open for a resume" [label="yes"];
+    "Any thread held this pass: a failed push or a forge refusal?" -> "run_field_set {key: hold, value: held, stage: <stage>}" [label="yes"];
     "Any thread held this pass: a failed push or a forge refusal?" -> "Report the outcome (to the caller when it owns the gates)" [label="no"];
     "Report the outcome (to the caller when it owns the gates)" -> "This verb started or resumed the run?";
     "This verb started or resumed the run?" -> "run_stage {action: done, stage: receive-review}" [label="yes"];
@@ -360,6 +363,9 @@ digraph receive_review {
     "run_stage {action: done, stage: receive-review}" -> "run_status {status: done|abandoned}";
     "run_status {status: done|abandoned}" -> "Review feedback answered";
     "run_stage {action: fail, stage: <stage>, reason}" -> "receive-review stage failed";
+    "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" -> "run_field_set {key: hold, value: <their words, or held>, stage: <stage>}";
+    "run_field_set {key: hold, value: <their words, or held>, stage: <stage>}" -> "Held: end the turn naming the run and stage";
+    "run_field_set {key: hold, value: held, stage: <stage>}" -> "Threads held: run left open for a resume";
 }
 ```
 
@@ -393,6 +399,16 @@ started or resumed the run, after every reply has posted and every
 decision is recorded: `run_stage` with `action: "done"`, `stage:
 "receive-review"`, then `run_status` with `status: "done"` (or `abandoned`
 when a gate said so).
+
+A Hold with a run, own or inherited, is recorded before the turn ends:
+`run_decision` with `contract: "gate@1"`, `scope:
+"hold:<stage>:<attempt>"`, `selection: {"reason": "<their words>"}`,
+`decidedBy: <the answer's by>`, then `run_field_set` with `key: "hold"`,
+`value: "<their words, or held>"`, `stage: <stage>`. Threads left held
+(a failed push or a forge refusal) set `run_field_set` with `key:
+"hold"`, `value: "held"`, `stage: <stage>` before the turn ends. The
+clarify Hold comes before any run and records nothing. A resume clears
+the field.
 
 {{include:run-identity}}
 
@@ -984,7 +1000,9 @@ the shell.
 A `hold` or `iterate` answer decides nothing, whatever its thread picks
 say: nothing pushes, no reply posts, no thread resolves, and no
 respond-post decision is recorded, so every offered thread stays pending
-in the record and the `gate-1: reply` rows keep waiting.
+in the record and the `gate-1: reply` rows keep waiting. A `hold` still
+records the hold itself and sets the `hold` field (Run); neither is a
+respond-post decision.
 
 ### Apply the respond-post note
 
