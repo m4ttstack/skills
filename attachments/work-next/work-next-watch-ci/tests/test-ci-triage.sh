@@ -89,6 +89,15 @@ else
   fail exclusion-filter-mixed "$(cat "$TMP/out")"
 fi
 
+# exclusion-filter-keeps-failures: a summary that reports passes AND a
+# nonzero failure count is a real failure, not a passing line -> REAL
+rc=$(run_triage verdicts --pipeline 27 --no-base --out-dir "$TMP/t27")
+grep -q 'verdict: REAL' "$TMP/out" && ok exclusion-keeps-mixed || fail exclusion-keeps-mixed "$(cat "$TMP/out")"
+
+# exclusion-filter-zero-errors: "1 failed, 0 errors" keeps its failure -> REAL
+rc=$(run_triage verdicts --pipeline 28 --no-base --out-dir "$TMP/t28")
+grep -q 'verdict: REAL' "$TMP/out" && ok exclusion-keeps-zero-errors || fail exclusion-keeps-zero-errors "$(cat "$TMP/out")"
+
 # ansi-stripped: ANSI-wrapped FAIL still hits REAL; saved .log has no raw ESC
 rc=$(run_triage verdicts --pipeline 25 --no-base --out-dir "$TMP/t5")
 grep -q 'verdict: REAL' "$TMP/out" && ok ansi-real || fail ansi-real "$(cat "$TMP/out")"
