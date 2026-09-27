@@ -59,9 +59,9 @@ tests") is a `box`.
    when a tool exists, else a `box` naming the step ("Merge the MR"). "No
    tool was listed" is not a reason to skip it.
 4. **Every loop has a budget, including loops that fix code.** A counter
-   diamond (`Fix attempts = 3?`) whose "yes" edge leaves the loop to a gate
-   or a STOP. "It is judgment-driven iteration, so it needs no bound" is the
-   rationalization that produces runaway runs.
+   diamond (`Fix attempts = 3?`) whose "yes" edge leaves the loop to a gate,
+   a STOP or an outcome. "It is judgment-driven iteration, so it needs no
+   bound" is the rationalization that produces runaway runs.
 5. **A STOP forbids one move and has at most one way out.** It ends the
    path, exits to an outcome, or hands to the off-script gate ("STOP: push
    only with git_push" -> "Off-script gate"). A guard STOP, entered only on
@@ -151,6 +151,7 @@ One graph, one section per judgment step, and the tool calls are the nodes.
      missing success outcome. On a new or edited graph run it with --strict:
      it also fails two warnings the default run only prints (two calls in one
      plaintext node, a tempted edge that leaves a step instead of a decision).
+   Before publishing, walk `Before you publish the spec` below against the graph.
 5. Test behavior with superpowers:writing-skills: fresh agents, describe-only,
    5 runs per scenario, prose version against graph version, and a deviation
    table (shell calls a tool covers, skipped steps, runaway loops, stops that
@@ -175,7 +176,7 @@ Check the spec against every line; each one caught a real graph in review.
 5. **Distinct text for every step**, specific to this skill. Identical text
    is one node to dot, so two steps merge.
 6. **Guard STOPs sit on `tempted to ...` edges out of a decision** and
-   redirect to the move they name.
+   redirect to the move they name or hand to the off-script gate.
 7. **RED scenarios reach the tempting move**.
 8. **Resume and run bookkeeping**.
 
@@ -184,7 +185,7 @@ Check the spec against every line; each one caught a real graph in review.
 | Thought | Reality |
 | --- | --- |
 | "The team's fallback rule lives outside my section, so I hand off to it." | The graph wins. Route to the off-script gate, never to an injected shell fallback. |
-| "Fixing code is judgment, so that loop needs no budget." | Every loop gets a counter and an exit to a gate. Judgment decides the fix, not how many times to try. |
+| "Fixing code is judgment, so that loop needs no budget." | Every loop gets a counter and an exit out of the loop. Judgment decides the fix, not how many times to try. |
 | "I'll keep git and push apart so the lint passes." | Name the tool. Dodging the lint keeps the forbidden move in the text. |
 | "The STOP can branch on what the human says next." | A STOP has one way out: none, an outcome, the off-script gate, or (for a guard) the move it names. Asking and choosing is a gate step. |
 | "The merge outcome implies the merge." | Outward steps are nodes. Draw the merge call. |
