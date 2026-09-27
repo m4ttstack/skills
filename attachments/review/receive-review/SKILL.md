@@ -236,7 +236,8 @@ digraph receive_review {
     "code-changes answer?" -> "Next report row, in verdict-table order?" [label="approve, or skip"];
     "code-changes answer?" -> "Dispatch one fresh-context adjudicator over all the review threads" [label="revise: a fresh dispatch with their note; a handed plan is spent"];
 
-    "Next report row, in verdict-table order?" -> "Implement the thread's fix" [label="fix, code-changes approve"];
+    "Next report row, in verdict-table order?" -> "Implement the thread's fix" [label="fix, code-changes approve, not yet on the branch"];
+    "Next report row, in verdict-table order?" -> "Commit the fix and finalize its Fixed reply" [label="fix whose commit is on the branch (sha in its row, or the branch log): implement nothing again"];
     "Next report row, in verdict-table order?" -> "Redraft the override's reply" [label="override"];
     "Next report row, in verdict-table order?" -> "Next report row, in verdict-table order?" [label="reply, skip, or fix under code-changes skip: nothing now"];
     "Next report row, in verdict-table order?" -> "Resumed, or re-asking after respond-post Hold or Iterate?" [label="rows done"];
@@ -431,7 +432,9 @@ What the snapshot records picks the re-entry:
   fetch the threads again.
 - **`respond-plan` recorded, no `respond-post` record:** rewrite the report
   rows from the record alone (the snapshot-only reading under Rewrite the
-  receive-review report rows), then walk the rows.
+  receive-review report rows), then walk the rows. A fix row whose commit
+  is already on the branch implements nothing again: its Fixed reply is
+  written from that commit, and nothing is re-committed.
 - **A `respond-post` record carrying `"held"`:** read each thread on the
   forge first (Posted already), then treat every other offered thread as
   already acted on and act only on the held threads. Push only when a held
@@ -764,7 +767,9 @@ offers nor posts it.
 Nothing is implemented until `respond-plan` approves it -- not under cover
 of "in a follow-up commit," not while drafting. On `code-changes: approve`,
 implement the `fix:<threadId>` threads one at a time, verifying each with
-the project's tests and checks before the next.
+the project's tests and checks before the next. A fix row whose commit is
+already on the branch (its row carries `sha`, or the branch log shows that
+thread's fix) is never implemented again, on a resume or anywhere else.
 
 ### Run the project's tests and checks on the fix
 
@@ -792,6 +797,10 @@ changed" and write it over the draft in the thread's report row, with
 ` · sha: <short sha>` before its `reply` field. The sha belongs to the
 report row only: the reply posted to the forge is the Fixed text alone,
 never the ` · sha:` field.
+
+A fix whose commit is already on the branch commits nothing again: its
+Fixed reply is written from that commit, and its row gets that commit's
+`sha`.
 
 ### Redraft the override's reply
 
