@@ -283,9 +283,12 @@ metadata:
 
 ## Pipeline resolution
 
-The compiler reads `pipelines` from the manifest and bakes the stage list
-into the compiled `work` skill via `{{pipeline.stages}}`. Nothing resolves
-pipelines at run time.
+The `work` orchestrator walks a fixed eight-stage graph and reaches each
+stage through `{{verb.path:stage-<stage>}}`. A manifest's `pipelines`
+array rosters the stage engines for compile and must list all eight; its
+order and work-type key are not read by `work`. `{{pipeline.stages}}` and
+`{{work-type}}` remain compiler placeholders that no mattstack engine uses.
+Nothing resolves pipelines at run time.
 
 ## Compile-native vs runtime-native
 

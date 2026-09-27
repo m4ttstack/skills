@@ -31,7 +31,7 @@
         "items": { "$ref": "#/definitions/skillName" },
         "minItems": 1
       },
-      "description": "Per-work-type pipelines (work type -> ordered stage skills). Schema-complete in phase 1; consumed by the orchestrator in a later phase."
+      "description": "Stage roster for compile (work type -> stage skills). The work orchestrator's order is fixed; a pack lists all eight stage-* engines."
     },
     "bindings": {
       "type": "object",
