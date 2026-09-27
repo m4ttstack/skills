@@ -400,12 +400,15 @@ decision is recorded: `run_stage` with `action: "done"`, `stage:
 "receive-review"`, then `run_status` with `status: "done"` (or `abandoned`
 when a gate said so).
 
-A Hold with a run, own or inherited, is recorded before the turn ends:
-`run_decision` with `contract: "gate@1"`, `scope:
+A gate's Hold answer that ends the turn (the edge to Held: end the turn
+naming the run and stage), with a run, own or inherited, is recorded
+before the turn ends: `run_decision` with `contract: "gate@1"`, `scope:
 "hold:<stage>:<attempt>"`, `selection: {"reason": "<their words>"}`,
 `decidedBy: <the answer's by>`, then `run_field_set` with `key: "hold"`,
-`value: "<their words, or held>"`, `stage: <stage>`. Threads left held
-(a failed push or a forge refusal) set `run_field_set` with `key:
+`value: "<their words, or held>"`, `stage: <stage>`. A thread hold is
+the other case: threads left held (a failed push, or a forge-refusal Hold
+that holds only its thread) record no `hold:<stage>:<attempt>` decision,
+only their `"held"` entry, and set `run_field_set` with `key:
 "hold"`, `value: "held"`, `stage: <stage>` before the turn ends. The
 clarify Hold comes before any run and records nothing. A resume clears
 the field.
