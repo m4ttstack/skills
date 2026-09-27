@@ -105,7 +105,7 @@ digraph shepherdr_start {
     "STOP: fix the refusal; never copy the template or strategies file elsewhere" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Domain provisions the tree?" [shape=diamond];
     "herd_spawn {herd, job, brief, model, effort?, account?}" [shape=plaintext];
-    "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree>" [shape=plaintext]; // <!-- mcp-lint: allow -->
+    "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree> [--account <A>]" [shape=plaintext]; // <!-- mcp-lint: allow -->
     "Spawn result?" [shape=diamond];
     "STOP: never hand-roll a tree, a pane or a launch" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Shepherd off-script gate: ask the user" [shape=box];
@@ -148,9 +148,9 @@ digraph shepherdr_start {
     "Brief retries = 2?" -> "Shepherd off-script gate: ask the user" [label="yes: budget spent"];
     "Fix what the refusal names" -> "herd_brief {job, template, strategy, strategies, fill, out}";
     "Domain provisions the tree?" -> "herd_spawn {herd, job, brief, model, effort?, account?}" [label="no: herd_spawn provisions"];
-    "Domain provisions the tree?" -> "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree>" [label="yes: its tree, its Bash line"]; // <!-- mcp-lint: allow -->
+    "Domain provisions the tree?" -> "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree> [--account <A>]" [label="yes: its tree, its Bash line"]; // <!-- mcp-lint: allow -->
     "herd_spawn {herd, job, brief, model, effort?, account?}" -> "Spawn result?";
-    "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree>" -> "Spawn result?"; // <!-- mcp-lint: allow -->
+    "rt herd spawn --herd <id> --job <job> --brief <brief> --model <model> --dir <its tree> [--account <A>]" -> "Spawn result?"; // <!-- mcp-lint: allow -->
     "Spawn result?" -> "More jobs in this batch (cap 6)?" [label="ok"];
     "Spawn result?" -> "Shepherd off-script gate: ask the user" [label="error: quote it"];
     "Spawn result?" -> "STOP: never hand-roll a tree, a pane or a launch" [label="tempted to build the tree or pane yourself"];
@@ -409,7 +409,7 @@ digraph shepherdr_watch {
     "Fix the answers: each value verbatim" [shape=box];
     "Spawn a reviewer chosen?" [shape=diamond];
     "Reviewer rounds on this milestone = 2?" [shape=diamond];
-    "rt herd spawn --herd <id> --job review-<job> --brief <review brief> --dir <the job's tree> --disposable --model <model>" [shape=plaintext]; // <!-- mcp-lint: allow -->
+    "rt herd spawn --herd <id> --job review-<job> --brief <review brief> --dir <the job's tree> --disposable --model <model> [--account <A>]" [shape=plaintext]; // <!-- mcp-lint: allow -->
     "rt_verb {args: [pane, peek, <pane>]}: the unconsumed lane" [shape=plaintext];
     "Is the lane alive?" [shape=diamond];
     "Nudges for this gate?" [shape=diamond];
@@ -480,9 +480,9 @@ digraph shepherdr_watch {
     "Fix the answers: each value verbatim" -> "rt gate answer <id> --answers <json> --by shepherd";
     "Spawn a reviewer chosen?" -> "End the turn until something arrives" [label="no"];
     "Spawn a reviewer chosen?" -> "Reviewer rounds on this milestone = 2?" [label="yes"];
-    "Reviewer rounds on this milestone = 2?" -> "rt herd spawn --herd <id> --job review-<job> --brief <review brief> --dir <the job's tree> --disposable --model <model>" [label="no"]; // <!-- mcp-lint: allow -->
+    "Reviewer rounds on this milestone = 2?" -> "rt herd spawn --herd <id> --job review-<job> --brief <review brief> --dir <the job's tree> --disposable --model <model> [--account <A>]" [label="no"]; // <!-- mcp-lint: allow -->
     "Reviewer rounds on this milestone = 2?" -> "Shepherd off-script gate: ask the user" [label="yes: budget spent"];
-    "rt herd spawn --herd <id> --job review-<job> --brief <review brief> --dir <the job's tree> --disposable --model <model>" -> "End the turn until something arrives"; // <!-- mcp-lint: allow -->
+    "rt herd spawn --herd <id> --job review-<job> --brief <review brief> --dir <the job's tree> --disposable --model <model> [--account <A>]" -> "End the turn until something arrives"; // <!-- mcp-lint: allow -->
     "rt_verb {args: [pane, peek, <pane>]}: the unconsumed lane" -> "Is the lane alive?";
     "Is the lane alive?" -> "Nudges for this gate?" [label="alive"];
     "Is the lane alive?" -> "Respawns of this job = 2?" [label="dead: a login expired, or no claude on it"];
@@ -605,7 +605,7 @@ briefs** / **Hold**. No restated heading, no per-option descriptions.
 - **Blocked diagnosis.** `<job> blocked` means the pane sat on a prompt for 30s. `herd_gates` comes first; its rows carry `presentation` and `owner`. Only "blocked, no open question, no open gate" makes the pane peek legitimate, never a hunch. `bg:` refs work for hidden herds.
 - **Typing versus keys.** Typing a text nudge into a lane's prompt with `rt pane send <pane> --text <nudge>` is allowed when the prompt is idle and no form is on screen. Pressing keys into a modal or form (Escape, Enter, an option number) is forbidden: the daemon injects Escape itself when a form-presentation gate is answered elsewhere, and a keystroke into a pane on a background `rt gate wait` interrupts a worker that was never stuck. A gate row's `presentation` says which you face: `"form"` means answering the gate clears the form; `"wait"` means leave the pane alone.
 - **Unconsumed answers.** The daemon already re-nudges the worker itself; what reaches you is `gate <id> UNCONSUMED` on a job in `herd_status`, or the watchdog's "answered Nm ago and unconsumed" line. Read the lane's pane first: a dead lane (a login expired, no claude on it) is a respawn, not a nudge. Nudge 0 is the DM. Nudge 1 types the same nudge, under the Typing versus keys rule above. After that, the off-script gate.
-- **The disposable reviewer.** Its spawn line is the graph's node, in the job's own tree (`herd_spawn` would land it in a fresh one). Its brief reads the artifact, DMs the findings to the job's handle with `chat_dm`, and reports a verdict; the daemon closes its pane on that report. The job revises and opens a fresh milestone gate: every round is gate, DM, gate. You never read the artifact.
+- **The disposable reviewer.** Its spawn line is the graph's node, in the job's own tree (`herd_spawn` would land it in a fresh one). Its brief reads the artifact, DMs the findings to the job's handle with `chat_dm`, and reports a verdict; the daemon closes its pane on that report. The job revises and opens a fresh milestone gate: every round is gate, DM, gate. You never read the artifact. With the Accounts section non-empty, it takes a per-spawn pick like any other spawn.
 - **A bare pane form.** A worker pane showing a structured question with no gate behind it (`herd_gates` returns nothing for it) is the banned bare pane-local form, unreachable from every channel. Flag it to the user; never answer it yourself. Covered panes deny it at source through the launch-injected gate-fork hook, so seeing one means the pane is uncovered or its daemon was unreachable.
 
 **The shared respawn.** A rate-limit stall (a limit banner in the peek), a
@@ -659,7 +659,7 @@ digraph shepherdr_lanes {
     "Every job done and closed?" [shape=diamond];
     "Show the status table" [shape=box];
     "Gate wrap-up: the form contract" [shape=box];
-    "Any trees closing or disposed?" [shape=diamond];
+    "Any panes closing or trees disposed?" [shape=diamond];
     "worktree_stop_holders {repoName, tree}" [shape=plaintext];
     "More closing trees to stop?" [shape=diamond];
     "Measure what still runs" [shape=box];
@@ -696,7 +696,7 @@ digraph shepherdr_lanes {
     "Every lane job done?" -> "Integration job spawned already?" [label="yes"];
     "Integration job spawned already?" -> "Ask the integration job's strategy and model" [label="no"];
     "Integration job spawned already?" -> "Unmerged reports for this lane = 2?" [label="yes: it reported no merge"];
-    "Integration job spawned already?" -> "Ask the integration job's strategy and model" [label="yes, but before this lane joined: a new one for it"];
+    "Integration job spawned already?" -> "Ask the integration job's strategy and model" [label="yes, it has reported and this lane joined after it spawned: a new one for it"];
     "Integration job spawned already?" -> "Back to the watch loop: end the turn" [label="yes, and it is still running: wait for its report"];
     "Ask the integration job's strategy and model" -> "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}";
     "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" -> "herd_spawn {herd, job: integration-<n>, brief, model, account?}";
@@ -724,9 +724,9 @@ digraph shepherdr_lanes {
     "Every job done and closed?" -> "Show the status table" [label="yes"];
     "Show the status table" -> "Gate wrap-up: the form contract";
     "Gate wrap-up: the form contract" -> "Herd held" [label="hold"];
-    "Gate wrap-up: the form contract" -> "Any trees closing or disposed?" [label="close, keep or dispose answers"];
-    "Any trees closing or disposed?" -> "worktree_stop_holders {repoName, tree}" [label="yes"];
-    "Any trees closing or disposed?" -> "herd_wrap_up {herd, closePanes, dispose, deleteJobDirs, archiveRoom}" [label="no: panes kept, nothing disposed"];
+    "Gate wrap-up: the form contract" -> "Any panes closing or trees disposed?" [label="close, keep or dispose answers"];
+    "Any panes closing or trees disposed?" -> "worktree_stop_holders {repoName, tree}" [label="yes"];
+    "Any panes closing or trees disposed?" -> "herd_wrap_up {herd, closePanes, dispose, deleteJobDirs, archiveRoom}" [label="no: every pane kept, nothing disposed"];
     "worktree_stop_holders {repoName, tree}" -> "More closing trees to stop?";
     "More closing trees to stop?" -> "worktree_stop_holders {repoName, tree}" [label="yes"];
     "More closing trees to stop?" -> "Measure what still runs" [label="no"];
