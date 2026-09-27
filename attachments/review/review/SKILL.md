@@ -75,7 +75,7 @@ digraph review {
     "Gate review clarify: which target?" [shape=box];
     "Review target answer?" [shape=diamond];
     "Own review run: record the target?" [shape=diamond];
-    "run_field_set {key: mr | branch | ticket, value, stage: review}" [shape=plaintext];
+    "Record the review target: mr, branch and any ticket" [shape=box];
 
     "Print the review depth block" [shape=box];
     "Review diff forge?" [shape=diamond];
@@ -97,8 +97,8 @@ digraph review {
     "Decided selection handed in by the review caller?" [shape=diamond];
     "Review report json in hand?" [shape=diamond];
     "Write review-post.extras.json" [shape=box];
-    "sh scripts/review-source.sh <report json> <extras> > review-post.source.json" [shape=plaintext];
-    "sh scripts/gate-ctx.sh fit < review-post.source.json > review-post.open.json" [shape=plaintext];
+    "sh \"${CLAUDE_SKILL_DIR}/scripts/review-source.sh\" <report json> <dir>/review-post.extras.json > <dir>/review-post.source.json" [shape=plaintext];
+    "sh \"${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh\" fit < <dir>/review-post.source.json > <dir>/review-post.open.json" [shape=plaintext];
     "Both review scripts exit 0?" [shape=diamond];
     "Fixed a field a review script named once already?" [shape=diamond];
     "Fix the field the review script names" [shape=box];
@@ -111,6 +111,7 @@ digraph review {
     "Gate review-post, legacy: tiers, outcome and next" [shape=box];
     "Review-post next answer?" [shape=diamond];
     "Take the human's changes into the review draft" [shape=box];
+    "Review iterate note asks for another depth?" [shape=diamond];
 
     "Review posting forge?" [shape=diamond];
     "gh pr review <ref> with the disposition and the summary body" [shape=plaintext];
@@ -165,7 +166,7 @@ digraph review {
     "Gate review clarify: Resume / Start fresh / Hold" -> "Review resume answer?";
     "Review resume answer?" -> "run_stage {action: start, stage: review} on the resumed runDb" [label="resume"];
     "Review resume answer?" -> "run_start {flags, skillDir, spawnedBy?} for review" [label="start fresh"];
-    "Review resume answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for review" [label="hold"];
+    "Review resume answer?" -> "Review held: end the turn" [label="hold: no run yet, record nothing"];
     "run_stage {action: start, stage: review} on the resumed runDb" -> "run_field_set {key: hold, value: -, stage: review}";
     "run_field_set {key: hold, value: -, stage: review}" -> "run_snapshot {runDb: <resumed review>}";
     "run_snapshot {runDb: <resumed review>}" -> "Resumed review snapshot records?";
@@ -196,9 +197,9 @@ digraph review {
     "Gate review clarify: which target?" -> "Review target answer?";
     "Review target answer?" -> "Review target form?" [label="a target picked: resolve it"];
     "Review target answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for review" [label="hold"];
-    "Own review run: record the target?" -> "run_field_set {key: mr | branch | ticket, value, stage: review}" [label="yes"];
+    "Own review run: record the target?" -> "Record the review target: mr, branch and any ticket" [label="yes"];
     "Own review run: record the target?" -> "Print the review depth block" [label="no: inherited"];
-    "run_field_set {key: mr | branch | ticket, value, stage: review}" -> "Print the review depth block";
+    "Record the review target: mr, branch and any ticket" -> "Print the review depth block";
 
     "Print the review depth block" -> "Review diff forge?";
     "Review diff forge?" -> "gh pr diff <ref>" [label="GitHub"];
@@ -225,14 +226,14 @@ digraph review {
     "Decided selection handed in by the review caller?" -> "Review report json in hand?" [label="no"];
     "Review report json in hand?" -> "Write review-post.extras.json" [label="yes"];
     "Review report json in hand?" -> "Gate review-post, legacy: tiers, outcome and next" [label="no"];
-    "Write review-post.extras.json" -> "sh scripts/review-source.sh <report json> <extras> > review-post.source.json";
-    "sh scripts/review-source.sh <report json> <extras> > review-post.source.json" -> "sh scripts/gate-ctx.sh fit < review-post.source.json > review-post.open.json";
-    "sh scripts/gate-ctx.sh fit < review-post.source.json > review-post.open.json" -> "Both review scripts exit 0?";
+    "Write review-post.extras.json" -> "sh \"${CLAUDE_SKILL_DIR}/scripts/review-source.sh\" <report json> <dir>/review-post.extras.json > <dir>/review-post.source.json";
+    "sh \"${CLAUDE_SKILL_DIR}/scripts/review-source.sh\" <report json> <dir>/review-post.extras.json > <dir>/review-post.source.json" -> "sh \"${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh\" fit < <dir>/review-post.source.json > <dir>/review-post.open.json";
+    "sh \"${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh\" fit < <dir>/review-post.source.json > <dir>/review-post.open.json" -> "Both review scripts exit 0?";
     "Both review scripts exit 0?" -> "Caller owns the review gates?" [label="yes"];
     "Both review scripts exit 0?" -> "Fixed a field a review script named once already?" [label="no: exit 1 names a field"];
     "Fixed a field a review script named once already?" -> "Fix the field the review script names" [label="no"];
     "Fixed a field a review script named once already?" -> "Open the review off-script gate: a review script refused twice" [label="yes"];
-    "Fix the field the review script names" -> "sh scripts/review-source.sh <report json> <extras> > review-post.source.json";
+    "Fix the field the review script names" -> "sh \"${CLAUDE_SKILL_DIR}/scripts/review-source.sh\" <report json> <dir>/review-post.extras.json > <dir>/review-post.source.json";
     "Open the review off-script gate: a review script refused twice" -> "Review script off-script answer?";
     "Review script off-script answer?" -> "Gate review-post, legacy: tiers, outcome and next" [label="take: open the legacy gate instead"];
     "Review script off-script answer?" -> "Write review-post.extras.json" [label="iterate here: rebuild with their note"];
@@ -248,7 +249,9 @@ digraph review {
     "Review-post next answer?" -> "Review posting forge?" [label="proceed"];
     "Review-post next answer?" -> "Take the human's changes into the review draft" [label="iterate here"];
     "Review-post next answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy} for review" [label="hold: nothing posted"];
-    "Take the human's changes into the review draft" -> "Review report path given?" [label="re-present; the next gate is a new one"];
+    "Take the human's changes into the review draft" -> "Review iterate note asks for another depth?";
+    "Review iterate note asks for another depth?" -> "Print the review depth block" [label="yes: redo from the depth block, verify rounds reset"];
+    "Review iterate note asks for another depth?" -> "Review report path given?" [label="no: draft edits only; the next gate is a new one"];
 
     "Review posting forge?" -> "gh pr review <ref> with the disposition and the summary body" [label="GitHub"];
     "Review posting forge?" -> "Next selected finding with a file anchor?" [label="GitLab"];
@@ -321,7 +324,8 @@ never reaches this gate: another pane's live run is not yours to resume.
 Resume: your `runDb` is `<home>/.mattstack/runs/<repo>/<its id>/state.db`
 (the candidate row's `id`, the home directory written out, never `~`).
 Re-enter with the snapshot's decisions: a question they already answered
-is never asked again.
+is never asked again. Hold here records nothing and ends the turn: no run
+exists yet, so there is nothing to write a hold reason into.
 
 ### Resolve the review target
 
@@ -343,6 +347,13 @@ per candidate, and `next`: **Proceed** (recommended) / **Hold**. Record
 `run_decision {contract: gate@1, scope: clarify, selection: {"target":
 "<picked>"}, decidedBy: <the answer's by>}`.
 
+### Record the review target: mr, branch and any ticket
+
+Up to three `run_field_set` calls, `stage: review`: `key: mr`, value the
+MR or PR URL; `key: branch`, value its source branch; and, only when the
+MR or PR itself names a ticket, `key: ticket`, value that id. Never guess
+a ticket id the target does not carry.
+
 ### Print the review depth block
 
 The review flow's "Commit to a review depth" below is this step, and its
@@ -354,11 +365,12 @@ resolving it returned (title, description, changed files).
 ### Set up for the review depth
 
 The review flow's "Set up for the depth". The GitLab fetch and diff above
-are two separate commands, `targetBranch` from the live `mr_view`. At
-`verify` and `repro` depth the setup checks out the MR head
-(`origin/mr-<iid>`, or `origin/pr-<n>` on GitHub) in a scratch worktree;
-that checkout is where the verify step re-runs commands. Record every
-command and its result.
+are two separate commands, `targetBranch` from the live `mr_view`. Checks
+and the verify step's command re-run happen only in a checkout of the MR
+head that is already in hand (the caller's, or the pane's own when it is
+at the MR head); the review never creates one. With no MR-head checkout in
+hand, the command check is skipped and noted, exactly as at read depth.
+Record every command and its result.
 
 ### Dispatch the fresh reviewer; it forms the findings
 
@@ -384,10 +396,15 @@ Check each blocking finding's facts, never its reasoning:
   checked on its quote and command only.
 - **Quote:** code the finding quotes appears at or near that line.
 - **Command:** a command the finding names (a test, a script) re-runs only
-  in the checkout the setup made at the MR head (`verify` and `repro`). At
-  `read` depth the local tree is the wrong code: skip the command check,
-  note "not run at read depth", and let the anchor and quote decide. A
-  command that passes where the finding says it fails is a failed check.
+  in a checkout of the MR head already in hand (the caller's, or the
+  pane's own when it is at the MR head); the review never creates one.
+  With no MR-head checkout in hand -- including at `read` depth, where the
+  local tree is the wrong code -- skip the command check, note "not run at
+  read depth", and let the anchor and quote decide. A command that passes
+  where the finding says it fails is a failed check.
+
+A round counts each time this step runs, whether the first pass or a
+re-dispatch.
 
 ### Re-dispatch a fresh reviewer on the unverified findings
 
@@ -398,11 +415,12 @@ corrected anchor or withdraw it. The counter is verify rounds in this run.
 
 ### Demote each unverified finding to Minor, marked unverified
 
-Move each finding that failed round two to Minor, in the draft and in the
-json, its `body` prefixed `Unverified: <the failed check>.` The
-Assessment's readiness is never raised by a demotion (the reviewer may
-have had other reasons); its reasoning gains one sentence naming the
-demoted findings.
+Move each finding that failed round two to Minor in the draft, its `body`
+prefixed `Unverified: <the failed check>.` The Assessment's readiness is
+never raised by a demotion (the reviewer may have had other reasons); its
+reasoning gains one sentence naming the demoted findings. The json
+sibling, written afterward, mirrors this demoted draft; demotion never
+edits an already-written json on its own.
 
 ### Write the review report and its json sibling
 
@@ -448,7 +466,8 @@ as context. The output file IS the open: its `.context` and `.questions`
 go to the gate verbatim, fitted to the shared budget. A report json from
 before version 2 carries no bodies, so fit opens it as prose on its own;
 that is correct, not an error. Never hand-edit the open, and never shorten
-a body to make it fit.
+a body to make it fit. Any non-zero exit, 1 or 2, from either script is a
+refusal at "Both review scripts exit 0?".
 
 ### Fix the field the review script names
 
@@ -494,8 +513,12 @@ pre-selected), then `outcome` and `next` exactly as in the extras above.
 
 ### Take the human's changes into the review draft
 
-Their text is changes to the draft: apply them, re-present, and the next
-gate is a NEW gate, never the old one reopened.
+Their text is changes to the draft: apply them. Their words asking for a
+different review depth (verify instead of read, repro instead of verify,
+or similarly) are a depth request: it sends the graph back to the depth
+block and resets the verify-round counter, since a deeper depth means new
+setup and a fresh verify pass. Anything else is a draft edit only:
+re-present, and the next gate is a NEW gate, never the old one reopened.
 
 ### Make the recorded gh move once
 
@@ -515,8 +538,9 @@ once.
 ### End with the review target's forge link
 
 The final message ends with the target's id as a markdown link to its
-real web URL, read from the forge (the review-posting close HARD-GATE
-below).
+real web URL: the one a posting tool returned, else `mr_view`'s `webUrl`
+(or `gh pr view`'s url), else on a resume the snapshot's `mr` field (the
+review-posting close HARD-GATE below).
 
 ### Open the review off-script gate: a review script refused twice
 
@@ -525,7 +549,8 @@ The rest is the shape in Review off-script gates below.
 
 ### Open the review off-script gate: gh pr review refused
 
-The proposed move is the human's, spelled in full in the value.
+The proposed move: post the summary body as a plain PR comment with `gh
+pr comment <ref>`, and leave the disposition to the human.
 
 ### Open the review off-script gate: mr_comment_inline refused
 
@@ -536,12 +561,14 @@ in the summary comment instead, as if it had no `file` anchor.
 ### Open the review off-script gate: mr_comment summary refused
 
 The inline threads are already posted: `context` lists them. The proposed
-move is the human's, spelled in full in the value.
+move: the human posts the summary body (quoted in full in `context`) in
+the forge UI, and the run records it as posted by the human.
 
 ### Open the review off-script gate: mr_approve refused
 
 The findings and the summary are posted; only the approval failed. The
-proposed move is the human's, spelled in full in the value.
+proposed move: the human approves in the forge UI, and the run records
+the approval as theirs.
 
 ## Review off-script gates
 
@@ -556,19 +583,22 @@ from 1 in this run), `context` quoting the refusal verbatim:
 
 Selection: `{"move": "<the move>", "why": "<the refusal>", "action":
 "take|handback", "next": "proceed|iterate|hold", "note": "<their words or
-null>"}`. Take makes exactly that move, once, then continues after it.
+null>"}`. `action: handback` is hand back, whatever `next` says; otherwise
+`next: iterate` is iterate here, `next: hold` is hold, and `next: proceed`
+is take. Take makes exactly that move, once, then continues after it.
 Iterate here retries the refused call with their note; each retry that
-fails opens a new gate. A hand-back's reason names every thread already
-posted.
+fails opens a new gate. A hold's reason, like a hand-back's, names every
+thread and note already posted.
 
 ## What the graph cannot show
 
 - Review verbs produce judgment and execute posting; they never decide
   what posts.
-- Present the draft, then state the severity levels present in one
+- The draft is presented once: after verify and any demotion, never
+  before. Present it, then state the severity levels present in one
   structured line, for example "Findings: Critical (2), Important (1); 3
   findings.", skipping any level with no findings. The counts are the
-  draft's own, before any selection narrows what posts.
+  demoted draft's own, before any selection narrows what posts.
 - A caller's decided selection is `{findings, outcome}` (findings naming
   finding ids from the report json, outcome the disposition), or from an
   unmigrated caller the legacy `{tiers, outcome}`. Use the decider the
@@ -589,6 +619,9 @@ posted.
   hold:<stage>:<attempt>, selection: {"reason": "<their words>"},
   decidedBy: <the answer's by>}` and `run_field_set {key: hold, value:
   "<their words>", stage: <stage>}`, then ends the turn.
+- On a resume, a thread or note that the latest hold's reason names as
+  already posted is never posted again; its finding is skipped at
+  posting.
 
 ## The review flow
 
