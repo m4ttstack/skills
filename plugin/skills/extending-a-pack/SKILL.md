@@ -208,13 +208,12 @@ and never adds a move the engine's graph marks STOP.
 ### Fix what the refusal names
 
 The bind validates `provides`, writes the per-repo manifest AND
-`pack/skills.jsonc`, and recompiles. It refuses:
+`pack/skills.jsonc`, and recompiles. It refuses a fill that does not exist
+yet: write it first. Other causes a refusal can name:
 
-- a fill that does not exist yet: write it first;
-- a `provides` that does not match the slot's contract;
-- a verb-level bind (`mattstack:ship`) before the door is rostered. The
-  stage-level bind (`mattstack:stage-ship`) works either way. Bind both
-  when both exist.
+- the fill's `provides` needs to match the slot's contract;
+- a verb-level bind (`mattstack:ship`) needs the door rostered first. The
+  stage-level bind (`mattstack:stage-ship`) works either way.
 
 ### Add it to pack/surface.jsonc public
 
@@ -285,8 +284,6 @@ again at zero. Takes over: the author finishes the rule.
   fragment, not the manifest, is checked for the new `bindings` entry.
 - When the ask has both a stage level and a verb level (`mattstack:stage-ship`
   and `mattstack:ship`), bind both, one bind call each.
-- A `context` skill is certified the same way,
-  `sh <mattstack-skills>/tests/certify.sh <context dir> --domain`.
 - A `shepherdr` door compiles only with its two required slots bound:
   `tiering` to `mattstack:model-tiering`, `strategy` to
   `mattstack:execution-strategy`.
@@ -299,7 +296,10 @@ fine, the bump and push still go through editing-skills.
 
 ## Red flags
 
-- The STOP node covers compiled output and the plugin cache: the next compile or update erases the edit.
+- The STOP node covers compiled output (`skills/<verb>/`,
+  `attachments/stage-*/`), which the next compile erases, and the engine in
+  the plugin cache, which every team's compile reads and the next update
+  erases.
 - Editing `~/.mattstack/repos/<slug>/skills.jsonc` by hand: regenerated on
   the next materialize; the fragment is the source.
 - A fill body that restates the engine: the fill carries only what the team

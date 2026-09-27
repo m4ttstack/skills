@@ -175,9 +175,6 @@ nothing was written. Relay `error.message` word for word, then read
 - `zone-has-pack`: the zone found already belongs to another team's pack,
   so this team needs a zone of its own, made the same way.
 
-Both go back to the author for a team and a remote; count every init run
-toward the budget of two.
-
 ### Relay error.message and error.wrote
 
 A post-write failure is
@@ -188,8 +185,8 @@ init wrote files before it failed. Relay `error.message` and the
 ### Remove the pack dir
 
 Only after `write-failed`: that code's remedy is to remove the pack dir and
-run init again. Remove the pack dir that `error.wrote` names, and nothing
-else in the zone. The re-run counts toward the same budget.
+run init again. Remove the pack dir the `error.wrote` paths sit in, and
+nothing else in the zone.
 
 ### Follow the printed remedy
 
@@ -198,9 +195,9 @@ pack.
 
 ### End the turn
 
-Queue the reload with rt:herdr-inject, then end the turn. `/reload-plugins`
-loads the new pack in place, and the queued Continue line resumes this pane
-on the next step.
+The `rt pane send self` call above is the rt:herdr-inject pattern and has
+already queued the reload; end the turn now. `/reload-plugins` loads the new
+pack in place.
 
 ### Run tryNext on a small real ticket
 
@@ -266,27 +263,31 @@ init: a `snapshot:` commit covering the pack dir, `team.jsonc`, and
 
 Quote each init envelope's `error.message` (and `error.wrote` after a
 write) and propose the next move: the zone and remote to use, or what to
-clear. Retry: the human fixed it; run init again. Takes over: the human
+clear. Retry: the human fixed it; run init again, with `Init runs` starting
+again at zero and no pack-dir removal counted yet. Takes over: the human
 runs init.
 
 ### Gate: remedy did not complete the pack
 
 Quote the remedy and what is still missing, and propose the next move.
-Retry: follow the remedy again with the human's note. Takes over: the pack
-stays as init and the remedy left it, for the human.
+Retry: follow the remedy again with the human's note, and a remedy that
+still leaves the pack incomplete comes back here. Takes over: the pack stays
+as init and the remedy left it, for the human.
 
 ### Gate: zone push rejected
 
 Quote the rejection and propose the next move (bring in the remote change,
-fix the credentials). Never force. Retry: the human fixed it; push again.
-Takes over: the commit stays local for the human to push.
+fix the credentials). Never force. Retry: the human fixed it; push again,
+and a second rejection comes back here. Takes over: the commit stays local
+for the human to push.
 
 ### Gate: snapshot never landed
 
 Quote the three `git status -sb` results and propose the next move (check
 the daemon is running with `rt_verb {args: ["daemon", "status"]}`, or the
-human commits the zone). Retry: the human fixed it; check the status again.
-Takes over: the human commits and pushes the zone.
+human commits the zone). Retry: the human fixed it; check the status again,
+with `Status checks` starting again at zero. Takes over: the human commits
+and pushes the zone.
 
 ## What the graph cannot show
 
