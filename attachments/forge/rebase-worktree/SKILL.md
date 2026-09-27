@@ -133,7 +133,7 @@ digraph rebase_worktree {
     "branch_sync {tree}" -> "branch_sync result?";
     "branch_sync result?" -> "Report the move" [label="synced"];
     "branch_sync result?" -> "Conflict: caller composing per branch?" [label="conflict"];
-    "branch_sync result?" -> "git -C <tree> remote get-url origin" [label="stack check could not run, or rt sync itself failed"];
+    "branch_sync result?" -> "git -C <tree> remote get-url origin" [label="stack check could not run, or the sync itself failed"];
     "branch_sync result?" -> "Refused: stack member, tool named" [label="stack refusal ending Run: <tool>"];
     "branch_sync result?" -> "Pulled once already?" [label="run git_pull first"];
     "branch_sync result?" -> "Refused: reported" [label="any other refusal"];
@@ -370,6 +370,7 @@ node; a failure is reported, never a second off-script gate.
 - A mechanical `git_push` refusal is one of "tree must be the absolute path of the root" (retry once with the printed root) or "not registered with rt" (no retry).
 - Never push unasked.
 - Aborting the rebase happens only on the **Abort the rebase** answer.
+- "Upstream set?" is no when the `status -sb` branch line carries no `...origin/<branch>` tracking ref.
 
 ## Gates
 
