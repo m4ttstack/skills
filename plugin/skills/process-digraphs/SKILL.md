@@ -167,8 +167,9 @@ Check the spec against every line; each one caught a real graph in review.
    hold and hand back exits.
 2. **A budget on every loop**, per-item repeats too: retries per job,
    reviewer rounds, the off-script iterate.
-3. **A preservation inventory**: every current rule mapped to its node or
-   section. A rule with no home is a rule dropped.
+3. **A preservation inventory**: every current rule and step mapped to its own
+   node or section. A rule with no home is a rule dropped; a step folded into
+   a later call ("tag, then push the tag" drawn as one push) is a step dropped.
 4. **One exact call per `plaintext` node.** "X, or Y on GitHub" is two nodes
    behind a `Forge?` diamond.
 5. **Distinct text for every step**, specific to this skill. Identical text
