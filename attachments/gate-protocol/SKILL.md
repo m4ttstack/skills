@@ -298,8 +298,10 @@ presentation. A human who opens an unattended pane can interrupt the wait
 and answer in words: the graph's words trigger, which first checks that
 no surface already reconciled the gate.
 
-A cancelled form holds on the wait even outside herdr: no form is open, so
-nothing needs the remote-answer Escape.
+Under a run, a cancelled form holds on the wait even outside herdr: no form
+is open, so nothing needs the remote-answer Escape. With no run, a cancelled
+form launches no wait: the human who cancelled is at the pane, the turn ends
+held at the open gate, and the answer arrives later in words.
 
 ## Runs integration
 
