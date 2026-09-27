@@ -49,12 +49,14 @@ digraph evidence {
     "Off-script gate (gate part)" [shape=box];
     "off-script answer?" [shape=diamond];
     "Domain attaches evidence to an MR here?" [shape=diamond];
+    "run_field_get {key: branch}" [shape=plaintext];
     "mr_for_branch {repoName: <worktree>, branches: [<branch>]}" [shape=plaintext];
     "Open MR on the branch?" [shape=diamond];
     "Gate evidence-attach (table below)" [shape=box];
     "attach answer?" [shape=diamond];
     "mr_upload {mrUrl, path} per file; keep each markdown" [shape=plaintext];
-    "mr_update {mrUrl, description}" [shape=plaintext];
+    "mr_view {mrUrl, maxAgeMs: 5000}" [shape=plaintext];
+    "mr_update {mrUrl, description: <the body read back plus the evidence markdown>}" [shape=plaintext];
     "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [shape=plaintext];
     "run_stage {action: fail, stage: evidence, reason, detailPath}" [shape=plaintext];
     "Held per the gate part" [shape=doublecircle];
@@ -78,6 +80,7 @@ digraph evidence {
     "evidence answer?" -> "Ticket already shows the broken state?" [label="proceed: intake and source recorded"];
     "evidence answer?" -> "Gate evidence (table below)" [label="iterate: re-ask with their note"];
     "evidence answer?" -> "Held per the gate part" [label="hold"];
+    "evidence answer?" -> "run_stage {action: fail, stage: evidence, reason, detailPath}" [label="hand back: detailPath holds what was captured"];
     "Ticket already shows the broken state?" -> "Record the ticket's location as the BEFORE" [label="yes"];
     "Ticket already shows the broken state?" -> "Capture the BEFORE" [label="no"];
     "Record the ticket's location as the BEFORE" -> "Domain attaches evidence to an MR here?";
@@ -93,7 +96,8 @@ digraph evidence {
     "Off-script gate (gate part)" -> "off-script answer?";
     "off-script answer?" -> "Capture the BEFORE" [label="take: the recorded source"];
     "off-script answer?" -> "run_stage {action: fail, stage: evidence, reason, detailPath}" [label="hand back"];
-    "Domain attaches evidence to an MR here?" -> "mr_for_branch {repoName: <worktree>, branches: [<branch>]}" [label="yes"];
+    "Domain attaches evidence to an MR here?" -> "run_field_get {key: branch}" [label="yes"];
+    "run_field_get {key: branch}" -> "mr_for_branch {repoName: <worktree>, branches: [<branch>]}";
     "Domain attaches evidence to an MR here?" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [label="no: ship attaches"];
     "mr_for_branch {repoName: <worktree>, branches: [<branch>]}" -> "Open MR on the branch?";
     "Open MR on the branch?" -> "Gate evidence-attach (table below)" [label="yes: keep its url"];
@@ -102,8 +106,10 @@ digraph evidence {
     "attach answer?" -> "mr_upload {mrUrl, path} per file; keep each markdown" [label="attach now"];
     "attach answer?" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [label="hand back the markdown"];
     "attach answer?" -> "Held per the gate part" [label="hold"];
-    "mr_upload {mrUrl, path} per file; keep each markdown" -> "mr_update {mrUrl, description}";
-    "mr_update {mrUrl, description}" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}";
+    "attach answer?" -> "Gate evidence-attach (table below)" [label="iterate: re-ask with their note"];
+    "mr_upload {mrUrl, path} per file; keep each markdown" -> "mr_view {mrUrl, maxAgeMs: 5000}";
+    "mr_view {mrUrl, maxAgeMs: 5000}" -> "mr_update {mrUrl, description: <the body read back plus the evidence markdown>}";
+    "mr_update {mrUrl, description: <the body read back plus the evidence markdown>}" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}";
     "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" -> "Evidence done: return to the orchestrator";
     "run_stage {action: fail, stage: evidence, reason, detailPath}" -> "Stage failed";
 }
@@ -143,9 +149,10 @@ One sentence above the form: what the plan asks for and what is unknown.
 |---|---|---|
 | the domain's intake | as the domain words them; an open-ended one is free text in the form | the domain declares them |
 | `source` | **Proceed with `<source>`** / **Switch to local** | the data source is not local |
-| `next` | **Proceed** / **Iterate here** / **Hold** | always |
+| `next` | **Proceed** / **Iterate here** / **Hold**, plus **Hand back** once three captures have failed | always |
 
-Selection: `{"intake":{<answers>},"source":"<as confirmed>"}`.
+Selection: `{"intake":{<answers>},"source":"<as confirmed>","next":"proceed|iterate|hold|handback","note":"<their words or null>"}`.
+Hand back fails the stage with `detailPath` = what was captured so far.
 
 ## Gate `evidence-attach` (the domain attaches here and the lookup found an open MR)
 
