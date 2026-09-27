@@ -14,7 +14,7 @@ import sys
 
 FENCE_OPEN = re.compile(r"^```dot\s*$")
 INDENTED_FENCE = re.compile(r"^\s+```dot\s*$")
-FENCE_CLOSE = re.compile(r"^```\s*$")
+FENCE_CLOSE = re.compile(r"^`{3,}\s*$")
 TERMINALS = {"doublecircle", "octagon"}
 
 
@@ -80,6 +80,10 @@ def check(graph):
             problems.append(f'"{name[:40]}...": a plaintext node is one short command or tool call, not a code block')
         if not out[i] and shape[i] not in TERMINALS:
             problems.append(f'"{name}": dead end; only a doublecircle outcome or a STOP octagon may have no way out')
+        if out[i] and shape[i] == "doublecircle":
+            problems.append(f'"{name}": an outcome ends the path; it has {len(out[i])} outgoing edge(s)')
+        if shape[i] == "octagon" and len(out[i]) > 1:
+            problems.append(f'"{name}": a STOP has at most one way out (found {len(out[i])}); a choice after it is a gate step')
 
     success = [i for i, o in enumerate(objects) if shape[i] == "doublecircle" and o.get("style", "") == "filled"]
     if not success:
@@ -100,9 +104,10 @@ def check(graph):
             problems.append(f'"{name}": unreachable from any entry')
 
     for comp in cycles(out):
-        if not any(shape[n] == "diamond" for n in comp):
+        exits = any(shape[n] == "diamond" and any(h not in comp for h, _ in out[n]) for n in comp)
+        if not exits:
             loop = ", ".join(f'"{names[n]}"' for n in sorted(comp))
-            problems.append(f"unbounded loop with no decision to leave it: {loop}")
+            problems.append(f"unbounded loop: no decision edge leaves it: {loop}")
     return problems
 
 

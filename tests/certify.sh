@@ -146,7 +146,7 @@ fi
 
 # A skill that carries process digraphs must render them cleanly and pass the
 # structure check (conventions: plugin/skills/process-digraphs/SKILL.md).
-if grep -q '```dot' "$DIR/SKILL.md"; then
+if grep -qE '^[[:space:]]*```dot[[:space:]]*$' "$DIR/SKILL.md"; then
   DG="$HERE/../plugin/skills/process-digraphs"
   if ! command -v dot >/dev/null 2>&1; then
     fail digraphs "graphviz dot is not installed (brew install graphviz)"

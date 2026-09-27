@@ -22,7 +22,7 @@ fi
 
 awk -v out="$out" '
   /^```dot[ \t]*$/ { inblk=1; body=""; next }
-  inblk && /^```[ \t]*$/ {
+  inblk && /^```+[ \t]*$/ {
     inblk=0
     name="graph_" (++n)
     if (match(body, /digraph[ \t]+[A-Za-z0-9_]+/)) {

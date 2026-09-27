@@ -65,9 +65,14 @@ fast tests") is a `box`.
    diamond (`Fix attempts = 3?`) whose "yes" edge leaves the loop to a gate or
    a STOP. "It is judgment-driven iteration, so it needs no bound" is the
    rationalization that produces runaway runs.
-5. **A STOP ends the path.** An octagon has no out-edges. If the process
-   continues after asking a human, that is a gate step (a box or a
-   `gate_ask` node) with labelled answers, not a STOP.
+5. **A STOP forbids one move and has at most one way out.** It ends the
+   path; or hands to the off-script gate ("STOP: push only with git_push" ->
+   "Off-script gate"); or, on a `tempted to ...` edge, redirects to the
+   sanctioned move its text names ("STOP: rt reads go through rt_verb" ->
+   the `rt_verb` node). It never branches. If the process continues after
+   asking a human, that is a gate step (a box or a `gate_ask` node) with
+   labelled answers, not a STOP. An outcome (doublecircle) has no out-edges
+   at all.
 6. **The graph wins over injected rules.** A team pack or fill injected into
    the skill supplies content, checks and extra questions; it never overrides
    a STOP or adds a move the graph forbids. Put this line directly above any
@@ -108,6 +113,7 @@ digraph hotfix_push {
     "Push attempt = 2?" -> "Use the repo root git_push printed" [label="no - retry once"];
     "Use the repo root git_push printed" -> "git_push {tree, setUpstream: true}";
     "Push attempt = 2?" -> "Open the off-script gate: push refused" [label="yes - budget spent"];
+    "Open the off-script gate: push refused" -> "git_push {tree, setUpstream: true}" [label="human fixed it, says retry"];
     "Open the off-script gate: push refused" -> "STOP: push only with git_push" [label="human takes over"];
     "mr_create {repoName, sourceBranch, targetBranch, title, description}" -> "MR open";
 }
@@ -150,7 +156,7 @@ by every tool, so it is never checked.
 | "The team's fallback rule lives outside my section, so I hand off to it." | The graph wins. Route to the off-script gate, never to an injected shell fallback. |
 | "Fixing code is judgment, so that loop needs no budget." | Every loop gets a counter and an exit to a gate. Judgment decides the fix, not how many times to try. |
 | "I'll keep git and push apart so the lint passes." | Name the tool. Dodging the lint keeps the forbidden move in the text. |
-| "STOP, then continue to the next step." | A STOP has no way out. Asking and continuing is a gate step. |
+| "The STOP can branch on what the human says next." | A STOP has one way out: none, the off-script gate, or the move it names. Asking and choosing is a gate step. |
 | "The merge outcome implies the merge." | Outward steps are nodes. Draw the merge call. |
 | "No merge tool was listed, so I end at the outcome." | Draw a box naming the step; the node is about the action, not the tool. |
 | "The guidance fits in the node label." | Labels are signposts; the how goes in the step's section. |
