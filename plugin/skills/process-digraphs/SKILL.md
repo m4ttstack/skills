@@ -116,7 +116,7 @@ digraph hotfix_push {
     "Push attempt = 2?" -> "Use the repo root git_push printed" [label="no: retry once"];
     "Use the repo root git_push printed" -> "git_push {tree, setUpstream: true}";
     "Push attempt = 2?" -> "Open the off-script gate: push refused" [label="yes: budget spent"];
-    "STOP: push only with git_push" -> "Push attempt = 2?";
+    "STOP: push only with git_push" -> "Open the off-script gate: push refused";
     "Open the off-script gate: push refused" -> "mr_create {repoName, sourceBranch, targetBranch, title, description}" [label="take: the human pushed"];
     "Open the off-script gate: push refused" -> "Off-script rounds = 2?" [label="iterate: the human fixed it"];
     "Open the off-script gate: push refused" -> "Held: the turn ends naming the gate" [label="hold"];
