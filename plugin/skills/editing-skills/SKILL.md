@@ -229,21 +229,31 @@ it. For parameterized wrapper skills also read
 ### Edit or create SKILL.md in the source path
 
 The source path for each estate is in the table above. Compiled output
-(`<pack>/skills/<verb>/`, `<pack>/attachments/<name>/`) and cache copies
+(`<pack>/skills/<verb>/` and the compiled internal verbs and stages under
+`<pack>/attachments/`, each carrying `compiled:` metadata) and cache copies
 are never edited: the next compile or update overwrites them. Edit the
 engine, include or fill instead.
 
 ### Compile the checkout's sources on Bash
 
 `rt_verb` refuses `--pack-dir` on compile, so compiling a checkout's or
-worktree's sources is the bare Bash command, run before GREEN so the fresh
-agent reads what the pack will ship:
+worktree's sources is the bare Bash command, run before GREEN. A team pack
+compile reads mattstack engines, includes and fills from the INSTALLED
+mattstack cache (table below), so compile the pack that reads your edit.
+A mattstack engine, include or fill compiles as mattstack against its
+checkout; other packs see it only after the mattstack cache updates:
 
-`rt skills compile --pack <pack> --pack-dir <dir>` <!-- mcp-lint: allow -->
+`rt skills compile --pack mattstack --pack-dir <mattstack checkout>` <!-- mcp-lint: allow -->
+
+A team pack's own fill compiles as that pack against its checkout:
+
+`rt skills compile --pack <pack> --pack-dir <pack checkout>` <!-- mcp-lint: allow -->
 
 ### Verify with a fresh agent (GREEN)
 
-Run the baseline scenario again on a fresh agent with the edited skill.
+Run the baseline scenario again on a fresh agent with the edited skill,
+loaded unbumped and uncommitted through a `--plugin-dir` session (see What
+the graph cannot show).
 GREEN asks one more question: did the fresh agent run a
 shell command a tool covers (`rt runs`, `glab`, `git push`, `git rebase`, `rt herd`, `rt worktree provision`)? <!-- mcp-lint: allow -->
 Then the skill is not green.
@@ -253,8 +263,8 @@ every tool.
 ### Revise the skill against the GREEN transcript
 
 Fix what the transcript shows. Where the agent ran a shell command a tool
-covers, name the tool in the sentence that named the command. The counter
-is revise rounds for this change.
+covers, name the tool in the sentence that named the command. `Craft
+rounds` counts the revisions already made for this change.
 
 ### Add its root to the manifest skills array
 
@@ -270,8 +280,8 @@ roster included.
 ### Fix what certify names
 
 Certify prints one `FAIL` line per problem. Fix the line it names in the
-source; never suppress a check or edit the checker to pass. The counter is
-certify runs for this change.
+source; never suppress a check or edit the checker to pass. `Certify
+rounds` counts the fixes already made for this change.
 
 ### Bump version in the manifest
 
@@ -345,7 +355,8 @@ Never force.
 
 Read the compiled output of ALL affected skills in FULL (no grep) and
 compare what you expected with what landed. Many errors have been caught
-this way.
+this way. When nothing compiled (a hand-authored skill), read the skill's
+cached copy under `<config>/plugins/cache/<marketplace>/<plugin>/<version>/`.
 
 Proof the fix landed: in the installed pack copy
 (`<config>/plugins/cache/<marketplace>/<pack>/<version>/`), the compiled
@@ -357,7 +368,9 @@ mattstack, whichever version that is.
 
 `/reload-plugins` reloads plugins, skills, agents, hooks and plugin MCP
 servers in place from the updated cache. The queued `Continue: ...` line
-resumes the work once the reload has run.
+resumes the work once the reload has run. Every other running session needs
+its own `/reload-plugins`; after it, the skill is invocable by name: that is
+the end-to-end proof.
 
 ### Ask the user to type /reload-plugins
 
@@ -367,52 +380,59 @@ name: that is the end-to-end proof.
 ### Gate: craft rounds spent
 
 Quote the deviation in the last GREEN transcript and propose the revision
-you would try next. Retry: revise with the human's note, then GREEN again.
-Takes over: the human finishes the change.
+you would try next. Retry: revise with the human's note, then GREEN again,
+with `Craft rounds` starting again at zero. Takes over: the human finishes
+the change.
 
 ### Gate: certify rounds spent
 
 Quote the `FAIL` lines from the last certify run and propose the fix you
-would try next. Retry: the human fixed it; certify again. Takes over: the
-human finishes the change.
+would try next. Retry: the human fixed it; certify again, with `Certify
+rounds` starting again at zero. Takes over: the human finishes the change.
 
 ### Gate: default-branch push rejected
 
 Quote the rejection and propose the next move (bring in the remote change,
-fix the credentials). Never force. Retry: the human fixed it; push again.
-Takes over: the commit stays local for the human to push.
+fix the credentials). Never force. Retry: the human fixed it; push again,
+and a second rejection comes back here. Takes over: the commit stays local
+for the human to push.
 
 ### Off-script gate: feature push refused
 
 Quote both `git_push` refusals and propose the fix (the tree's
 registration, the branch, the remote). Retry: the human fixed it;
-`git_push` again from the checkout. Takes over: the human pushes.
+`git_push` again from the checkout, with the printed-root retry available
+again. Takes over: the human pushes.
 
 ### Gate: drift survives the compile
 
 Quote the check's failing output (read it with the bare check, as in `Read
 what moved on Bash`) and propose the source or fill edit that would close
-it. Retry: the human fixed it; compile again. Takes over: leave the pack
-tree as sync left it for the human.
+it. Retry: the human fixed it; compile again, and a check that still fails
+comes back here. Takes over: leave the pack tree as sync left it for the
+human.
 
 ### Gate: drift push rejected
 
 Quote the rejection and propose the next move. Never force. Retry: the
-human fixed it; push again. Takes over: the drift commit stays local for
-the human to push.
+human fixed it; push again, and a second rejection comes back here. Takes
+over: the drift commit stays local for the human to push.
 
 ### Gate: sync budget spent
 
-Quote each pack's last check or sync result, name the packs still not
-current, and propose the next move. Retry: the human fixed it; check the
-next pack not yet current. Takes over: the human brings the rest current.
+`Sync calls` counts every sync this change, the `rt_verb` calls and the
+bare Bash sync read alike; the budget is the listed packs plus two. Quote
+each pack's last check or sync result, name the packs still not current,
+and propose the next move. Retry: the human fixed it; check the next pack
+not yet current, with `Sync calls` starting again at zero. Takes over: the
+human brings the rest current.
 
 ### Gate: cached version still behind
 
 Quote the cache listing and the version you bumped to, and propose why it
 lags (the update ran under another config dir, a marketplace points
-elsewhere). Retry: bring the packs current again. Takes over: the human
-chases the cache.
+elsewhere). Retry: bring the packs current again, with `Sync calls`
+starting again at zero. Takes over: the human chases the cache.
 
 ## What the graph cannot show
 
@@ -427,9 +447,6 @@ chases the cache.
 - A team pack's own skill certifies with `--domain`
   (`sh tests/certify.sh <dir> --domain`): the purity greps skip, every
   structural check still runs.
-- An `rt_verb` check or sync that comes back `failed (exit 1)` is drift
-  (check) or a refusal (sync), and only the tail of its output comes back
-  with it.
 - The cswap sessions sync warns about are those whose `plugins` is not a
   symlink resolving to `<config>/plugins`.
 
