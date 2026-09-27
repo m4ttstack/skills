@@ -22,11 +22,27 @@ TEMPTED = re.compile(r"^\s*tempted", re.IGNORECASE)
 
 
 def two_calls(name):
-    depth, flat = 0, []
-    for ch in name:
+    quote_openers = {}
+    stack, opens, closes = [], set(), set()
+    for i, ch in enumerate(name):
         if ch in "{<(":
-            depth += 1
+            stack.append(i)
         elif ch in "}>)":
+            if stack:
+                opens.add(stack.pop())
+                closes.add(i)
+        elif ch in "\"`":
+            if ch in quote_openers:
+                opens.add(quote_openers.pop(ch))
+                closes.add(i)
+            else:
+                quote_openers[ch] = i
+    depth, flat = 0, []
+    for i, ch in enumerate(name):
+        if i in opens:
+            depth += 1
+            ch = " "
+        elif i in closes:
             depth = max(depth - 1, 0)
             ch = " "
         flat.append(ch if depth == 0 else " ")
