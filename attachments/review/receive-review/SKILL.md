@@ -205,7 +205,7 @@ digraph receive_review {
 
     "Dispatch one fresh-context adjudicator over all the review threads" -> "Draft the verdict table and one reply per thread";
     "Draft the verdict table and one reply per thread" -> "Caller handed the respond-plan answers?";
-    "Caller handed the respond-plan answers?" -> "Rewrite the receive-review report rows" [label="yes: ask nothing"];
+    "Caller handed the respond-plan answers?" -> "run_decision {contract: gate@1, scope: respond-plan, selection, decidedBy}" [label="yes: ask nothing, record it"];
     "Caller handed the respond-plan answers?" -> "Build the open" [label="no"];
     "Build the open" -> "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-plan.source.json > <dir>/respond-plan.open.json";
     "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-plan.source.json > <dir>/respond-plan.open.json" -> "respond-plan fit exit code?";
@@ -222,7 +222,7 @@ digraph receive_review {
     "Make the recorded move once at the respond-plan fit" -> "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-plan.source.json > <dir>/respond-plan.open.json";
     "Caller owns the receive-review gates at respond-plan?" -> "Hand back the verdict table and the respond-plan open's path" [label="yes"];
     "Caller owns the receive-review gates at respond-plan?" -> "Gate respond-plan through gate-protocol" [label="no: a direct run"];
-    "Hand back the verdict table and the respond-plan open's path" -> "Rewrite the receive-review report rows" [label="caller hands {plan} back"];
+    "Hand back the verdict table and the respond-plan open's path" -> "run_decision {contract: gate@1, scope: respond-plan, selection, decidedBy}" [label="caller hands {plan} back"];
     "Gate respond-plan through gate-protocol" -> "respond-plan pane next answer?";
     "respond-plan pane next answer?" -> "run_decision {contract: gate@1, scope: respond-plan, selection, decidedBy}" [label="continue, or answered off the pane"];
     "respond-plan pane next answer?" -> "Redraft the replies with the respond-plan note" [label="iterate here"];
@@ -514,8 +514,10 @@ half alone (a board wrapper hands it after its own first gate, `{post}`
 following later when gate respond-post offers a thread) or a combined `{plan, post}` object from a
 caller that collected both up front -- use `plan` and ask nothing here: its
 per-question answers, keyed by question id with verbatim option strings,
-are the decision. Use the decider the caller names alongside it. Every
-other path builds the open first.
+are the decision. Use the decider the caller names alongside it. Record
+that `plan` with the same `run_decision` a pane answer gets (its selection
+shape is under Gate respond-plan through gate-protocol), `decidedBy` that
+decider. Every other path builds the open first.
 
 The gate (`respond-plan`, gate 1; `respond-post` is gate 2) carries
 structured context (gate-protocol's Structured context), built from the
@@ -605,6 +607,9 @@ verb and presents the gates itself; a board wrapper does, and says so when
 it delegates): open nothing. Hand back the verdict table plus the absolute
 path of `<dir>/respond-plan.open.json`; the caller opens its gate from
 that file's `.questions` and `.context`, then hands `{plan}` back.
+Record that `{plan}` with `run_decision` before rewriting the rows,
+`decidedBy` the decider the caller names: this verb writes the
+respond-plan record whoever asked the gate.
 
 ### Gate respond-plan through gate-protocol
 
@@ -659,7 +664,7 @@ the shell.
   receive-review report rows).
 - `fix:<threadId>` implies that thread's reply; `skip:<threadId>` means
   neither.
-- `run_decision` with `contract: "gate@1"`, `scope: "respond-plan"`, `selection: {"threads":{"<threadId>":"reply|fix|skip","...":"one entry per thread, keyed by the id read out of its answer value"},"texts":{"<threadId>":"<the answer's text>"},"overrides":["<threadId>"],"notes":{"<threadId>":"<the answer's note>"},"code-changes":"approve|revise|skip"}`, `decidedBy: <the answer's by>`.
+- `run_decision` with `contract: "gate@1"`, `scope: "respond-plan"`, `selection: {"threads":{"<threadId>":"reply|fix|skip","...":"one entry per thread, keyed by the id read out of its answer value"},"texts":{"<threadId>":"<the answer's text>"},"overrides":["<threadId>"],"notes":{"<threadId>":"<the answer's note>"},"code-changes":"approve|revise|skip"}`, `decidedBy: <the answer's by>` (for a caller-handed `{plan}`, the decider the caller names).
   `threads` values stay the bare verbs. `texts` holds one entry per
   `reply:` answer that carries `text`; `overrides` lists every
   `gate-1: override` thread (Report rows); `notes` holds one entry
@@ -1042,7 +1047,8 @@ included) posts nothing.
 **The respond-post record.** At execution time, after acting: `run_decision` with `contract:
 "gate@1"`, `scope: "respond-post"`, `selection:
 {"threads":{"<threadId>":{"post":true,"resolve":false},"...":"one entry per offered thread"}}`,
-`decidedBy: <the answer's by>`. An entry carries `text` only when its
+`decidedBy: <the answer's by>` (for a caller-handed `post`, the decider
+the caller names). An entry carries `text` only when its
 thread's answer was an object with `text` and `post:`, and then it is the
 answer's: `{"post":true,"resolve":true,"text":"<the answer's text>"}`
 when that answer also carries `resolve:`, `"resolve":false` when it does
@@ -1148,6 +1154,7 @@ entry's relations.
 | "The snapshot has no respond-post record, so nothing has posted yet" | A pane can post and die before it records. On a resume, read each thread on the forge before its reply posts or a re-asked gate offers it: one carrying this run's reply (the same text, or a note by this run's account since `started_at`) is posted, counted as posted, never posted or offered again. |
 | "This one is clearly right, I'll add the guard in a follow-up commit" | Implementation follows `respond-plan`'s `code-changes: approve`, not a line in the draft. |
 | "It's wrong, but I need the reviewer to point me at it" | Then it is `needs-clarification`, not `pushback`. |
+| "The caller asked the respond-plan gate, so it records the decision" | This verb records it: a handed `{plan}` gets the same `run_decision` as a pane answer, `decidedBy` the decider the caller names. A resume reads that record. |
 | "I'll present the table and ask about fixes and posting in the same breath" | `respond-plan` and `respond-post` are two gates, in order. Prose that asks both at once is neither. |
 
 ## Gate protocol
