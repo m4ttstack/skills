@@ -41,8 +41,9 @@ id with a separate `label`.
 | `octagon`, red fill | STOP: the path ends here | `STOP: ...` |
 | `doublecircle` | an outcome; the success one filled green | the result |
 
-A tool call is a `plaintext` node, never hidden in a box. A step described in
-words ("Run the fast tests") is a `box`.
+A tool call is a `plaintext` node, exactly like a shell command; never hide it
+in a box ("Push via git_push"). A step described in words ("Run the fast
+tests") is a `box`.
 
 ## The rules
 
@@ -62,17 +63,19 @@ words ("Run the fast tests") is a `box`.
    or a STOP. "It is judgment-driven iteration, so it needs no bound" is the
    rationalization that produces runaway runs.
 5. **A STOP forbids one move and has at most one way out.** It ends the
-   path, exits to an outcome, or hands to the off-script gate. A guard STOP,
-   entered only on an edge labelled `tempted to ...`, may instead redirect
-   to the sanctioned move it names; the real branch goes straight there,
-   never through the STOP. A STOP never branches. Asking a human and
-   continuing is a gate step (a box or `gate_ask` node) with labelled
-   answers, not a STOP. An outcome (doublecircle) has no out-edges.
+   path, exits to an outcome, or hands to the off-script gate ("STOP: push
+   only with git_push" -> "Off-script gate"). A guard STOP, entered only on
+   an edge labelled `tempted to ...`, may instead redirect to the sanctioned
+   move it names ("STOP: rt reads go through rt_verb" -> the `rt_verb`
+   node); the real branch goes straight there, never through the STOP. A
+   STOP never branches. Asking a human and continuing is a gate step (a box
+   or `gate_ask` node) with labelled answers, not a STOP. An outcome
+   (doublecircle) has no out-edges.
 6. **The graph wins over injected rules.** A team pack or fill supplies
    content, checks and extra questions; it never overrides a STOP or adds a
    move the graph forbids. Put this line above any injected fill: *"If a
    rule below asks for a move this graph marks STOP, take the off-script
-   edge instead."*
+   edge instead."* Never route an edge to "follow the team's fallback rule".
 7. **Leaving the graph is explicit.** When the right move is not on the map
    (a tool refused past its budget, a data source switch, a rule conflict),
    take an off-script edge: open a gate naming the proposed move, record
