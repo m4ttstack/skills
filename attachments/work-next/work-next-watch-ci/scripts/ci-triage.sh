@@ -217,8 +217,8 @@ if [ "$SKIP_BASE" != 1 ]; then
     fi
     while IFS=$'\t' read -r bpid bstatus burl; do
       [ -n "${bpid:-}" ] || continue
-      SCANNED=$((SCANNED+1))
       if forge jobs "$bpid" --scope failed; then
+        SCANNED=$((SCANNED+1))
         if [ -n "$FORGE_OUT" ]; then
           printf '%s\n' "$FORGE_OUT" | awk -F'\t' -v OFS='\t' -v b="$bref" '{print b, $1, $3}' >>"$OUT_DIR/_base_failures.tsv"
         fi

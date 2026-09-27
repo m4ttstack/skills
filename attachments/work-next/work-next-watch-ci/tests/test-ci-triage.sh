@@ -193,6 +193,12 @@ EOF
 rc=$(run_triage_git other ownership --ref feat-y --base other --config "$TMP/cfg-baseref.json" --out-dir "$TMP/t15")
 grep -q 'also failing on other' "$TMP/out" && ok base-flag-overrides || fail base-flag-overrides "$(cat "$TMP/out")"
 
+# base-lookup-failed: the only base pipeline's jobs lookup fails, so no
+# base was actually compared -> UNKNOWN, never "yours"
+rc=$(run_triage_git blind-base ownership --ref feat-blind --out-dir "$TMP/t23")
+grep -q 'ownership: UNKNOWN (no base pipelines scanned)' "$TMP/out" \
+  && ok base-lookup-failed || fail base-lookup-failed "$(cat "$TMP/out")"
+
 # self-excluded: the triaged pipeline (33) also appears in its own base
 # listing (target-branch feat-self -> feat-self) and must be dropped, so
 # test:self compares only against sibling pipeline 34 (which lacks it) -> yours
