@@ -88,7 +88,7 @@ digraph work {
         "run_field_set {key: <each produce from <to> on>, value: -}" [shape=plaintext];
     }
 
-    "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}" [shape=plaintext];
+    "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [shape=plaintext];
     "run_field_set {key: hold, value: <their words, or held>, stage}" [shape=plaintext];
     "Held: end the turn naming run and stage" [shape=doublecircle];
     "Run abandoned" [shape=doublecircle];
@@ -135,13 +135,13 @@ digraph work {
     "Gate <stage>-failed:<attempt>" -> "failure answer?";
     "failure answer?" -> "run_stage {action: start, stage}" [label="retry: a new attempt"];
     "failure answer?" -> "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [label="go back, or iterate here (to = this stage)"];
-    "failure answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}" [label="hold"];
+    "failure answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
     "failure answer?" -> "run_status {status: abandoned}" [label="abandon"];
     "Gate close" -> "close answer?";
     "close answer?" -> "run_status {status: done}" [label="done"];
     "close answer?" -> "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [label="iterate (to = implement) or go back"];
-    "close answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}" [label="hold"];
-    "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}" -> "run_field_set {key: hold, value: <their words, or held>, stage}";
+    "close answer?" -> "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
+    "run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}, decidedBy}" -> "run_field_set {key: hold, value: <their words, or held>, stage}";
     "run_field_set {key: hold, value: <their words, or held>, stage}" -> "Held: end the turn naming run and stage";
     "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" -> "Is the <from> row still running?";
     "Is the <from> row still running?" -> "run_stage {action: redirect, stage: <from>, to, reason}" [label="yes: a Go back or Fix handed back mid-stage"];
@@ -190,8 +190,12 @@ digraph work {
   gate-protocol with "Under a run: fail the stage at the gate?" answered
   no: a gate the daemon cannot open here ends the turn quoting the
   refusal, and the run stays `running`.
-- **The gate is the form.** About to end the turn with the run still
-  `running` and no form on screen? Stop: the Stop hook sends you back.
+- **Hold at `close`** records against the last stage row (watch-ci) and
+  its attempt.
+- **A gate ends the turn only as gate-protocol ends it.** Under a running
+  run, a turn ends at a gate with the form on screen, with `waiting-gate`
+  armed and its wait running, or with `hold` recorded; any other ending
+  and the Stop hook sends you back.
 - **Account back-fill** (a pick made before the DB existed):
   `selection` is the pick as an object, `decidedBy` the spawning surface.
 

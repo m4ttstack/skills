@@ -78,7 +78,7 @@ digraph ship {
     "Write the title and description" [shape=box];
     "mr_update {mrUrl, title, description}, or gh pr edit on GitHub" [shape=plaintext];
     "run_stage {action: fail, stage: ship, reason}" [shape=plaintext];
-    "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}}" [shape=plaintext];
+    "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}, decidedBy}" [shape=plaintext];
     "run_field_set {key: hold, value: <their words, or held>, stage: ship}" [shape=plaintext];
     "Held: end the turn naming run and stage" [shape=doublecircle];
     "Hand the Go back answer to the orchestrator" [shape=doublecircle];
@@ -92,8 +92,8 @@ digraph ship {
     "ship answer?" -> "dirty answer?" [label="proceed"];
     "ship answer?" -> "Run the domain steps before the gate (none when unbound)" [label="iterate: redo with their note"];
     "ship answer?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
-    "ship answer?" -> "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}}" [label="hold"];
-    "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}}" -> "run_field_set {key: hold, value: <their words, or held>, stage: ship}";
+    "ship answer?" -> "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
+    "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}, decidedBy}" -> "run_field_set {key: hold, value: <their words, or held>, stage: ship}";
     "run_field_set {key: hold, value: <their words, or held>, stage: ship}" -> "Held: end the turn naming run and stage";
     "ship answer?" -> "run_stage {action: fail, stage: ship, reason}" [label="dirty = abort: reason 'aborted at the ship gate'"];
     "dirty answer?" -> "Commit named files, ticket-prefixed subject" [label="commit"];
@@ -130,7 +130,7 @@ digraph ship {
     "off-script answer?" -> "Make the recorded move once" [label="proceed + take"];
     "off-script answer?" -> "run_stage {action: fail, stage: ship, reason}" [label="proceed + hand back"];
     "off-script answer?" -> "Off-script rounds = 2?" [label="iterate: the human fixed the cause, retry the push"];
-    "off-script answer?" -> "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}}" [label="hold: no move made"];
+    "off-script answer?" -> "run_decision {contract: gate@1, scope: hold:ship:<attempt>, selection: {reason}, decidedBy}" [label="hold: no move made"];
     "Off-script rounds = 2?" -> "git_push {tree: <root>, setUpstream: true}" [label="no"];
     "Off-script rounds = 2?" -> "run_stage {action: fail, stage: ship, reason}" [label="yes: hand back, the refusal quoted"];
     "Make the recorded move once" -> "git remote get-url origin";
@@ -243,9 +243,9 @@ Selection: `{"dirty":"commit|stash|abort|null","open_as":"draft|ready","domain":
 ## Domain rules
 
 The domain rules below supply content, checks and extra gate questions.
-Where a domain step names a move the graph above marks STOP (a shell push
-fallback, a forge CLI write), the STOP node wins: open the off-script gate
-instead.
+Where a domain step names a move the graph above marks STOP, the STOP
+node's edge wins: a shell push fallback opens the push's off-script gate;
+a GitLab CLI read or write goes through the `mr_*` tools.
 
 {{slot:domain}}
 

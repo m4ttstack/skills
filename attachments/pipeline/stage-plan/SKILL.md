@@ -36,7 +36,7 @@ digraph plan {
     "run_decision {contract: execution-strategy@1, scope: run, selection: {tier}, decidedBy: stage-plan}" [shape=plaintext];
     "run_field_set {key: approach}; run_field_set {key: evidence-plan}" [shape=plaintext];
     "Hand the Go back answer to the orchestrator" [shape=doublecircle];
-    "run_decision {contract: gate@1, scope: hold:plan:<attempt>, selection: {reason}}" [shape=plaintext];
+    "run_decision {contract: gate@1, scope: hold:plan:<attempt>, selection: {reason}, decidedBy}" [shape=plaintext];
     "run_field_set {key: hold, value: <their words, or held>, stage: plan}" [shape=plaintext];
     "Held: end the turn naming run and stage" [shape=doublecircle];
     "Plan done: return to the orchestrator" [shape=doublecircle style=filled fillcolor=lightgreen];
@@ -52,8 +52,8 @@ digraph plan {
     "plan answer?" -> "run_decision {contract: execution-strategy@1, scope: run, selection: {tier}, decidedBy: stage-plan}" [label="proceed"];
     "plan answer?" -> "Read the ticket" [label="iterate: re-read with their note"];
     "plan answer?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
-    "plan answer?" -> "run_decision {contract: gate@1, scope: hold:plan:<attempt>, selection: {reason}}" [label="hold"];
-    "run_decision {contract: gate@1, scope: hold:plan:<attempt>, selection: {reason}}" -> "run_field_set {key: hold, value: <their words, or held>, stage: plan}";
+    "plan answer?" -> "run_decision {contract: gate@1, scope: hold:plan:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
+    "run_decision {contract: gate@1, scope: hold:plan:<attempt>, selection: {reason}, decidedBy}" -> "run_field_set {key: hold, value: <their words, or held>, stage: plan}";
     "run_field_set {key: hold, value: <their words, or held>, stage: plan}" -> "Held: end the turn naming run and stage";
     "run_decision {contract: execution-strategy@1, scope: run, selection: {tier}, decidedBy: stage-plan}" -> "run_field_set {key: approach}; run_field_set {key: evidence-plan}";
     "run_field_set {key: approach}; run_field_set {key: evidence-plan}" -> "Plan done: return to the orchestrator";

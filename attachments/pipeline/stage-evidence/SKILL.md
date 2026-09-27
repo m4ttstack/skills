@@ -60,7 +60,7 @@ digraph evidence {
     "mr_update {mrUrl, description: <the body read back plus the evidence markdown>}" [shape=plaintext];
     "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [shape=plaintext];
     "run_stage {action: fail, stage: evidence, reason, detailPath}" [shape=plaintext];
-    "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}}" [shape=plaintext];
+    "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}, decidedBy}" [shape=plaintext];
     "run_field_set {key: hold, value: <their words, or held>, stage: evidence}" [shape=plaintext];
     "Held: end the turn naming run and stage" [shape=doublecircle];
     "Stage failed" [shape=doublecircle];
@@ -82,7 +82,7 @@ digraph evidence {
     "Gate evidence (table below)" -> "evidence answer?";
     "evidence answer?" -> "Ticket already shows the broken state?" [label="proceed: intake and source recorded"];
     "evidence answer?" -> "Gate evidence (table below)" [label="iterate: re-ask with their note"];
-    "evidence answer?" -> "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}}" [label="hold"];
+    "evidence answer?" -> "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
     "evidence answer?" -> "run_stage {action: fail, stage: evidence, reason, detailPath}" [label="hand back: detailPath holds what was captured"];
     "Ticket already shows the broken state?" -> "Record the ticket's location as the BEFORE" [label="yes"];
     "Ticket already shows the broken state?" -> "Capture the BEFORE" [label="no"];
@@ -100,7 +100,7 @@ digraph evidence {
     "off-script answer?" -> "Capture the BEFORE" [label="proceed + take: the proposed source"];
     "off-script answer?" -> "run_stage {action: fail, stage: evidence, reason, detailPath}" [label="proceed + hand back"];
     "off-script answer?" -> "Off-script rounds = 2?" [label="iterate: the human fixed the evidence gate's source, retry it"];
-    "off-script answer?" -> "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}}" [label="hold: no capture made"];
+    "off-script answer?" -> "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}, decidedBy}" [label="hold: no capture made"];
     "Off-script rounds = 2?" -> "Capture the BEFORE" [label="no: the evidence gate's source"];
     "Off-script rounds = 2?" -> "run_stage {action: fail, stage: evidence, reason, detailPath}" [label="yes: hand back"];
     "Domain attaches evidence to an MR here?" -> "run_field_get {key: branch}" [label="yes"];
@@ -112,8 +112,8 @@ digraph evidence {
     "Gate evidence-attach (table below)" -> "attach answer?";
     "attach answer?" -> "mr_upload {mrUrl, path} per file; keep each markdown" [label="attach now"];
     "attach answer?" -> "run_field_set {key: evidence, value: <labelled paths and URLs>, stage: evidence}" [label="hand back the markdown"];
-    "attach answer?" -> "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}}" [label="hold"];
-    "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}}" -> "run_field_set {key: hold, value: <their words, or held>, stage: evidence}";
+    "attach answer?" -> "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
+    "run_decision {contract: gate@1, scope: hold:evidence:<attempt>, selection: {reason}, decidedBy}" -> "run_field_set {key: hold, value: <their words, or held>, stage: evidence}";
     "run_field_set {key: hold, value: <their words, or held>, stage: evidence}" -> "Held: end the turn naming run and stage";
     "attach answer?" -> "Gate evidence-attach (table below)" [label="iterate: re-ask with their note"];
     "mr_upload {mrUrl, path} per file; keep each markdown" -> "mr_view {mrUrl, maxAgeMs: 5000}";

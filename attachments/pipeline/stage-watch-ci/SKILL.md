@@ -77,7 +77,7 @@ digraph watch_ci {
     "Which exit is this?" [shape=diamond];
     "Fixed the claim call once already?" [shape=diamond];
     "run_stage {action: fail, stage: watch-ci, reason}" [shape=plaintext];
-    "run_decision {contract: gate@1, scope: hold:watch-ci:<attempt>, selection: {reason}}" [shape=plaintext];
+    "run_decision {contract: gate@1, scope: hold:watch-ci:<attempt>, selection: {reason}, decidedBy}" [shape=plaintext];
     "run_field_set {key: hold, value: <their words, or held>, stage: watch-ci}" [shape=plaintext];
     "Stage failed" [shape=doublecircle];
     "Hand Fix and re-push to the orchestrator: Redirect to implement" [shape=doublecircle];
@@ -163,8 +163,8 @@ digraph watch_ci {
     "Was a lease claimed?" -> "Which exit is this?" [label="no: mr unset, nothing to release"];
     "<scripts>/ci-attendant.sh release <mr-url> <iid>" -> "Which exit is this?";
     "Which exit is this?" -> "Watch-ci done: return to the orchestrator" [label="ci written"];
-    "Which exit is this?" -> "run_decision {contract: gate@1, scope: hold:watch-ci:<attempt>, selection: {reason}}" [label="hold"];
-    "run_decision {contract: gate@1, scope: hold:watch-ci:<attempt>, selection: {reason}}" -> "run_field_set {key: hold, value: <their words, or held>, stage: watch-ci}";
+    "Which exit is this?" -> "run_decision {contract: gate@1, scope: hold:watch-ci:<attempt>, selection: {reason}, decidedBy}" [label="hold"];
+    "run_decision {contract: gate@1, scope: hold:watch-ci:<attempt>, selection: {reason}, decidedBy}" -> "run_field_set {key: hold, value: <their words, or held>, stage: watch-ci}";
     "run_field_set {key: hold, value: <their words, or held>, stage: watch-ci}" -> "Held: end the turn naming run and stage";
     "Which exit is this?" -> "Hand the Go back answer to the orchestrator" [label="go back"];
     "Which exit is this?" -> "run_status {status: abandoned}" [label="abandon"];
