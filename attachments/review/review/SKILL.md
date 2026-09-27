@@ -83,6 +83,8 @@ digraph review {
     "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>" [shape=plaintext];
     "git fetch origin <targetBranch> +refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>" [shape=plaintext];
     "git diff origin/<targetBranch>...origin/mr-<iid>" [shape=plaintext];
+    "MR-head checkout in hand for the review checks?" [shape=diamond];
+    "STOP: never create a checkout for the review; dispatch with the checks noted as not run" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Set up for the review depth" [shape=box];
     "Dispatch the fresh reviewer; it forms the findings" [shape=box];
     "Assemble the review draft" [shape=box];
@@ -205,9 +207,13 @@ digraph review {
     "Review diff forge?" -> "gh pr diff <ref>" [label="GitHub"];
     "Review diff forge?" -> "git fetch origin <targetBranch> +refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>" [label="GitLab"];
     "git fetch origin <targetBranch> +refs/merge-requests/<iid>/head:refs/remotes/origin/mr-<iid>" -> "git diff origin/<targetBranch>...origin/mr-<iid>";
-    "git diff origin/<targetBranch>...origin/mr-<iid>" -> "Set up for the review depth";
+    "git diff origin/<targetBranch>...origin/mr-<iid>" -> "MR-head checkout in hand for the review checks?";
     "gh pr diff <ref>" -> "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>";
-    "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>" -> "Set up for the review depth";
+    "git fetch origin pull/<n>/head:refs/remotes/origin/pr-<n>" -> "MR-head checkout in hand for the review checks?";
+    "MR-head checkout in hand for the review checks?" -> "Set up for the review depth" [label="yes, or read depth"];
+    "MR-head checkout in hand for the review checks?" -> "Dispatch the fresh reviewer; it forms the findings" [label="no: the checks are noted as not run"];
+    "MR-head checkout in hand for the review checks?" -> "STOP: never create a checkout for the review; dispatch with the checks noted as not run" [label="tempted to create one"];
+    "STOP: never create a checkout for the review; dispatch with the checks noted as not run" -> "Dispatch the fresh reviewer; it forms the findings";
     "Set up for the review depth" -> "Dispatch the fresh reviewer; it forms the findings";
     "Dispatch the fresh reviewer; it forms the findings" -> "Assemble the review draft";
     "Assemble the review draft" -> "Verify each blocking finding against the MR head";
@@ -362,15 +368,21 @@ provider triage lines when Criteria is bound, prints before a test runs, a
 checkout is touched, or the diff is read. Size the change from what
 resolving it returned (title, description, changed files).
 
+### MR-head checkout in hand for the review checks?
+
+In hand means a checkout already at the MR head: the one a caller handed,
+or this pane's own tree when it sits at the MR head. At `read` depth
+nothing runs, so take the yes edge. The review never creates one; that is
+the caller's job. With none in hand, the setup checks and the verify
+step's command check are noted as not run, and the anchor and quote
+decide.
+
 ### Set up for the review depth
 
 The review flow's "Set up for the depth". The GitLab fetch and diff above
-are two separate commands, `targetBranch` from the live `mr_view`. Checks
-and the verify step's command re-run happen only in a checkout of the MR
-head that is already in hand (the caller's, or the pane's own when it is
-at the MR head); the review never creates one. With no MR-head checkout in
-hand, the command check is skipped and noted, exactly as at read depth.
-Record every command and its result.
+are two separate commands, `targetBranch` from the live `mr_view`. Run
+the checks the depth names in that checkout. Record every command and its
+result.
 
 ### Dispatch the fresh reviewer; it forms the findings
 
@@ -396,12 +408,9 @@ Check each blocking finding's facts, never its reasoning:
   checked on its quote and command only.
 - **Quote:** code the finding quotes appears at or near that line.
 - **Command:** a command the finding names (a test, a script) re-runs only
-  in a checkout of the MR head already in hand (the caller's, or the
-  pane's own when it is at the MR head); the review never creates one.
-  With no MR-head checkout in hand -- including at `read` depth, where the
-  local tree is the wrong code -- skip the command check, note "not run at
-  read depth", and let the anchor and quote decide. A command that passes
-  where the finding says it fails is a failed check.
+  in the MR-head checkout the graph found in hand; with none, skip it and
+  note it. A command that passes where the finding says it fails is a
+  failed check.
 
 A round counts each time this step runs, whether the first pass or a
 re-dispatch.
