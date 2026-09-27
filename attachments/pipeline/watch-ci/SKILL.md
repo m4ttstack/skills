@@ -558,7 +558,9 @@ first"). Pushed: the `ci` gate says no pipeline ran for that sha.
 absolute root, `iid` a number, `sha` 7 to 40 hex characters,
 `priorPipelineId` the number `N` of a `gitlab:pipeline:N` id) and call
 again, once. An error is never a reason to watch with a script or the
-GitLab CLI.
+GitLab CLI. An error that names none of these inputs (the repo is not
+registered with rt, for example) has nothing to correct: call again
+unchanged, once, and the off-script gate follows.
 
 ### watch-ci off-script gate: ci_watch refused
 
@@ -675,8 +677,10 @@ with the comparison as its context.
   before its push when the push moved the branch; this verb reads it again
   before its own push (`mr_pipeline ... (the prior pipeline id)`).
   `ci_watch` takes the number `N` of that `gitlab:pipeline:N` as
-  `priorPipelineId`, so a new pipeline is told from the old one. When a
-  result carries `priorPipelineId`, pass that value on the next call.
+  `priorPipelineId`, so a new pipeline is told from the old one. Pass only
+  that handed or read id, or a `priorPipelineId` field a `ci_watch` result
+  itself returns; the watched pipeline's own `pipeline.id` is never a prior
+  id.
 - **The sha guard.** On GitLab it is inside `ci_watch`: only a pipeline for
   `sha` counts, a head that moved past it returns `superseded`, and green or
   red is never read off an older pipeline. On GitHub, `headRefOid` from `gh

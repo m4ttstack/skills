@@ -27,7 +27,9 @@ reason, detailPath}` with `detailPath` = the triage report.
 `{{stage.dir}}/parts/forge/scripts/ci-forge.sh`: the triage script is
 vendored beside this file, the forge adapter beside it. GitLab MR tools and
 `ci_watch` take `repoName` = this worktree's absolute path and `iid` = the
-iid in `mr`; the lease tools take `mrUrl` = `mr`'s https URL.
+iid in `mr`; the lease tools take `mrUrl` = `mr`'s https URL. `Which forge
+watches?` reads `mr`'s host: a `/-/merge_requests/` URL is GitLab, a
+`/pull/` URL is GitHub, anything else is the clarify gate.
 
 ```dot
 digraph watch_ci {
@@ -300,7 +302,9 @@ retry.
 worktree's absolute path, `iid` a number, `sha` 7 to 40 hex characters,
 `priorPipelineId` the number `N` of a `gitlab:pipeline:N` id) and call
 again, once. An error is never a reason to watch with a script or the
-GitLab CLI.
+GitLab CLI. An error that names none of these inputs (the repo is not
+registered with rt, for example) has nothing to correct: call again
+unchanged, once, and the off-script gate follows.
 
 ### Off-script gate: ci_watch refused (gate-protocol, scope off-script:watch-ci:<n>)
 
@@ -371,8 +375,10 @@ claims it again. The stand-down never touches it: that lease is someone
 else's.
 
 `Watch calls = 9` is 45 minutes of 300 second `ci_watch` calls; it resets
-when the pushed sha changes and after a job retry. When a result carries
-`priorPipelineId`, pass that value on the next call.
+when the pushed sha changes and after a job retry. The stage has no prior
+pipeline id: pass `priorPipelineId` only when a `ci_watch` result itself
+returns a `priorPipelineId` field, and pass that field's value. The watched
+pipeline's own `pipeline.id` is never a prior id.
 
 | Thought | Reality |
 |---|---|
