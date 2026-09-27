@@ -641,8 +641,9 @@ digraph shepherdr_lanes {
     "STOP: never merge, fix or push by hand; route by who merges" [shape=octagon style=filled fillcolor=red fontcolor=white];
     "Every lane job done?" [shape=diamond];
     "Integration job spawned already?" [shape=diamond];
+    "Ask the integration job's strategy and model" [shape=box];
     "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" [shape=plaintext];
-    "herd_spawn {herd, job: integration-<n>, brief, model}" [shape=plaintext];
+    "herd_spawn {herd, job: integration-<n>, brief, model, account?}" [shape=plaintext];
     "chat_dm {to: <job>, body: ship through your skill chain}" [shape=plaintext];
     "Gate: merge this lane?" [shape=box];
     "Forge?" [shape=diamond];
@@ -693,11 +694,13 @@ digraph shepherdr_lanes {
     "STOP: never merge, fix or push by hand; route by who merges" -> "Who merges this lane?";
     "Every lane job done?" -> "Back to the watch loop: end the turn" [label="no"];
     "Every lane job done?" -> "Integration job spawned already?" [label="yes"];
-    "Integration job spawned already?" -> "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" [label="no"];
+    "Integration job spawned already?" -> "Ask the integration job's strategy and model" [label="no"];
     "Integration job spawned already?" -> "Unmerged reports for this lane = 2?" [label="yes: it reported no merge"];
-    "Integration job spawned already?" -> "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" [label="yes, but before this lane joined: a new one for it"];
-    "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" -> "herd_spawn {herd, job: integration-<n>, brief, model}";
-    "herd_spawn {herd, job: integration-<n>, brief, model}" -> "Back to the watch loop: end the turn";
+    "Integration job spawned already?" -> "Ask the integration job's strategy and model" [label="yes, but before this lane joined: a new one for it"];
+    "Integration job spawned already?" -> "Back to the watch loop: end the turn" [label="yes, and it is still running: wait for its report"];
+    "Ask the integration job's strategy and model" -> "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}";
+    "herd_brief {job: integration-<n>, template, strategy, strategies, fill, out}" -> "herd_spawn {herd, job: integration-<n>, brief, model, account?}";
+    "herd_spawn {herd, job: integration-<n>, brief, model, account?}" -> "Back to the watch loop: end the turn";
     "chat_dm {to: <job>, body: ship through your skill chain}" -> "Back to the watch loop: end the turn";
     "Gate: merge this lane?" -> "Forge?" [label="merge"];
     "Gate: merge this lane?" -> "Back to the watch loop: end the turn" [label="not yet, or hold"];
@@ -753,6 +756,13 @@ reads as checked. Measure before you assert it:
 `rt_verb {args: ["endpoint", "lookup", "<role>", "--path", "<the job's worktree>"]}`,
 a `curl`, `lsof`, a CI status call. When you will not measure it, attribute
 it: "the worker reports X".
+
+### Ask the integration job's strategy and model
+
+The same question as every job's, one AskUserQuestion: the tier table's
+integration row is the recommendation, with the strategy half filled from
+the strategy table. When the Accounts section is non-empty, keep the herd's
+pool answer and make the per-spawn pick; pass it as `account` on the spawn.
 
 ### Gate: merge this lane?
 
