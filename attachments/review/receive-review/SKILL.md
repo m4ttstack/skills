@@ -219,7 +219,7 @@ digraph receive_review {
     "Answer at the respond-plan fit off-script gate?" -> "Fix the respond-plan source the fit names" [label="iterate: fix again with their note"];
     "Answer at the respond-plan fit off-script gate?" -> "Held: end the turn naming the run and stage" [label="hold"];
     "Answer at the respond-plan fit off-script gate?" -> "run_stage {action: fail, stage: <stage>, reason}" [label="hand back"];
-    "Make the recorded move once at the respond-plan fit" -> "Caller owns the receive-review gates at respond-plan?";
+    "Make the recorded move once at the respond-plan fit" -> "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-plan.source.json > <dir>/respond-plan.open.json";
     "Caller owns the receive-review gates at respond-plan?" -> "Hand back the verdict table and the respond-plan open's path" [label="yes"];
     "Caller owns the receive-review gates at respond-plan?" -> "Gate respond-plan through gate-protocol" [label="no: a direct run"];
     "Hand back the verdict table and the respond-plan open's path" -> "Rewrite the receive-review report rows" [label="caller hands {plan} back"];
@@ -273,7 +273,7 @@ digraph receive_review {
     "Answer at the respond-post fit off-script gate?" -> "Fix the respond-post source the fit names" [label="iterate: fix again with their note"];
     "Answer at the respond-post fit off-script gate?" -> "Held: end the turn naming the run and stage" [label="hold"];
     "Answer at the respond-post fit off-script gate?" -> "run_stage {action: fail, stage: <stage>, reason}" [label="hand back"];
-    "Make the recorded move once at the respond-post fit" -> "Caller owns the receive-review gates at respond-post?";
+    "Make the recorded move once at the respond-post fit" -> "sh ${CLAUDE_SKILL_DIR}/scripts/gate-ctx.sh fit < <dir>/respond-post.source.json > <dir>/respond-post.open.json";
     "Caller owns the receive-review gates at respond-post?" -> "Hand back the offered replies and the respond-post open's path" [label="yes"];
     "Caller owns the receive-review gates at respond-post?" -> "Gate respond-post through gate-protocol" [label="no: a direct run"];
     "Hand back the offered replies and the respond-post open's path" -> "Picks post or resolve a gate-1: fix row?" [label="caller hands {post} back"];
@@ -588,16 +588,15 @@ build of the open.
 
 Quote the third fit's problem lines as the `context`. Propose, spelled in
 full, one source change for the fields the fit named, never a shortened
-reply or a hand-edited open. The take move includes exactly one rerun of
-the fit, which must exit 0; any other exit hands back. Ask it per the
-Off-script gate section.
+reply or a hand-edited open. The take makes that change, then the fit
+reruns. Ask it per the Off-script gate section.
 
 ### Make the recorded move once at the respond-plan fit
 
 Make the source change the answer recorded, exactly once, then rerun the
-fit once. Exit 0: go on to whether a caller owns the gates at
-respond-plan. Any other exit: hand back, as the Off-script gate section
-says, with the fit's output as the why.
+fit. Exit 0 goes on as normal. Exit 1 finds the attempt counter already
+spent and returns to this same off-script gate, where the human answers
+again.
 
 ### Hand back the verdict table and the respond-plan open's path
 
@@ -868,16 +867,15 @@ within this build of the open.
 
 Quote the third fit's problem lines as the `context`. Propose, spelled in
 full, one source change for the fields the fit named, never a shortened
-reply or a hand-edited open. The take move includes exactly one rerun of
-the fit, which must exit 0; any other exit hands back. Ask it per the
-Off-script gate section.
+reply or a hand-edited open. The take makes that change, then the fit
+reruns. Ask it per the Off-script gate section.
 
 ### Make the recorded move once at the respond-post fit
 
 Make the source change the answer recorded, exactly once, then rerun the
-fit once. Exit 0: go on to whether a caller owns the gates at
-respond-post. Any other exit: hand back, as the Off-script gate section
-says, with the fit's output as the why.
+fit. Exit 0 goes on as normal. Exit 1 finds the attempt counter already
+spent and returns to this same off-script gate, where the human answers
+again.
 
 ### Hand back the offered replies and the respond-post open's path
 
