@@ -326,8 +326,9 @@ Record `run_decision {contract: gate@1, scope: self-review, selection:
 <the answer's by>}`. Blocking means Critical and Important; the minors
 answer fixes every finding.
 
-A resumed run whose snapshot records a `self-review` decision reuses that
-decision's `fix` answer, treats `next` as proceed, and asks nothing here.
+A resumed run whose snapshot records the latest `self-review` decision
+carrying `fix` reuses that decision's `fix` answer, treats `next` as
+proceed, and asks nothing here.
 
 ### Gate self-review again: quote the failing output
 
@@ -357,7 +358,9 @@ and the suite plus a re-read of the finding is their check.
 ### Write a failing test for the finding
 
 The test states the finding's claim against the current code, before any
-fix.
+fix. Before the first fix attempt on this finding, save a patch of every
+file the attempts will touch: a copy in a scratch directory outside the
+repo, so its own attempts can be undone.
 
 ### Record the finding as not reproduced; no fix
 
@@ -374,8 +377,12 @@ The counter is attempts on this finding within this pass.
 
 No more attempts on it in this run; keep its last failing output. It is
 listed as left open, with that output, in the final message and any
-hand-back. Revert the fix attempts that broke tests if they are still in
-the working tree, so the suite is back to green before the next finding.
+hand-back. Undo only this finding's own fix attempts, from the patch
+saved before the first attempt; never restore a file from HEAD or the
+index, since the diff under review includes uncommitted work. Mark the
+finding's failing test skipped, the finding id in its name or reason (or
+remove it), and keep its last output for the final message, so the suite
+is green before the next finding.
 
 ### Hand back with the Minor findings listed
 
