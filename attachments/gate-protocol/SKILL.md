@@ -32,7 +32,7 @@ digraph gate_protocol {
     "run_stage {action: fail, stage, reason}" [shape=plaintext];
     "Present the gate form with no registry" [shape=box];
     "gate_ask presentation?" [shape=diamond];
-    "Wait: is the gated pane unattended?" [shape=diamond];
+    "Wait: is the gated pane an attended non-herdr session?" [shape=diamond];
     "Present the in-pane gate form" [shape=box];
     "Gate form result?" [shape=diamond];
     "Gate questions left for another form call?" [shape=diamond];
@@ -86,9 +86,9 @@ digraph gate_protocol {
     "run_stage {action: fail, stage, reason}" -> "Gate stage failed";
     "Present the gate form with no registry" -> "Under a run: record the gate decision?" [label="answered: decidedBy is pane"];
     "gate_ask presentation?" -> "Present the in-pane gate form" [label="form"];
-    "gate_ask presentation?" -> "Wait: is the gated pane unattended?" [label="wait"];
-    "Wait: is the gated pane unattended?" -> "Present the in-pane gate form" [label="no: attended, take the form anyway"];
-    "Wait: is the gated pane unattended?" -> "Under a run: set waiting-gate?" [label="yes: spawned, or a herdr pane"];
+    "gate_ask presentation?" -> "Wait: is the gated pane an attended non-herdr session?" [label="wait"];
+    "Wait: is the gated pane an attended non-herdr session?" -> "Present the in-pane gate form" [label="yes: take the form anyway"];
+    "Wait: is the gated pane an attended non-herdr session?" -> "Under a run: set waiting-gate?" [label="no: spawned, or any herdr pane"];
     "Present the in-pane gate form" -> "Gate form result?";
     "Gate form result?" -> "Gate questions left for another form call?" [label="answered"];
     "Gate form result?" -> "Trigger: a gate doorbell push arrives" [label="dismissed by the daemon: the doorbell is the next input" style=dashed];
@@ -279,13 +279,13 @@ surface spawned the pane and it is unattended. A verb with no run has no
 brief) is unattended, and its launch instruction says so; one a human typed
 is attended.
 
-On `wait`, the attended branch is a human's interactive non-herdr session:
-it takes the plain in-pane form anyway, because the stamp names what OTHER
-surfaces reconcile against, not a command to this pane, and a non-herdr
-pane has no herdr PTY to receive the remote-answer Escape that makes the
-idle wait safe. The unattended branch is a spawned pane, or a herdr pane
-whose gate exceeded the form option cap. A human who opens an unattended
-pane can interrupt the wait and answer in words: the graph's words trigger.
+On `wait`, the branch turns on herdr as well as attendance: an attended
+non-herdr session takes the plain in-pane form anyway, because the stamp
+names what OTHER surfaces reconcile against, not a command to this pane,
+and a non-herdr pane has no herdr PTY to receive the remote-answer Escape
+that makes the idle wait safe. A spawned pane, or any herdr pane whether
+attended or not, goes to the wait. A human who opens an unattended pane
+can interrupt the wait and answer in words: the graph's words trigger.
 
 ## Runs integration
 
