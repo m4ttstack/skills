@@ -608,7 +608,10 @@ that file's `.questions` and `.context`, then hands `{plan}` back.
 
 ### Gate respond-plan through gate-protocol
 
-**Otherwise** (a direct terminal run) the verb runs the gate itself:
+**Otherwise** (a direct terminal run) the verb runs the gate itself. It asks with the
+`gate_ask` tool and answers a pane form with the `gate_answer` tool, per
+gate-protocol's Runs integration; a gate is never asked or answered from
+the shell.
 
 - `run_field_set` with `key: "gate"`, `value: "respond-plan"`, `stage:
   <stage>`.
@@ -889,7 +892,10 @@ hand back which replies posted, as the no-offer path does.
 
 ### Gate respond-post through gate-protocol
 
-**Otherwise** the verb runs the gate itself:
+**Otherwise** the verb runs the gate itself. It asks with the
+`gate_ask` tool and answers a pane form with the `gate_answer` tool, per
+gate-protocol's Runs integration; a gate is never asked or answered from
+the shell.
 
 - `run_field_set` with `key: "gate"`, `value: "respond-post"`, `stage:
   <stage>`.
