@@ -137,7 +137,7 @@ ticket, the title).
 | the domain's own | as the domain words them | the domain declares them |
 | `next` | **Proceed** / **Iterate here** / **Hold** | always |
 
-Selection: `{"resume_in":"<tree or null>","ticket":"create|recheck|null","slug":"<text or null>","domain":{<answers>}}`.
+Selection: `{"resume_in":"<tree or null>","ticket":"create|recheck|null","slug":"<text or null>","domain":{<answers>},"next":"proceed|iterate|hold","note":"<their words or null>"}`.
 
 ## Domain rules
 
