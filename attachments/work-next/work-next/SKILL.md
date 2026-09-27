@@ -47,7 +47,7 @@ digraph work_next {
     "Existing work, and no runDb in context?" [shape=diamond];
     "run_list {repo}" [shape=plaintext];
     "Newest running run in this repo?" [shape=diamond];
-    "Gate clarify: Resume it / Start fresh / Hold" [shape=box];
+    "Gate clarify, AskUserQuestion only: Resume it / Start fresh / Hold" [shape=box];
     "clarify answer?" [shape=diamond];
     "runDb = absolute runs root/<repo>/<id>/state.db" [shape=box];
     "run_snapshot" [shape=plaintext];
@@ -95,9 +95,9 @@ digraph work_next {
     "Existing work, and no runDb in context?" -> "run_list {repo}" [label="yes"];
     "Existing work, and no runDb in context?" -> "run_start {flags, skillDir, ticket?, spawnedBy?}" [label="no: new work"];
     "run_list {repo}" -> "Newest running run in this repo?";
-    "Newest running run in this repo?" -> "Gate clarify: Resume it / Start fresh / Hold" [label="found"];
+    "Newest running run in this repo?" -> "Gate clarify, AskUserQuestion only: Resume it / Start fresh / Hold" [label="found"];
     "Newest running run in this repo?" -> "run_start {flags, skillDir, ticket?, spawnedBy?}" [label="none"];
-    "Gate clarify: Resume it / Start fresh / Hold" -> "clarify answer?";
+    "Gate clarify, AskUserQuestion only: Resume it / Start fresh / Hold" -> "clarify answer?";
     "clarify answer?" -> "runDb = absolute runs root/<repo>/<id>/state.db" [label="resume"];
     "clarify answer?" -> "run_start {flags, skillDir, ticket?, spawnedBy?}" [label="start fresh"];
     "clarify answer?" -> "Held: end the turn naming run and stage" [label="hold"];
@@ -122,6 +122,7 @@ digraph work_next {
     "How did the stage end?" -> "Gate <stage>-failed:<attempt>" [label="it wrote run_stage fail"];
     "How did the stage end?" -> "run_decision {contract: gate@1, scope: redirect:<from>:<attempt>, selection: {from, to, reason}}" [label="a Go back or Fix answer: no produce check"];
     "How did the stage end?" -> "Held: end the turn naming run and stage" [label="held at a gate"];
+    "How did the stage end?" -> "Run abandoned" [label="the stage abandoned the run"];
     "run_snapshot: every produce set and not -?" -> "run_stage {action: done, stage}" [label="yes"];
     "run_snapshot: every produce set and not -?" -> "run_stage {action: fail, stage, reason: <missing field>}" [label="no"];
     "run_stage {action: fail, stage, reason: <missing field>}" -> "Gate <stage>-failed:<attempt>";
@@ -173,6 +174,14 @@ digraph work_next {
 - **A finished run stays finished.** Only Close's answer or Abandon ends
   it; a green `ci` does not. Never carry a finished run's `runDb` into new
   work: its next `run_stage start` would write into it.
+- **Clarify comes before the run.** No `runDb` exists yet, so `clarify`
+  is AskUserQuestion alone: no `gate_*` and no `run_*` call.
+- **This file's own gates** (`<stage>-failed`, `close`) take the gate
+  part minus its `run_stage {action: fail}` exits: a gate the daemon
+  cannot open here ends the turn with a one-line report, and the run stays
+  `running`.
+- **The gate is the form.** About to end the turn with the run still
+  `running` and no form on screen? Stop: the Stop hook sends you back.
 - **Account back-fill** (a pick made before the DB existed):
   `selection` is the pick as an object, `decidedBy` the spawning surface.
 

@@ -40,7 +40,6 @@ digraph run_gate {
     "Take the winning answer and its by" [shape=box];
     "run_decision {contract: gate@1, scope, selection, decidedBy}" [shape=plaintext];
     "next answer?" [shape=diamond];
-    "Revise per their note" [shape=box];
     "Record the hold decision and the hold field" [shape=box];
     "run_stage {action: fail, stage, reason}" [shape=plaintext];
     "STOP: never invent an answer or re-ask a closed gate" [shape=octagon style=filled fillcolor=red fontcolor=white];
@@ -85,10 +84,9 @@ digraph run_gate {
     "Take the winning answer and its by" -> "run_decision {contract: gate@1, scope, selection, decidedBy}";
     "run_decision {contract: gate@1, scope, selection, decidedBy}" -> "next answer?";
     "next answer?" -> "Act on the answer at the site" [label="proceed, or a site answer"];
-    "next answer?" -> "Revise per their note" [label="iterate here"];
+    "next answer?" -> "Act on the answer at the site" [label="iterate here: the site's iterate edge says what to redo"];
     "next answer?" -> "Hand the answer to the orchestrator for Redirect" [label="go back"];
     "next answer?" -> "Record the hold decision and the hold field" [label="hold"];
-    "Revise per their note" -> "A site reaches its gate" [label="a new gate; each pass is the human's call"];
     "Record the hold decision and the hold field" -> "Held: end the turn naming run and stage";
     "run_stage {action: fail, stage, reason}" -> "Stage failed";
 }
@@ -119,6 +117,8 @@ digraph run_gate {
   list in prose, nothing after it.
 - **Hold** records `run_decision {contract: gate@1, scope: hold:<stage>:<attempt>, selection: {reason}}`
   and `run_field_set {key: hold, value: <their words, or held>}`.
+- **A re-ask after Iterate is a new gate**: a fresh `gate_ask` with its
+  own id, never the old one reopened. Each pass is the human's call.
 - `rt gate wait` is the one rt command this pipeline runs on Bash: no tool
   blocks on a gate.
 
