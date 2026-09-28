@@ -609,6 +609,12 @@ short to classify is what `mr_job_trace` is for. REAL: the change broke it
 change (a runner, network or dependency outage, a known flake). One retry
 per INFRA job; a REAL failure goes to the gate.
 
+`ci_watch` details at most five blocking failures. When `blockingFailures`
+is larger than the blocking jobs in `failedJobs`, the rest are
+unclassified, so the red is not INFRA only: answer no at `Only INFRA
+blocking failures, none retried yet (watch-ci)?` and let the `ci` gate name the
+count.
+
 ### Classify each failing check REAL or INFRA (GitHub)
 
 Read the failing checks' logs from the links `gh pr checks <mr>` prints,

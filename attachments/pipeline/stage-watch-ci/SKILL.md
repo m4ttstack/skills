@@ -365,6 +365,12 @@ it (a test, type or lint failure in touched code). INFRA: unrelated to the
 change (a runner, network or dependency outage, a known flake). One retry
 per INFRA job; a REAL failure goes to the gate.
 
+`ci_watch` details at most five blocking failures. When `blockingFailures`
+is larger than the blocking jobs in `failedJobs`, the rest are
+unclassified, so the red is not INFRA only: answer no at `Only INFRA
+blocking failures, none retried yet?` and let the `ci` gate name the
+count.
+
 ## The attendant lease
 
 Exactly one actor attends an MR's CI at a time: this stage, a standalone
