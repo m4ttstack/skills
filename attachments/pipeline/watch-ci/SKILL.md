@@ -368,7 +368,7 @@ digraph watch_ci {
     "Classify each failure REAL or INFRA (GitLab)" -> "Only INFRA blocking failures, none retried yet (watch-ci)?";
     "Classify each failing check REAL or INFRA (GitHub)" -> "Only INFRA blocking failures, none retried yet (watch-ci)?";
     "Only INFRA blocking failures, none retried yet (watch-ci)?" -> "MR found (before the retry)?" [label="yes"];
-    "Only INFRA blocking failures, none retried yet (watch-ci)?" -> "watch-ci gate ci" [label="no: a REAL failure, or retried already"];
+    "Only INFRA blocking failures, none retried yet (watch-ci)?" -> "watch-ci gate ci" [label="no: a REAL or unclassified failure, or retried already"];
 
     "Own run (watch-ci green)?" -> "MR found (watch-ci green)?" [label="yes"];
     "Own run (watch-ci green)?" -> "Was a lease claimed (watch-ci exit)?" [label="no: the verdict goes back to the caller"];
@@ -597,9 +597,10 @@ claim, no watch, no retry, no push inside it.
 or INFRA) with its job id. `<N>` is the number in `ci_watch`'s
 `pipeline.id` on GitLab, and the run id from the failing check's link on
 GitHub. A script that fails instead of reporting: quote its output and
-classify from `failedJobs` as the unbound flow does. INFRA job ids go to
-`mr_retry` (GitLab) or `gh run rerun` (GitHub); the adapter's printed retry
-command is not run.
+classify from `failedJobs` as the unbound flow does, including its rule
+for blocking failures `failedJobs` does not return. INFRA job ids go to
+`mr_retry` (GitLab) or `gh run rerun` (GitHub); the adapter's printed
+retry command is not run.
 
 ### Classify each failure REAL or INFRA (GitLab)
 
@@ -612,8 +613,8 @@ per INFRA job; a REAL failure goes to the gate.
 `ci_watch` details at most five blocking failures. When `blockingFailures`
 is larger than the blocking jobs in `failedJobs`, the rest are
 unclassified, so the red is not INFRA only: answer no at `Only INFRA
-blocking failures, none retried yet (watch-ci)?` and let the `ci` gate name the
-count.
+blocking failures, none retried yet (watch-ci)?` and let the `ci`
+gate name the count.
 
 ### Classify each failing check REAL or INFRA (GitHub)
 

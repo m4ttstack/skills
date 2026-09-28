@@ -209,7 +209,7 @@ digraph watch_ci {
     "Classify each failure REAL or INFRA" -> "Only INFRA blocking failures, none retried yet?";
     "Classify each failing check REAL or INFRA" -> "Only INFRA blocking failures, none retried yet?";
     "Only INFRA blocking failures, none retried yet?" -> "ci_lease_claim {mrUrl: <mr>, branch} (before the retry)" [label="yes"];
-    "Only INFRA blocking failures, none retried yet?" -> "Gate ci (table below)" [label="no: a REAL failure, or retried already"];
+    "Only INFRA blocking failures, none retried yet?" -> "Gate ci (table below)" [label="no: a REAL or unclassified failure, or retried already"];
     "ci_lease_claim {mrUrl: <mr>, branch} (before the retry)" -> "Re-claim result (before the retry, stage)?";
     "Re-claim result (before the retry, stage)?" -> "Retry on which forge?" [label="claimed: true"];
     "Re-claim result (before the retry, stage)?" -> "STOP: while another attendant holds the lease, every commit, push and retry is theirs (stage)" [label="claimed: false"];
@@ -348,9 +348,10 @@ claim, no watch, no retry, no push inside it.
 or INFRA) with its job id. `<N>` is the number in `ci_watch`'s
 `pipeline.id` on GitLab, and the run id from the failing check's link on
 GitHub. A script that fails instead of reporting: quote its output and
-classify from `failedJobs` as the unbound flow does. INFRA job ids go to
-`mr_retry` (GitLab) or `gh run rerun` (GitHub); the adapter's printed retry
-command is not run.
+classify from `failedJobs` as the unbound flow does, including its rule
+for blocking failures `failedJobs` does not return. INFRA job ids go to
+`mr_retry` (GitLab) or `gh run rerun` (GitHub); the adapter's printed
+retry command is not run.
 
 ### Classify each failing check REAL or INFRA
 
